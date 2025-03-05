@@ -1,0 +1,35 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+/* Blog content styles */
+.blog-content h1 {
+  @apply text-3xl font-bold text-accent mb-4 mt-6;
+}
+
+.blog-content h2 {
+  @apply text-2xl font-bold text-accent mb-3 mt-5;
+}
+
+/* Add more styles for blog content... */
+
+/* Prose styles for MDX rendering */
+.prose {
+  @apply text-gray-700;
+}
+
+.prose a {
+  @apply text-steel-blue hover:text-accent transition-colors no-underline;
+}
+
+/* Add more prose styles... */
