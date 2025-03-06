@@ -1,7 +1,7 @@
-import { ReactNode } from 'react';
+import { ReactNode, useState } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
-import Sidebar from './sidebar';
+import Sidebar from './Sidebar';
 import { useTranslation } from '@/lib/translations';
 
 // Page section types
@@ -38,6 +38,14 @@ export default function Layout({
     contact: t('contact.title', 'Contact'),
     admin: t('admin.login', 'Admin')
   };
+
+  const [currentLanguage, setCurrentLanguage] = useState(() => {
+    // Initialize from localStorage if available, otherwise use 'en'
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('preferred_language') || 'en';
+    }
+    return 'en';
+  });
   
   const pageTitle = title || sectionTitles[section];
   const metaDescription = description || `Senior Engineering Manager personal website - ${pageTitle} section`;
@@ -77,22 +85,25 @@ export default function Layout({
           
           {/* Footer */}
           <footer className="bg-light-accent p-4 flex justify-between items-center">
-            <div className="language-selector">
-              <select 
-                value={router.locale}
-                onChange={(e) => {
-                  const newLocale = e.target.value;
-                  router.push(router.pathname, router.asPath, { locale: newLocale });
-                }}
-                className="px-3 py-1 rounded border border-steel-blue bg-linen text-steel-blue"
-              >
-                <option value="en">English</option>
-                <option value="es">Español</option>
-                <option value="de">Deutsch</option>
-                <option value="ja">日本語</option>
-                <option value="uk">Українська</option>
-              </select>
-            </div>
+
+          <div className="language-selector">
+  <select 
+    defaultValue="en"
+    onChange={(e) => {
+      const newLanguage = e.target.value;
+      localStorage.setItem('preferred_language', newLanguage);
+      // Note: We're not actually changing the language yet
+      // This is just to store the preference
+    }}
+    className="px-3 py-1 rounded border border-steel-blue bg-linen text-steel-blue"
+  >
+    <option value="en">English</option>
+    <option value="es">Español</option>
+    <option value="de">Deutsch</option>
+    <option value="ja">日本語</option>
+    <option value="uk">Українська</option>
+  </select>
+</div>
             
             <div className="copyright text-sm">
               &copy; {new Date().getFullYear()} Your Name

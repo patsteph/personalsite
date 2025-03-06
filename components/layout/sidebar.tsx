@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useTranslation } from '@/lib/translations';
-import { PageSection } from './layout';
+import { PageSection } from './Layout';
 
 type SidebarProps = {
   currentSection: PageSection;

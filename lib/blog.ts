@@ -52,5 +52,58 @@ export function getAllPosts(): BlogPost[] {
   return posts;
 }
 
-// Additional functions to implement...
-// getRecentPosts, getPostBySlug, getAllPostSlugs
+/**
+ * Get recent blog posts
+ */
+export function getRecentPosts(count: number = 3): BlogPost[] {
+  return getAllPosts().slice(0, count);
+}
+
+/**
+ * Get a specific blog post by slug
+ */
+export function getPostBySlug(slug: string): BlogPost | null {
+  try {
+    const fullPath = path.join(postsDirectory, `${slug}.md`);
+    
+    // Check if the file exists
+    if (!fs.existsSync(fullPath)) {
+      return null;
+    }
+    
+    const fileContents = fs.readFileSync(fullPath, 'utf8');
+    const { data, content } = matter(fileContents);
+    
+    // Estimate reading time
+    const wordsPerMinute = 200;
+    const wordCount = content.split(/\s+/g).length;
+    const readingTime = Math.ceil(wordCount / wordsPerMinute);
+    
+    return {
+      slug,
+      title: data.title,
+      date: data.date,
+      summary: data.summary,
+      content,
+      readingTime
+    } as BlogPost;
+  } catch (error) {
+    console.error(`Error fetching post ${slug}:`, error);
+    return null;
+  }
+}
+
+/**
+ * Get all post slugs for static path generation
+ * This is the function that was missing!
+ */
+export function getAllPostSlugs(): string[] {
+  if (!fs.existsSync(postsDirectory)) {
+    return [];
+  }
+  
+  const fileNames = fs.readdirSync(postsDirectory);
+  return fileNames
+    .filter(fileName => fileName.endsWith('.md'))
+    .map(fileName => fileName.replace(/\.md$/, ''));
+}

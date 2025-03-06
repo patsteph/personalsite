@@ -1,5 +1,5 @@
 import { useRouter } from 'next/router';
-import { useCallback } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 
 // Translation dictionary types
 type TranslationDictionary = {
@@ -41,8 +41,16 @@ const commonTranslations: TranslationSet = {
  * Hook to provide translation functionality
  */
 export function useTranslation() {
-  const router = useRouter();
-  const locale = router.locale || 'en';
+  const [locale, setLocale] = useState('en');
+  
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedLanguage = localStorage.getItem('preferred_language');
+      if (savedLanguage && commonTranslations[savedLanguage]) {
+        setLocale(savedLanguage);
+      }
+    }
+  }, []);
   
   /**
    * Translate a key to the current locale
@@ -52,5 +60,5 @@ export function useTranslation() {
     return translations[key] || fallback || key;
   }, [locale]);
   
-  return { t, locale };
+  return { t, locale, setLanguage: setLocale };
 }

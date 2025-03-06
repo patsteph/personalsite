@@ -1,4 +1,4 @@
-import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
+import React, { useState, useEffect, useContext, ReactNode } from 'react';
 import { 
   User,
   signInWithEmailAndPassword,
@@ -9,17 +9,28 @@ import {
 } from 'firebase/auth';
 import { auth } from './firebase';
 
-// Create a context for authentication
-type AuthContextType = {
+// Define the authentication context type
+export interface AuthContextType {
   user: User | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<User>;
   signUp: (email: string, password: string) => Promise<User>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
+}
+
+// Create the context with a default value
+const defaultContext: AuthContextType = {
+  user: null,
+  loading: true,
+  signIn: async () => { throw new Error('Auth not initialized'); },
+  signUp: async () => { throw new Error('Auth not initialized'); },
+  signOut: async () => { throw new Error('Auth not initialized'); },
+  resetPassword: async () => { throw new Error('Auth not initialized'); }
 };
 
-const AuthContext = createContext<AuthContextType | null>(null);
+// Create the context - explicitly use React.createContext
+export const AuthContext = React.createContext<AuthContextType>(defaultContext);
 
 // Authentication provider component
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -33,7 +44,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     });
     
-    // Cleanup subscription
+    // Cleanup subscription on unmount
     return () => unsubscribe();
   }, []);
   
@@ -79,22 +90,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
   
-  return (
-    <AuthContext.Provider value={{
-      user,
-      loading,
-      signIn,
-      signUp,
-      signOut,
-      resetPassword
-    }}>
-      {children}
-    </AuthContext.Provider>
+  // Create the value object
+  const value = {
+    user,
+    loading,
+    signIn,
+    signUp,
+    signOut,
+    resetPassword
+  };
+  
+  // Use JSX element type assertion to help TypeScript understand this is a valid JSX element
+  return React.createElement(
+    AuthContext.Provider,
+    { value },
+    children
   );
 }
 
-// Hook to use authentication
-export function useAuth() {
+// Hook to use authentication in components
+export function useAuth(): AuthContextType {
   const context = useContext(AuthContext);
   if (!context) {
     throw new Error('useAuth must be used within an AuthProvider');
