@@ -4,39 +4,80 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Welcome</title>
+  <title>Personal Website</title>
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      text-align: center;
-      padding: 50px;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 40px 20px;
+      line-height: 1.6;
     }
-    a {
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
       color: #0070f3;
-      text-decoration: none;
+    }
+    h2 {
+      font-size: 1.8rem;
+      margin-top: 2rem;
+      margin-bottom: 1rem;
+      color: #333;
+    }
+    .nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 2rem 0;
+    }
+    .nav-link {
       display: inline-block;
       padding: 10px 20px;
-      margin: 10px 0;
       background-color: #0070f3;
       color: white;
-      border-radius: 4px;
+      text-decoration: none;
+      border-radius: 5px;
       font-weight: 500;
+      transition: background-color 0.2s;
     }
-    a:hover {
-      background-color: #005bb5;
+    .nav-link:hover {
+      background-color: #0051b3;
+    }
+    .admin-link {
+      background-color: #666;
+    }
+    .admin-link:hover {
+      background-color: #444;
+    }
+    p {
+      margin-bottom: 1rem;
+    }
+    .note {
+      background-color: #f5f5f5;
+      padding: 15px;
+      border-radius: 5px;
+      margin: 2rem 0;
+      font-size: 0.9rem;
     }
   </style>
 </head>
 <body>
-  <h1>Welcome to My Personal Site</h1>
-  <p>Please click the button below to access the site:</p>
-  <a href="personalsite/index.html">Enter Site</a>
+  <h1>Welcome to My Personal Website</h1>
   
-  <script>
-    // Automatically redirect after a short delay
-    setTimeout(function() {
-      window.location.href = 'personalsite/index.html';
-    }, 1500);
-  </script>
+  <p>This is a direct landing page for easier navigation. Select a section to explore:</p>
+  
+  <div class="nav">
+    <a href="personalsite/index.html" class="nav-link">Home</a>
+    <a href="personalsite/books.html" class="nav-link">Books</a>
+    <a href="personalsite/blog.html" class="nav-link">Blog</a>
+    <a href="personalsite/cv.html" class="nav-link">CV</a>
+    <a href="personalsite/contact.html" class="nav-link">Contact</a>
+    <a href="admin.html" class="nav-link admin-link">Admin</a>
+  </div>
+  
+  <div class="note">
+    <p><strong>Note:</strong> If you encounter any navigation issues, you can always return to this page.</p>
+    <p>If you're experiencing path issues, try <a href="debug.html">the debug page</a> to troubleshoot.</p>
+  </div>
 </body>
 </html>
