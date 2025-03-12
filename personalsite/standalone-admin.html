@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Standalone Admin</title>
+  <title>Admin Dashboard</title>
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -126,9 +126,10 @@
           </ul>
         </div>
         
-        <div class="content">
+        <div class="content" id="content-area">
           <h2>Books Management</h2>
-          <p>This is a standalone admin interface that works without Next.js.</p>
+          <p>This is a secure standalone admin interface.</p>
+          <p>Use this interface to manage your website when the main Next.js admin interface is unavailable.</p>
           
           <div class="book-list">
             <div class="book-card">
@@ -209,7 +210,60 @@
         // Add active class to clicked link
         this.classList.add('active');
         
-        // You could implement actual content switching here
+        // Simple content switching
+        const contentArea = document.getElementById('content-area');
+        const id = this.getAttribute('href').substring(1);
+        
+        switch(id) {
+          case 'overview':
+            contentArea.innerHTML = `
+              <h2>Dashboard Overview</h2>
+              <p>Welcome to your admin dashboard!</p>
+              <p>Select a section from the sidebar to manage your site content.</p>
+            `;
+            break;
+          case 'books':
+            contentArea.innerHTML = `
+              <h2>Books Management</h2>
+              <p>Manage your book collection here.</p>
+              <div class="book-list">
+                <div class="book-card">
+                  <h3>Book Title 1</h3>
+                  <p>Author: John Doe</p>
+                  <button>Edit</button>
+                </div>
+                <div class="book-card">
+                  <h3>Book Title 2</h3>
+                  <p>Author: Jane Smith</p>
+                  <button>Edit</button>
+                </div>
+                <div class="book-card">
+                  <h3>Book Title 3</h3>
+                  <p>Author: Alex Johnson</p>
+                  <button>Edit</button>
+                </div>
+              </div>
+            `;
+            break;
+          case 'blog':
+            contentArea.innerHTML = `
+              <h2>Blog Management</h2>
+              <p>Manage your blog posts here.</p>
+              <ul>
+                <li>Blog Post 1 - March 5, 2023</li>
+                <li>Blog Post 2 - February 20, 2023</li>
+                <li>Blog Post 3 - January 15, 2023</li>
+              </ul>
+            `;
+            break;
+          case 'settings':
+            contentArea.innerHTML = `
+              <h2>Settings</h2>
+              <p>Configure your website settings.</p>
+              <p><strong>Note:</strong> This is a limited admin interface. For full functionality, please use the main admin interface when available.</p>
+            `;
+            break;
+        }
       });
     });
   </script>
