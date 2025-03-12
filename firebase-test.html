@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Firebase Authentication Test</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 500px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    h1 {
+      color: #333;
+      text-align: center;
+    }
+    .container {
+      background-color: #f9f9f9;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    input {
+      display: block;
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 16px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+    button {
+      background-color: #4285f4;
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-right: 8px;
+    }
+    button:hover {
+      background-color: #3367d6;
+    }
+    #status {
+      margin-top: 16px;
+      padding: 8px;
+      border-radius: 4px;
+    }
+    .success {
+      background-color: #d4edda;
+      color: #155724;
+    }
+    .error {
+      background-color: #f8d7da;
+      color: #721c24;
+    }
+    #log {
+      margin-top: 16px;
+      padding: 8px;
+      background-color: #f5f5f5;
+      border-radius: 4px;
+      height: 200px;
+      overflow-y: auto;
+      font-family: monospace;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Firebase Authentication Test</h1>
+  
+  <div class="container">
+    <div id="login-form">
+      <input type="email" id="email" placeholder="Email">
+      <input type="password" id="password" placeholder="Password">
+      
+      <div>
+        <button id="login-button">Login</button>
+        <button id="check-button">Check Auth</button>
+        <button id="logout-button">Logout</button>
+      </div>
+      
+      <div id="status"></div>
+      <div id="log"></div>
+    </div>
+  </div>
+
+  <!-- Load Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+
+  <script>
+    // Logging function
+    function log(message) {
+      const logElem = document.getElementById('log');
+      const timestamp = new Date().toISOString();
+      logElem.innerHTML += `<div>${timestamp}: ${message}</div>`;
+      logElem.scrollTop = logElem.scrollHeight;
+      console.log(`${timestamp}: ${message}`);
+    }
+
+    // Set status
+    function setStatus(message, isError = false) {
+      const statusElem = document.getElementById('status');
+      statusElem.textContent = message;
+      statusElem.className = isError ? 'error' : 'success';
+    }
+
+    // Initialize Firebase
+    log('Initializing Firebase...');
+    
+    const firebaseConfig = {
+      apiKey: "AIzaSyD4a8iaxHP9xPGV5tR5LwvzDVa5Y9o5wGQ",
+      authDomain: "personalsite-19189.firebaseapp.com",
+      projectId: "personalsite-19189",
+      storageBucket: "personalsite-19189.firebasestorage.app",
+      messagingSenderId: "892517360036",
+      appId: "1:892517360036:web:36dda234d9f3f79562e131"
+    };
+    
+    try {
+      firebase.initializeApp(firebaseConfig);
+      log('Firebase initialized successfully');
+      
+      // Set up auth state listener
+      firebase.auth().onAuthStateChanged(function(user) {
+        if (user) {
+          log(`User signed in: ${user.email}`);
+          setStatus(`Signed in as ${user.email}`);
+        } else {
+          log('No user signed in');
+          setStatus('Not signed in', true);
+        }
+      });
+      
+      // Login button
+      document.getElementById('login-button').addEventListener('click', function() {
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        
+        if (!email || !password) {
+          setStatus('Please enter email and password', true);
+          return;
+        }
+        
+        log(`Attempting to sign in with email: ${email}`);
+        
+        firebase.auth().signInWithEmailAndPassword(email, password)
+          .then(function(userCredential) {
+            log('Login successful');
+            setStatus(`Logged in as ${userCredential.user.email}`);
+            
+            // Store authentication in session storage
+            sessionStorage.setItem('auth_success', 'true');
+            sessionStorage.setItem('auth_email', email);
+            sessionStorage.setItem('auth_timestamp', new Date().toISOString());
+            log('Auth data stored in session storage');
+          })
+          .catch(function(error) {
+            log(`Login error: ${error.code} - ${error.message}`);
+            setStatus(`Login error: ${error.message}`, true);
+          });
+      });
+      
+      // Check auth button
+      document.getElementById('check-button').addEventListener('click', function() {
+        const user = firebase.auth().currentUser;
+        
+        if (user) {
+          log(`Current user: ${user.email} (uid: ${user.uid})`);
+          setStatus(`Signed in as ${user.email}`);
+        } else {
+          log('No user currently signed in');
+          setStatus('Not signed in', true);
+        }
+      });
+      
+      // Logout button
+      document.getElementById('logout-button').addEventListener('click', function() {
+        firebase.auth().signOut()
+          .then(function() {
+            log('Signed out successfully');
+            setStatus('Signed out');
+            
+            // Clear session storage
+            sessionStorage.removeItem('auth_success');
+            sessionStorage.removeItem('auth_email');
+            sessionStorage.removeItem('auth_timestamp');
+            log('Auth data removed from session storage');
+          })
+          .catch(function(error) {
+            log(`Sign out error: ${error.message}`);
+            setStatus(`Sign out error: ${error.message}`, true);
+          });
+      });
+      
+    } catch (error) {
+      log(`Error initializing Firebase: ${error.message}`);
+      setStatus(`Error: ${error.message}`, true);
+    }
+  </script>
+</body>
+</html>

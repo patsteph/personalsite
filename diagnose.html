@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Deployment Diagnostic</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      line-height: 1.6;
+    }
+    h1 {
+      color: #333;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 10px;
+    }
+    .container {
+      background-color: #f9f9f9;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      border: 1px solid #eee;
+    }
+    .btn {
+      background-color: #4285f4;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-right: 8px;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+    .btn:hover {
+      background-color: #3367d6;
+    }
+    #results {
+      background-color: #000;
+      color: #33ff33;
+      font-family: monospace;
+      padding: 10px;
+      border-radius: 4px;
+      height: 300px;
+      overflow-y: auto;
+      margin-top: 20px;
+    }
+    .log {
+      margin-bottom: 5px;
+      border-bottom: 1px solid #333;
+      padding-bottom: 5px;
+    }
+    .info {
+      border-left: 4px solid #4285f4;
+      padding-left: 10px;
+      margin: 10px 0;
+      background-color: #e8f0fe;
+      padding: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Deployment Diagnostic Tool</h1>
+  
+  <div class="info">
+    This is a standalone diagnostic page that doesn't rely on your React/Next.js build.
+    It's designed to troubleshoot path issues with your GitHub Pages deployment.
+  </div>
+  
+  <div class="container">
+    <h2>Path Analysis</h2>
+    <button class="btn" id="checkPaths">Check Paths</button>
+    <button class="btn" id="testNetworking">Test Networking</button>
+    <button class="btn" id="clearLogs">Clear Logs</button>
+  </div>
+  
+  <div class="container">
+    <h2>Firebase Test</h2>
+    <button class="btn" id="loadFirebase">Load Firebase SDK</button>
+    <button class="btn" id="initFirebase">Initialize Firebase</button>
+    <button class="btn" id="checkAuth">Check Auth State</button>
+  </div>
+  
+  <div id="results"></div>
+  
+  <script>
+    // Logging function
+    function log(message, type = 'info') {
+      const results = document.getElementById('results');
+      const timestamp = new Date().toISOString();
+      const logEntry = document.createElement('div');
+      logEntry.className = `log ${type}`;
+      logEntry.textContent = `${timestamp}: ${message}`;
+      results.appendChild(logEntry);
+      results.scrollTop = results.scrollHeight;
+      console.log(`${timestamp}: ${message}`);
+    }
+    
+    // Clear logs
+    document.getElementById('clearLogs').addEventListener('click', function() {
+      document.getElementById('results').innerHTML = '';
+      log('Logs cleared');
+    });
+    
+    // Check paths
+    document.getElementById('checkPaths').addEventListener('click', function() {
+      log('Checking paths...');
+      
+      // Get location information
+      const location = window.location;
+      log(`Current URL: ${location.href}`);
+      log(`Pathname: ${location.pathname}`);
+      log(`Hostname: ${location.hostname}`);
+      log(`Protocol: ${location.protocol}`);
+      log(`Base path extraction: ${location.pathname.match(/^\/[^\/]+/) ? location.pathname.match(/^\/[^\/]+/)[0] : 'Not found'}`);
+      
+      // Check for expected paths
+      checkResourceExists('/personalsite/runtime-config.js', 'Runtime Config');
+      checkResourceExists('/personalsite/styles.css', 'Styles CSS');
+      checkResourceExists('/personalsite/_next/static/chunks/main.js', 'Next.js Main Chunk');
+      checkResourceExists('/runtime-config.js', 'Root Runtime Config');
+    });
+    
+    // Test networking
+    document.getElementById('testNetworking').addEventListener('click', function() {
+      log('Testing network connectivity...');
+      
+      // Check Firebase hosting
+      fetch('https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js', { method: 'HEAD' })
+        .then(response => {
+          log(`Firebase SDK reachable: ${response.ok} (${response.status})`);
+        })
+        .catch(error => {
+          log(`Firebase SDK not reachable: ${error.message}`, 'error');
+        });
+      
+      // Check GitHub Pages
+      fetch('https://github.githubassets.com/favicon.ico', { method: 'HEAD' })
+        .then(response => {
+          log(`GitHub assets reachable: ${response.ok} (${response.status})`);
+        })
+        .catch(error => {
+          log(`GitHub assets not reachable: ${error.message}`, 'error');
+        });
+    });
+    
+    // Check if a resource exists
+    function checkResourceExists(path, name) {
+      fetch(path, { method: 'HEAD' })
+        .then(response => {
+          if (response.ok) {
+            log(`✅ ${name} exists at ${path}`);
+          } else {
+            log(`❌ ${name} not found at ${path} (${response.status})`, 'error');
+          }
+        })
+        .catch(error => {
+          log(`❌ Error checking ${name}: ${error.message}`, 'error');
+        });
+    }
+    
+    // Load Firebase SDK
+    document.getElementById('loadFirebase').addEventListener('click', function() {
+      log('Loading Firebase SDK...');
+      
+      const script = document.createElement('script');
+      script.src = 'https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js';
+      script.onload = function() {
+        log('✅ Firebase App SDK loaded successfully');
+        
+        // Load Auth after App is loaded
+        const authScript = document.createElement('script');
+        authScript.src = 'https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js';
+        authScript.onload = function() {
+          log('✅ Firebase Auth SDK loaded successfully');
+        };
+        authScript.onerror = function() {
+          log('❌ Failed to load Firebase Auth SDK', 'error');
+        };
+        document.body.appendChild(authScript);
+      };
+      script.onerror = function() {
+        log('❌ Failed to load Firebase App SDK', 'error');
+      };
+      document.body.appendChild(script);
+    });
+    
+    // Initialize Firebase
+    document.getElementById('initFirebase').addEventListener('click', function() {
+      log('Initializing Firebase...');
+      
+      if (typeof firebase === 'undefined') {
+        log('❌ Firebase SDK not loaded. Click "Load Firebase SDK" first.', 'error');
+        return;
+      }
+      
+      try {
+        // Firebase configuration
+        const firebaseConfig = {
+          apiKey: "AIzaSyD4a8iaxHP9xPGV5tR5LwvzDVa5Y9o5wGQ",
+          authDomain: "personalsite-19189.firebaseapp.com",
+          projectId: "personalsite-19189",
+          storageBucket: "personalsite-19189.firebasestorage.app",
+          messagingSenderId: "892517360036",
+          appId: "1:892517360036:web:36dda234d9f3f79562e131"
+        };
+        
+        // Initialize if not already initialized
+        if (firebase.apps.length === 0) {
+          firebase.initializeApp(firebaseConfig);
+          log('✅ Firebase initialized successfully');
+        } else {
+          log('Firebase already initialized');
+        }
+      } catch (error) {
+        log(`❌ Error initializing Firebase: ${error.message}`, 'error');
+      }
+    });
+    
+    // Check Auth State
+    document.getElementById('checkAuth').addEventListener('click', function() {
+      log('Checking authentication state...');
+      
+      if (typeof firebase === 'undefined') {
+        log('❌ Firebase SDK not loaded. Click "Load Firebase SDK" first.', 'error');
+        return;
+      }
+      
+      if (firebase.apps.length === 0) {
+        log('❌ Firebase not initialized. Click "Initialize Firebase" first.', 'error');
+        return;
+      }
+      
+      try {
+        const auth = firebase.auth();
+        const user = auth.currentUser;
+        
+        if (user) {
+          log(`✅ User is signed in: ${user.email}`);
+        } else {
+          log('ℹ️ No user is signed in');
+        }
+        
+        // Also try to check auth state with listener
+        auth.onAuthStateChanged(function(user) {
+          if (user) {
+            log(`✅ Auth state changed: User is signed in (${user.email})`);
+          } else {
+            log('ℹ️ Auth state changed: No user is signed in');
+          }
+        });
+      } catch (error) {
+        log(`❌ Error checking auth state: ${error.message}`, 'error');
+      }
+    });
+    
+    // Log page load
+    window.addEventListener('DOMContentLoaded', function() {
+      log('Page loaded');
+      
+      // Check for runtime config in window object
+      if (typeof window.runtimeConfig !== 'undefined') {
+        log('✅ window.runtimeConfig is defined');
+      } else {
+        log('❌ window.runtimeConfig is NOT defined', 'error');
+      }
+    });
+  </script>
+</body>
+</html>
