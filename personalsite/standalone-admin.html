@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Standalone Admin</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    header {
+      background-color: #f5f5f5;
+      padding: 20px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    h1 {
+      margin: 0;
+      color: #333;
+    }
+    button {
+      background-color: #0070f3;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .admin-panel {
+      display: grid;
+      grid-template-columns: 250px 1fr;
+      gap: 20px;
+    }
+    .sidebar {
+      background-color: #f5f5f5;
+      padding: 20px;
+      border-radius: 8px;
+    }
+    .sidebar ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .sidebar li {
+      margin-bottom: 10px;
+    }
+    .sidebar a {
+      display: block;
+      padding: 8px;
+      color: #333;
+      text-decoration: none;
+      border-radius: 4px;
+    }
+    .sidebar a:hover, .sidebar a.active {
+      background-color: #e0e0e0;
+    }
+    .content {
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      border: 1px solid #eaeaea;
+    }
+    .book-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 20px;
+    }
+    .book-card {
+      border: 1px solid #eaeaea;
+      border-radius: 8px;
+      padding: 15px;
+      transition: transform 0.2s;
+    }
+    .book-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    .book-card h3 {
+      margin-top: 0;
+      font-size: 16px;
+    }
+    .status {
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 4px;
+    }
+    .success {
+      background-color: #d4edda;
+      color: #155724;
+    }
+    .error {
+      background-color: #f8d7da;
+      color: #721c24;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <!-- Auth check screen shown before content -->
+    <div id="auth-check" style="text-align: center; padding: 50px 0;">
+      <h2>Checking authentication...</h2>
+      <p>Please wait while we verify your access.</p>
+      <div id="auth-status" class="status"></div>
+    </div>
+    
+    <!-- Main admin content (hidden initially) -->
+    <div id="admin-content" style="display: none;">
+      <header>
+        <h1>Admin Dashboard</h1>
+        <button id="logout-button">Logout</button>
+      </header>
+      
+      <div class="admin-panel">
+        <div class="sidebar">
+          <ul>
+            <li><a href="#overview" class="active">Overview</a></li>
+            <li><a href="#books">Manage Books</a></li>
+            <li><a href="#blog">Manage Blog</a></li>
+            <li><a href="#settings">Settings</a></li>
+          </ul>
+        </div>
+        
+        <div class="content">
+          <h2>Books Management</h2>
+          <p>This is a standalone admin interface that works without Next.js.</p>
+          
+          <div class="book-list">
+            <div class="book-card">
+              <h3>Book Title 1</h3>
+              <p>Author: John Doe</p>
+              <button>Edit</button>
+            </div>
+            <div class="book-card">
+              <h3>Book Title 2</h3>
+              <p>Author: Jane Smith</p>
+              <button>Edit</button>
+            </div>
+            <div class="book-card">
+              <h3>Book Title 3</h3>
+              <p>Author: Alex Johnson</p>
+              <button>Edit</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Check authentication on page load
+    document.addEventListener('DOMContentLoaded', function() {
+      const authCheckElement = document.getElementById('auth-check');
+      const adminContentElement = document.getElementById('admin-content');
+      const authStatusElement = document.getElementById('auth-status');
+      
+      // Check session storage for auth state
+      const authSuccess = sessionStorage.getItem('auth_success');
+      const bypassAuth = sessionStorage.getItem('bypass_auth');
+      
+      if (authSuccess === 'true' || bypassAuth === 'true') {
+        // Auth is valid, show admin content
+        authStatusElement.textContent = 'Authentication successful!';
+        authStatusElement.className = 'status success';
+        
+        // Show admin content after a short delay
+        setTimeout(() => {
+          authCheckElement.style.display = 'none';
+          adminContentElement.style.display = 'block';
+        }, 1000);
+      } else {
+        // Not authenticated
+        authStatusElement.textContent = 'Authentication failed. Please login again.';
+        authStatusElement.className = 'status error';
+        
+        // Redirect to login page after a delay
+        setTimeout(() => {
+          window.location.href = '/personalsite/admin.html';
+        }, 3000);
+      }
+    });
+    
+    // Handle logout button
+    document.getElementById('logout-button').addEventListener('click', function() {
+      // Clear auth state
+      sessionStorage.removeItem('auth_success');
+      sessionStorage.removeItem('auth_timestamp');
+      sessionStorage.removeItem('bypass_auth');
+      
+      // Redirect to login
+      window.location.href = '/personalsite/admin.html';
+    });
+    
+    // Handle sidebar navigation
+    document.querySelectorAll('.sidebar a').forEach(link => {
+      link.addEventListener('click', function(e) {
+        e.preventDefault();
+        
+        // Remove active class from all links
+        document.querySelectorAll('.sidebar a').forEach(l => {
+          l.classList.remove('active');
+        });
+        
+        // Add active class to clicked link
+        this.classList.add('active');
+        
+        // You could implement actual content switching here
+      });
+    });
+  </script>
+</body>
+</html>
