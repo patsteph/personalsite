@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="refresh" content="0;url=personalsite/">
+  <meta http-equiv="refresh" content="0;url=../personalsite/">
   <title>Redirecting...</title>
   <style>
     body {
@@ -28,8 +28,15 @@
   </style>
 </head>
 <body>
-  <h1>Redirecting to Personal Website...</h1>
+  <h1>Redirecting to correct path...</h1>
   <div class="loader"></div>
-  <p>If you are not redirected automatically, <a href="personalsite/">click here</a>.</p>
+  <p>If you are not redirected automatically, <a href="../personalsite/">click here</a>.</p>
+  
+  <script>
+    // For debugging path issues
+    console.log('Current path:', window.location.pathname);
+    console.log('Redirecting to:', '../personalsite/');
+  </script>
 </body>
 </html>
+  
