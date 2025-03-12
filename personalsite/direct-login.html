@@ -1,0 +1,131 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Direct Login</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 400px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .container {
+      background-color: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+    input {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 16px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+    button {
+      width: 100%;
+      padding: 10px;
+      background-color: #0070f3;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    #message {
+      margin-top: 16px;
+      padding: 10px;
+      border-radius: 4px;
+      text-align: center;
+    }
+    .success {
+      background-color: #d4edda;
+      color: #155724;
+    }
+    .error {
+      background-color: #f8d7da;
+      color: #721c24;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Direct Login</h1>
+    <form id="loginForm">
+      <input type="email" id="email" placeholder="Email" required>
+      <input type="password" id="password" placeholder="Password" required>
+      <button type="submit">Login</button>
+    </form>
+    <div id="message"></div>
+  </div>
+
+  <!-- Firebase Libraries -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+
+  <script>
+    // Initialize Firebase with hardcoded config
+    const firebaseConfig = {
+      apiKey: "AIzaSyD4a8iaxHP9xPGV5tR5LwvzDVa5Y9o5wGQ",
+      authDomain: "personalsite-19189.firebaseapp.com",
+      projectId: "personalsite-19189",
+      storageBucket: "personalsite-19189.firebasestorage.app",
+      messagingSenderId: "892517360036",
+      appId: "1:892517360036:web:36dda234d9f3f79562e131"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+
+    // Handle form submission
+    document.getElementById('loginForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const messageElement = document.getElementById('message');
+      
+      // Clear previous messages
+      messageElement.textContent = '';
+      messageElement.className = '';
+      
+      // Sign in with Firebase
+      firebase.auth().signInWithEmailAndPassword(email, password)
+        .then((userCredential) => {
+          // Signed in successfully
+          const user = userCredential.user;
+          console.log('User signed in:', user);
+          
+          // Show success message
+          messageElement.textContent = 'Signed in successfully! Redirecting...';
+          messageElement.className = 'success';
+          
+          // Store authentication state
+          sessionStorage.setItem('auth_success', 'true');
+          sessionStorage.setItem('auth_email', email);
+          sessionStorage.setItem('auth_timestamp', new Date().toISOString());
+          
+          // Redirect to admin page after a brief delay
+          setTimeout(() => {
+            window.location.href = '/personalsite/admin';
+          }, 1000);
+        })
+        .catch((error) => {
+          // Handle errors
+          console.error('Authentication error:', error);
+          
+          // Show error message
+          messageElement.textContent = 'Authentication error: ' + error.message;
+          messageElement.className = 'error';
+        });
+    });
+  </script>
+</body>
+</html>
