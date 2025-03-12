@@ -11,7 +11,7 @@ window.runtimeConfig = {
     appId: "1:892517360036:web:36dda234d9f3f79562e131",
     measurementId: ""
   },
-  isProduction: true,
+  isProduction: false,
   basePath: "/personalsite"
 };
 
@@ -26,6 +26,6 @@ window.__RUNTIME_CONFIG__ = {
     "appId": "1:892517360036:web:36dda234d9f3f79562e131",
     "measurementId": ""
   },
-  "isProduction": true,
+  "isProduction": false,
   "basePath": "/personalsite"
 };
