@@ -613,9 +613,6 @@ video {
 .h-16 {
   height: 4rem;
 }
-.h-32 {
-  height: 8rem;
-}
 .h-4 {
   height: 1rem;
 }
@@ -1314,9 +1311,6 @@ body {
 }
 .hover\:bg-opacity-10:hover {
   --tw-bg-opacity: 0.1;
-}
-.hover\:bg-opacity-80:hover {
-  --tw-bg-opacity: 0.8;
 }
 .hover\:text-accent:hover {
   --tw-text-opacity: 1;
