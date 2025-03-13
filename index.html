@@ -3,13 +3,16 @@
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="refresh" content="0;url=/personalsite/index.html">
+    <meta http-equiv="refresh" content="0;url=/personalsite/">
     <title>Redirecting...</title>
   </head>
   <body>
-    <p>Redirecting to <a href="/personalsite/index.html">the site</a>...</p>
+    <p>Redirecting to <a href="/personalsite/">the site</a>...</p>
     <script>
-      window.location.href = "/personalsite/index.html";
+      // Simple redirect without any path analysis to avoid loops
+      if (!window.location.pathname.includes('/personalsite/')) {
+        window.location.href = "/personalsite/";
+      }
     </script>
   </body>
 </html>
