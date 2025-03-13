@@ -11,21 +11,24 @@ window.runtimeConfig = {
     appId: "1:892517360036:web:36dda234d9f3f79562e131",
     measurementId: ""
   },
-  isProduction: false,
+  isProduction: true,
   basePath: "/personalsite"
 };
 
-// Also include alternate format for compatibility
-window.__RUNTIME_CONFIG__ = {
-  "firebase": {
-    "apiKey": "AIzaSyD4a8iaxHP9xPGV5tR5LwvzDVa5Y9o5wGQ",
-    "authDomain": "personalsite-19189.firebaseapp.com",
-    "projectId": "personalsite-19189",
-    "storageBucket": "personalsite-19189.firebasestorage.app",
-    "messagingSenderId": "892517360036",
-    "appId": "1:892517360036:web:36dda234d9f3f79562e131",
-    "measurementId": ""
-  },
-  "isProduction": false,
-  "basePath": "/personalsite"
-};
+// For development, automatically detect the correct base path
+(function detectBasePath() {
+  // Check if we're running on GitHub Pages (username.github.io/repo-name)
+  const isGitHubPages = window.location.hostname.includes('github.io');
+  
+  if (isGitHubPages) {
+    // Extract repo name from path for GitHub Pages
+    const pathMatch = window.location.pathname.match(/^\/([^/]+)/);
+    if (pathMatch) {
+      window.runtimeConfig.basePath = pathMatch[0];
+      console.log('Detected GitHub Pages path:', window.runtimeConfig.basePath);
+    }
+  } else if (window.location.hostname === 'localhost') {
+    // If we're on localhost, keep the basePath that's already set
+    console.log('Running on localhost with basePath:', window.runtimeConfig.basePath);
+  }
+})();
