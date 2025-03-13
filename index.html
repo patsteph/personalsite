@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Personal Website - Redirecting</title>
+    <title>Personal Website</title>
     <style>
       body {
         font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -20,9 +20,10 @@
         background: white;
         border-radius: 10px;
         box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        max-width: 600px;
       }
       h1 { margin-top: 0; color: #333; }
-      p { margin-bottom: 20px; color: #666; }
+      p { margin-bottom: 20px; color: #666; line-height: 1.5; }
       .btn {
         display: inline-block;
         padding: 12px 24px;
@@ -32,19 +33,19 @@
         border-radius: 5px;
         font-weight: bold;
         transition: background-color 0.2s;
+        margin-top: 10px;
       }
       .btn:hover { background-color: #3070af; }
     </style>
-    <script>
-      // Immediately redirect to the intended location
-      window.location.href = "https://patsteph.github.io/personalsite/";
-    </script>
+    <!-- No automatic redirect script to avoid throttling -->
   </head>
   <body>
     <div class="container">
-      <h1>Redirecting...</h1>
-      <p>If you're not redirected automatically, please click the button below:</p>
-      <a href="https://patsteph.github.io/personalsite/" class="btn">Go to Website</a>
+      <h1>Welcome to My Personal Website</h1>
+      <p>
+        This is the landing page for my personal website. Click the button below to access the full site.
+      </p>
+      <a href="https://patsteph.github.io/personalsite/" class="btn">Enter Site</a>
     </div>
   </body>
 </html>
