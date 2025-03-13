@@ -1,35 +1,15 @@
-
 <!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="refresh" content="0;url=personalsite/">
-  <title>Redirecting...</title>
-  <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      text-align: center;
-      padding: 50px;
-    }
-    .loader {
-      border: 5px solid #f3f3f3;
-      border-top: 5px solid #0070f3;
-      border-radius: 50%;
-      width: 40px;
-      height: 40px;
-      animation: spin 1s linear infinite;
-      margin: 20px auto;
-    }
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-  </style>
-</head>
-<body>
-  <h1>Redirecting to Personal Website...</h1>
-  <div class="loader"></div>
-  <p>If you are not redirected automatically, <a href="personalsite/">click here</a>.</p>
-</body>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="refresh" content="0;url=/personalsite/index.html">
+    <title>Redirecting...</title>
+  </head>
+  <body>
+    <p>Redirecting to <a href="/personalsite/index.html">the site</a>...</p>
+    <script>
+      window.location.href = "/personalsite/index.html";
+    </script>
+  </body>
 </html>
