@@ -3,13 +3,35 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="refresh" content="0;url=/personalsite/index.html">
-  <title>Redirecting...</title>
+  <title>Redirecting</title>
+  <style>
+    body {
+      font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      background-color: #f5f5f5;
+      color: #333;
+    }
+    .container {
+      text-align: center;
+      padding: 20px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+  </style>
+  <script>
+    // Use absolute URL with domain name to prevent path issues
+    window.location.href = "https://patsteph.github.io/personalsite/";
+  </script>
 </head>
 <body>
-  <p>Redirecting to correct path...</p>
-  <script>
-    window.location.href = "/personalsite/index.html";
-  </script>
+  <div class="container">
+    <h2>Redirecting to the correct location...</h2>
+    <p>If you're not redirected automatically, <a href="https://patsteph.github.io/personalsite/">click here</a>.</p>
+  </div>
 </body>
 </html>
