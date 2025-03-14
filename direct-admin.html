@@ -471,6 +471,11 @@
       appId: "1:892517360036:web:36dda234d9f3f79562e131"
     };
     
+    // Get Google Books API configuration
+    const googleBooksConfig = window.SECURE_CONFIG && window.SECURE_CONFIG.googleBooks ? window.SECURE_CONFIG.googleBooks : {
+      apiKey: "" // No fallback key for Google Books API
+    };
+    
     // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();

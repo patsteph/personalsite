@@ -10,6 +10,9 @@ window.SECURE_CONFIG = {
     messagingSenderId: "892517360036",
     appId: "1:892517360036:web:36dda234d9f3f79562e131"
   },
+  googleBooks: {
+    apiKey: ""
+  },
   basePath: "",
   isProduction: false
 };
