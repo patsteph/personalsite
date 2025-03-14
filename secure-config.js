@@ -13,8 +13,8 @@ window.SECURE_CONFIG = {
   googleBooks: {
     apiKey: ""
   },
-  basePath: "/personalsite",
-  isProduction: true
+  basePath: "",
+  isProduction: false
 };
 
 // For GitHub Pages, automatically detect the correct base path
