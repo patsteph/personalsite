@@ -28,3 +28,73 @@ window.runtimeConfig = {
     console.log('Running on localhost with basePath:', window.runtimeConfig.basePath);
   }
 })();
+
+// Fix for GitHub Pages asset loading issues
+(function fixMissingAssets() {
+  // Check if we're on GitHub Pages and running in a browser
+  if (typeof window !== 'undefined' && window.location.hostname.includes('github.io')) {
+    // Only run if we don't already have a fix applied
+    if (!window._assetFixApplied) {
+      window._assetFixApplied = true;
+      
+      // Add window error handler to detect missing resources
+      window.addEventListener('error', function(event) {
+        // Check if this is a missing script or CSS file
+        if (event.target && (
+            event.target.tagName === 'SCRIPT' || 
+            event.target.tagName === 'LINK')) {
+          
+          const src = event.target.src || event.target.href;
+          if (src) {
+            console.warn('Resource failed to load:', src);
+            
+            // If the URL doesn't have the basePath prefix, add it
+            if (src.includes('/_next/') && !src.includes('/personalsite/_next/')) {
+              const newSrc = src.replace('/_next/', '/personalsite/_next/');
+              console.log('Attempting to load with fixed path:', newSrc);
+              
+              // For scripts, create a new script tag
+              if (event.target.tagName === 'SCRIPT') {
+                const newScript = document.createElement('script');
+                newScript.src = newSrc;
+                document.head.appendChild(newScript);
+              }
+              
+              // For CSS, create a new link tag
+              if (event.target.tagName === 'LINK' && event.target.rel === 'stylesheet') {
+                const newLink = document.createElement('link');
+                newLink.rel = 'stylesheet';
+                newLink.href = newSrc;
+                document.head.appendChild(newLink);
+              }
+            }
+          }
+        }
+      }, true);
+      
+      // Fix navigation issue with admin button
+      if (!window._navFixApplied) {
+        window._navFixApplied = true;
+        console.log('Adding navigation handler for GitHub Pages');
+        
+        // Add click handler for all links
+        document.addEventListener('click', function(event) {
+          const target = event.target.closest('a[href], button[data-href]');
+          if (target) {
+            const href = target.getAttribute('href') || target.getAttribute('data-href');
+            if (href && href.startsWith('/')) {
+              // Internal link - make sure it has the basePath
+              const basePath = window.runtimeConfig.basePath;
+              if (!href.startsWith(basePath)) {
+                event.preventDefault();
+                const fixedPath = `${basePath}${href}`;
+                console.log('Redirecting to fixed path:', fixedPath);
+                window.location.href = fixedPath;
+              }
+            }
+          }
+        });
+      }
+    }
+  }
+})();

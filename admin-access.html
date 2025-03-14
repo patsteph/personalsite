@@ -47,7 +47,30 @@
     <p><strong>Note:</strong> You'll need to authenticate with your admin credentials to access the admin area.</p>
   </div>
   
-  <a href="./admin/login" class="button">Go to Admin Login</a>
+  <a href="/personalsite/admin/login" class="button" id="adminLink">Go to Admin Login</a>
+  
+  <script>
+    // Automatically detect and fix the admin link path
+    document.addEventListener('DOMContentLoaded', function() {
+      // Get the admin link
+      const adminLink = document.getElementById('adminLink');
+      
+      if (adminLink) {
+        // Detect if we're on GitHub Pages
+        const isGitHubPages = window.location.hostname.includes('github.io');
+        
+        if (isGitHubPages) {
+          // Extract repo name for GitHub Pages
+          const pathMatch = window.location.pathname.match(/^\/([^/]+)/);
+          if (pathMatch) {
+            const basePath = pathMatch[0];
+            adminLink.href = `${basePath}/admin/login`;
+            console.log('Set admin link to:', adminLink.href);
+          }
+        }
+      }
+    });
+  </script>
   
   <p style="margin-top: 20px; font-size: 0.9em; color: #666;">
     If you're having trouble with the regular admin login, please contact the site administrator.
