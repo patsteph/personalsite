@@ -416,6 +416,10 @@
       return '/personalsite'; // Default fallback
     }
     
+    // Show error message for debugging purposes
+    console.log('Direct Admin Page - Current path:', window.location.pathname);
+    console.log('Direct Admin Page - Base path:', getBasePath());
+    
     // Firebase Configuration
     const firebaseConfig = {
       apiKey: "AIzaSyD4a8iaxHP9xPGV5tR5LwvzDVa5Y9o5wGQ",
