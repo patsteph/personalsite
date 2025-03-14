@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard</title>
+  <style>
+    :root {
+      --primary-color: #3b82f6;
+      --primary-hover: #2563eb;
+      --text-color: #333;
+      --bg-color: #f5f7fa;
+      --card-bg: #fff;
+      --border-color: #e5e7eb;
+      --success-color: #22c55e;
+      --error-color: #ef4444;
+      --warning-color: #f59e0b;
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      line-height: 1.6;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px 0;
+      border-bottom: 1px solid var(--border-color);
+      margin-bottom: 30px;
+    }
+    
+    .header h1 {
+      color: var(--primary-color);
+      font-size: 24px;
+    }
+    
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .login-container {
+      max-width: 400px;
+      margin: 80px auto;
+      padding: 30px;
+      background-color: var(--card-bg);
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .login-container h2 {
+      margin-bottom: 20px;
+      color: var(--primary-color);
+      text-align: center;
+    }
+    
+    .login-form {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+    
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    
+    label {
+      font-weight: 500;
+      font-size: 14px;
+    }
+    
+    input {
+      padding: 10px;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      font-size: 16px;
+    }
+    
+    button {
+      background-color: var(--primary-color);
+      color: white;
+      border: none;
+      padding: 12px;
+      border-radius: 4px;
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    
+    button:hover {
+      background-color: var(--primary-hover);
+    }
+    
+    button:disabled {
+      background-color: #93c5fd;
+      cursor: not-allowed;
+    }
+    
+    .secondary-button {
+      background-color: #6b7280;
+    }
+    
+    .secondary-button:hover {
+      background-color: #4b5563;
+    }
+    
+    .card {
+      background-color: var(--card-bg);
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    
+    .admin-dashboard {
+      display: none;
+    }
+    
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+    
+    .stat-card {
+      background-color: var(--card-bg);
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      padding: 20px;
+      text-align: center;
+    }
+    
+    .stat-card h3 {
+      font-size: 14px;
+      color: #6b7280;
+      margin-bottom: 10px;
+    }
+    
+    .stat-card .value {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--primary-color);
+    }
+    
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    
+    .table th, .table td {
+      padding: 12px 15px;
+      text-align: left;
+      border-bottom: 1px solid var(--border-color);
+    }
+    
+    .table th {
+      background-color: #f8fafc;
+      font-weight: 600;
+      color: #6b7280;
+    }
+    
+    .alert {
+      padding: 12px 15px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+    }
+    
+    .alert-error {
+      background-color: #fee2e2;
+      color: var(--error-color);
+      border-left: 4px solid var(--error-color);
+    }
+    
+    .alert-success {
+      background-color: #dcfce7;
+      color: var(--success-color);
+      border-left: 4px solid var(--success-color);
+    }
+    
+    .hidden {
+      display: none;
+    }
+    
+    .book-form {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+    
+    .action-buttons {
+      display: flex;
+      gap: 10px;
+    }
+    
+    .btn-small {
+      padding: 6px 12px;
+      font-size: 14px;
+    }
+    
+    .btn-edit {
+      background-color: #f59e0b;
+    }
+    
+    .btn-edit:hover {
+      background-color: #d97706;
+    }
+    
+    .btn-delete {
+      background-color: #ef4444;
+    }
+    
+    .btn-delete:hover {
+      background-color: #dc2626;
+    }
+    
+    .tabs {
+      display: flex;
+      gap: 5px;
+      margin-bottom: 20px;
+      border-bottom: 1px solid var(--border-color);
+    }
+    
+    .tab {
+      padding: 10px 15px;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+    }
+    
+    .tab.active {
+      border-bottom: 2px solid var(--primary-color);
+      color: var(--primary-color);
+      font-weight: 500;
+    }
+    
+    .tab-content {
+      display: none;
+    }
+    
+    .tab-content.active {
+      display: block;
+    }
+    
+    #statusMessage {
+      padding: 12px 15px;
+      border-radius: 4px;
+      margin: 20px 0;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <!-- Login Page -->
+  <div id="loginPage" class="container">
+    <div class="login-container">
+      <h2>Admin Login</h2>
+      
+      <div id="loginError" class="alert alert-error hidden">
+        <strong>Error:</strong> <span id="errorText"></span>
+      </div>
+      
+      <form id="loginForm" class="login-form">
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input type="email" id="email" required placeholder="your@email.com">
+        </div>
+        
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" required>
+        </div>
+        
+        <button type="submit" id="loginButton">Sign In</button>
+        <button type="button" id="bypassButton" class="secondary-button">Skip Authentication</button>
+      </form>
+    </div>
+  </div>
+  
+  <!-- Admin Dashboard -->
+  <div id="adminDashboard" class="container admin-dashboard">
+    <div class="header">
+      <h1>Book Management Dashboard</h1>
+      <div class="user-info">
+        <span id="userEmail"></span>
+        <button id="logoutButton" class="btn-small">Logout</button>
+      </div>
+    </div>
+    
+    <div class="dashboard-grid">
+      <div class="stat-card">
+        <h3>Total Books</h3>
+        <div class="value" id="totalBooks">0</div>
+      </div>
+      <div class="stat-card">
+        <h3>Categories</h3>
+        <div class="value" id="totalCategories">0</div>
+      </div>
+      <div class="stat-card">
+        <h3>Fiction Books</h3>
+        <div class="value" id="fictionBooks">0</div>
+      </div>
+      <div class="stat-card">
+        <h3>Non-Fiction Books</h3>
+        <div class="value" id="nonFictionBooks">0</div>
+      </div>
+    </div>
+    
+    <div class="tabs">
+      <div class="tab active" data-tab="bookList">Book List</div>
+      <div class="tab" data-tab="addBook">Add New Book</div>
+    </div>
+    
+    <div id="statusMessage"></div>
+    
+    <div id="bookListTab" class="tab-content active">
+      <div class="card">
+        <h2>Book Collection</h2>
+        <div id="booksTableContainer">
+          <table class="table" id="booksTable">
+            <thead>
+              <tr>
+                <th>Title</th>
+                <th>Author</th>
+                <th>Category</th>
+                <th>Year</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="booksTableBody">
+              <!-- Books will be loaded here -->
+              <tr>
+                <td colspan="5" style="text-align: center;">No books found. Add some books to see them here.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    
+    <div id="addBookTab" class="tab-content">
+      <div class="card">
+        <h2>Add New Book</h2>
+        <form id="bookForm" class="book-form">
+          <div class="form-group">
+            <label for="title">Title</label>
+            <input type="text" id="title" required>
+          </div>
+          
+          <div class="form-group">
+            <label for="author">Author</label>
+            <input type="text" id="author" required>
+          </div>
+          
+          <div class="form-group">
+            <label for="category">Category</label>
+            <input type="text" id="category" required placeholder="e.g. Fiction, Science, History">
+          </div>
+          
+          <div class="form-group">
+            <label for="year">Year Published</label>
+            <input type="number" id="year" required min="1000" max="2100">
+          </div>
+          
+          <div class="form-group">
+            <label for="description">Description</label>
+            <textarea id="description" rows="4" style="padding: 10px; border: 1px solid var(--border-color); border-radius: 4px;"></textarea>
+          </div>
+          
+          <div class="form-group">
+            <label for="coverImage">Cover Image URL</label>
+            <input type="url" id="coverImage" placeholder="https://example.com/book-cover.jpg">
+          </div>
+          
+          <input type="hidden" id="bookId">
+          <button type="submit" id="saveBookButton">Save Book</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Add Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  
+  <script>
+    // Get base path from URL
+    function getBasePath() {
+      // Detect GitHub Pages path
+      if (window.location.hostname.includes('github.io')) {
+        const pathMatch = window.location.pathname.match(/^\/([^/]+)/);
+        if (pathMatch) {
+          return pathMatch[0];
+        }
+      }
+      return '/personalsite'; // Default fallback
+    }
+    
+    // Firebase Configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyD4a8iaxHP9xPGV5tR5LwvzDVa5Y9o5wGQ",
+      authDomain: "personalsite-19189.firebaseapp.com",
+      projectId: "personalsite-19189",
+      storageBucket: "personalsite-19189.appspot.com",
+      messagingSenderId: "892517360036",
+      appId: "1:892517360036:web:36dda234d9f3f79562e131"
+    };
+    
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+    
+    // DOM Elements
+    const loginPage = document.getElementById('loginPage');
+    const loginForm = document.getElementById('loginForm');
+    const loginButton = document.getElementById('loginButton');
+    const bypassButton = document.getElementById('bypassButton');
+    const loginError = document.getElementById('loginError');
+    const errorText = document.getElementById('errorText');
+    
+    const adminDashboard = document.getElementById('adminDashboard');
+    const logoutButton = document.getElementById('logoutButton');
+    const userEmail = document.getElementById('userEmail');
+    
+    const statusMessage = document.getElementById('statusMessage');
+    const totalBooks = document.getElementById('totalBooks');
+    const totalCategories = document.getElementById('totalCategories');
+    const fictionBooks = document.getElementById('fictionBooks');
+    const nonFictionBooks = document.getElementById('nonFictionBooks');
+    
+    const tabs = document.querySelectorAll('.tab');
+    const tabContents = document.querySelectorAll('.tab-content');
+    
+    const bookForm = document.getElementById('bookForm');
+    const booksTableBody = document.getElementById('booksTableBody');
+    
+    // Book collection reference
+    const booksCollection = db.collection('books');
+    
+    // Check auth state
+    auth.onAuthStateChanged(function(user) {
+      if (user || sessionStorage.getItem('bypass_auth') === 'true') {
+        // User is signed in or bypass auth is enabled
+        loginPage.style.display = 'none';
+        adminDashboard.style.display = 'block';
+        
+        if (user) {
+          userEmail.textContent = user.email;
+        } else {
+          userEmail.textContent = 'Guest (Bypass)';
+        }
+        
+        // Load books data
+        loadBooks();
+        updateStats();
+      } else {
+        // No user is signed in
+        loginPage.style.display = 'block';
+        adminDashboard.style.display = 'none';
+      }
+    });
+    
+    // Login form submit handler
+    loginForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      
+      loginButton.textContent = 'Signing in...';
+      loginButton.disabled = true;
+      loginError.classList.add('hidden');
+      
+      auth.signInWithEmailAndPassword(email, password)
+        .then(function(userCredential) {
+          // Store auth in session storage
+          sessionStorage.setItem('auth_success', 'true');
+          sessionStorage.setItem('auth_timestamp', new Date().toISOString());
+        })
+        .catch(function(error) {
+          // Show error message
+          errorText.textContent = error.message;
+          loginError.classList.remove('hidden');
+          
+          // Reset button
+          loginButton.textContent = 'Sign In';
+          loginButton.disabled = false;
+        });
+    });
+    
+    // Bypass button click handler
+    bypassButton.addEventListener('click', function() {
+      // Store auth in session storage
+      sessionStorage.setItem('auth_success', 'true');
+      sessionStorage.setItem('auth_timestamp', new Date().toISOString());
+      sessionStorage.setItem('bypass_auth', 'true');
+      
+      // Update UI
+      loginPage.style.display = 'none';
+      adminDashboard.style.display = 'block';
+      userEmail.textContent = 'Guest (Bypass)';
+      
+      // Load books data
+      loadBooks();
+      updateStats();
+    });
+    
+    // Logout button click handler
+    logoutButton.addEventListener('click', function() {
+      auth.signOut().then(function() {
+        // Clear session storage
+        sessionStorage.removeItem('auth_success');
+        sessionStorage.removeItem('auth_timestamp');
+        sessionStorage.removeItem('bypass_auth');
+        
+        // Update UI
+        loginPage.style.display = 'block';
+        adminDashboard.style.display = 'none';
+      });
+    });
+    
+    // Tab switching
+    tabs.forEach(function(tab) {
+      tab.addEventListener('click', function() {
+        // Remove active class from all tabs and contents
+        tabs.forEach(t => t.classList.remove('active'));
+        tabContents.forEach(c => c.classList.remove('active'));
+        
+        // Add active class to clicked tab and corresponding content
+        this.classList.add('active');
+        document.getElementById(this.dataset.tab + 'Tab').classList.add('active');
+      });
+    });
+    
+    // Book form submit handler
+    bookForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      const bookId = document.getElementById('bookId').value;
+      const title = document.getElementById('title').value;
+      const author = document.getElementById('author').value;
+      const category = document.getElementById('category').value;
+      const year = parseInt(document.getElementById('year').value);
+      const description = document.getElementById('description').value;
+      const coverImage = document.getElementById('coverImage').value;
+      
+      const bookData = {
+        title,
+        author,
+        category,
+        year,
+        description: description || '',
+        coverImage: coverImage || '',
+        updatedAt: new Date()
+      };
+      
+      if (bookId) {
+        // Update existing book
+        booksCollection.doc(bookId).update(bookData)
+          .then(function() {
+            showMessage('Book updated successfully!', 'success');
+            resetBookForm();
+            loadBooks();
+            updateStats();
+            
+            // Switch to book list tab
+            tabs.forEach(t => t.classList.remove('active'));
+            tabContents.forEach(c => c.classList.remove('active'));
+            document.querySelector('[data-tab="bookList"]').classList.add('active');
+            document.getElementById('bookListTab').classList.add('active');
+          })
+          .catch(function(error) {
+            showMessage('Error updating book: ' + error.message, 'error');
+          });
+      } else {
+        // Add created date for new books
+        bookData.createdAt = new Date();
+        
+        // Add new book
+        booksCollection.add(bookData)
+          .then(function() {
+            showMessage('Book added successfully!', 'success');
+            resetBookForm();
+            loadBooks();
+            updateStats();
+            
+            // Switch to book list tab
+            tabs.forEach(t => t.classList.remove('active'));
+            tabContents.forEach(c => c.classList.remove('active'));
+            document.querySelector('[data-tab="bookList"]').classList.add('active');
+            document.getElementById('bookListTab').classList.add('active');
+          })
+          .catch(function(error) {
+            showMessage('Error adding book: ' + error.message, 'error');
+          });
+      }
+    });
+    
+    // Load books function
+    function loadBooks() {
+      booksCollection.orderBy('title').get()
+        .then(function(querySnapshot) {
+          if (querySnapshot.empty) {
+            booksTableBody.innerHTML = '<tr><td colspan="5" style="text-align: center;">No books found. Add some books to see them here.</td></tr>';
+            return;
+          }
+          
+          let booksHTML = '';
+          querySnapshot.forEach(function(doc) {
+            const book = doc.data();
+            booksHTML += `
+              <tr>
+                <td>${book.title}</td>
+                <td>${book.author}</td>
+                <td>${book.category}</td>
+                <td>${book.year}</td>
+                <td class="action-buttons">
+                  <button class="btn-small btn-edit" data-id="${doc.id}">Edit</button>
+                  <button class="btn-small btn-delete" data-id="${doc.id}">Delete</button>
+                </td>
+              </tr>
+            `;
+          });
+          
+          booksTableBody.innerHTML = booksHTML;
+          
+          // Add event listeners to edit and delete buttons
+          document.querySelectorAll('.btn-edit').forEach(function(button) {
+            button.addEventListener('click', function() {
+              editBook(this.dataset.id);
+            });
+          });
+          
+          document.querySelectorAll('.btn-delete').forEach(function(button) {
+            button.addEventListener('click', function() {
+              deleteBook(this.dataset.id);
+            });
+          });
+        })
+        .catch(function(error) {
+          showMessage('Error loading books: ' + error.message, 'error');
+        });
+    }
+    
+    // Edit book function
+    function editBook(id) {
+      booksCollection.doc(id).get()
+        .then(function(doc) {
+          if (doc.exists) {
+            const book = doc.data();
+            
+            // Fill form with book data
+            document.getElementById('bookId').value = id;
+            document.getElementById('title').value = book.title;
+            document.getElementById('author').value = book.author;
+            document.getElementById('category').value = book.category;
+            document.getElementById('year').value = book.year;
+            document.getElementById('description').value = book.description || '';
+            document.getElementById('coverImage').value = book.coverImage || '';
+            
+            // Switch to add book tab
+            tabs.forEach(t => t.classList.remove('active'));
+            tabContents.forEach(c => c.classList.remove('active'));
+            document.querySelector('[data-tab="addBook"]').classList.add('active');
+            document.getElementById('addBookTab').classList.add('active');
+            
+            // Change button text
+            document.getElementById('saveBookButton').textContent = 'Update Book';
+          } else {
+            showMessage('Book not found', 'error');
+          }
+        })
+        .catch(function(error) {
+          showMessage('Error loading book: ' + error.message, 'error');
+        });
+    }
+    
+    // Delete book function
+    function deleteBook(id) {
+      if (confirm('Are you sure you want to delete this book?')) {
+        booksCollection.doc(id).delete()
+          .then(function() {
+            showMessage('Book deleted successfully!', 'success');
+            loadBooks();
+            updateStats();
+          })
+          .catch(function(error) {
+            showMessage('Error deleting book: ' + error.message, 'error');
+          });
+      }
+    }
+    
+    // Reset book form
+    function resetBookForm() {
+      document.getElementById('bookId').value = '';
+      bookForm.reset();
+      document.getElementById('saveBookButton').textContent = 'Save Book';
+    }
+    
+    // Update statistics
+    function updateStats() {
+      booksCollection.get()
+        .then(function(querySnapshot) {
+          const books = [];
+          const categories = new Set();
+          let fiction = 0;
+          let nonFiction = 0;
+          
+          querySnapshot.forEach(function(doc) {
+            const book = doc.data();
+            books.push(book);
+            categories.add(book.category.toLowerCase());
+            
+            // Count fiction vs non-fiction (simplified)
+            if (book.category.toLowerCase().includes('fiction')) {
+              fiction++;
+            } else {
+              nonFiction++;
+            }
+          });
+          
+          totalBooks.textContent = books.length;
+          totalCategories.textContent = categories.size;
+          fictionBooks.textContent = fiction;
+          nonFictionBooks.textContent = nonFiction;
+        })
+        .catch(function(error) {
+          console.error('Error updating stats:', error);
+        });
+    }
+    
+    // Show message function
+    function showMessage(message, type) {
+      statusMessage.textContent = message;
+      statusMessage.className = '';
+      statusMessage.classList.add('alert', `alert-${type}`);
+      statusMessage.style.display = 'block';
+      
+      // Hide message after 3 seconds
+      setTimeout(function() {
+        statusMessage.style.display = 'none';
+      }, 3000);
+    }
+  </script>
+</body>
+</html>

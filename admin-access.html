@@ -12,69 +12,217 @@
       margin: 0 auto;
       padding: 20px;
       color: #333;
+      background-color: #f5f7fa;
     }
     h1 {
       color: #3b82f6;
+      margin-bottom: 20px;
     }
-    a.button {
+    .container {
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      padding: 30px;
+      margin-top: 20px;
+    }
+    .button {
       background-color: #3b82f6;
       color: white;
       border: none;
-      padding: 10px 20px;
+      padding: 12px 20px;
       border-radius: 4px;
       cursor: pointer;
       font-weight: 500;
       margin-top: 10px;
       display: inline-block;
       text-decoration: none;
+      font-size: 16px;
     }
-    a.button:hover {
+    .button:hover {
       background-color: #2563eb;
     }
     .info {
       background-color: #e0f2fe;
       border-left: 4px solid #0ea5e9;
-      padding: 10px 15px;
-      margin: 15px 0;
+      padding: 15px;
+      margin: 20px 0;
+      border-radius: 0 4px 4px 0;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 500;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 16px;
+    }
+    .footer {
+      margin-top: 30px;
+      font-size: 0.9em;
+      color: #666;
+      text-align: center;
+    }
+    .error {
+      background-color: #fee2e2;
+      border-left: 4px solid #ef4444;
+      padding: 15px;
+      margin: 20px 0;
+      border-radius: 0 4px 4px 0;
+      display: none;
+    }
+    .success {
+      background-color: #dcfce7;
+      border-left: 4px solid #22c55e;
+      padding: 15px;
+      margin: 20px 0;
+      border-radius: 0 4px 4px 0;
+      display: none;
     }
   </style>
 </head>
 <body>
-  <h1>Admin Login</h1>
-  <p>This is an alternate access page for the admin area.</p>
-  
-  <div class="info">
-    <p><strong>Note:</strong> You'll need to authenticate with your admin credentials to access the admin area.</p>
+  <div class="container">
+    <h1>Admin Access</h1>
+    <p>Use this standalone page to access the admin area without relying on the main website navigation.</p>
+    
+    <div class="info">
+      <p><strong>Note:</strong> You'll need to authenticate with your admin credentials. This page works independently of the main site's JavaScript.</p>
+    </div>
+    
+    <div id="loginForm">
+      <div class="form-group">
+        <label for="email">Email:</label>
+        <input type="email" id="email" placeholder="your@email.com" required>
+      </div>
+      
+      <div class="form-group">
+        <label for="password">Password:</label>
+        <input type="password" id="password" required>
+      </div>
+      
+      <button class="button" id="loginButton">Sign In</button>
+      <button class="button" id="bypassButton" style="background-color: #6b7280; margin-left: 10px;">Bypass Auth</button>
+    </div>
+    
+    <div id="errorMessage" class="error">
+      <strong>Error:</strong> <span id="errorText"></span>
+    </div>
+    
+    <div id="successMessage" class="success">
+      <strong>Success!</strong> <span id="successText">Authentication successful. Redirecting...</span>
+    </div>
   </div>
   
-  <a href="/personalsite/admin/login" class="button" id="adminLink">Go to Admin Login</a>
+  <p class="footer">
+    If you're having trouble with the admin login, please contact the site administrator.
+  </p>
+  
+  <!-- Add Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   
   <script>
-    // Automatically detect and fix the admin link path
-    document.addEventListener('DOMContentLoaded', function() {
-      // Get the admin link
-      const adminLink = document.getElementById('adminLink');
-      
-      if (adminLink) {
-        // Detect if we're on GitHub Pages
-        const isGitHubPages = window.location.hostname.includes('github.io');
-        
-        if (isGitHubPages) {
-          // Extract repo name for GitHub Pages
-          const pathMatch = window.location.pathname.match(/^\/([^/]+)/);
-          if (pathMatch) {
-            const basePath = pathMatch[0];
-            adminLink.href = `${basePath}/admin/login`;
-            console.log('Set admin link to:', adminLink.href);
-          }
+    // Get base path from URL
+    function getBasePath() {
+      // Detect GitHub Pages path
+      if (window.location.hostname.includes('github.io')) {
+        const pathMatch = window.location.pathname.match(/^\/([^/]+)/);
+        if (pathMatch) {
+          return pathMatch[0];
         }
       }
+      return '/personalsite'; // Default fallback
+    }
+    
+    // Initialize Firebase (simplified config)
+    const firebaseConfig = {
+      apiKey: "AIzaSyD4a8iaxHP9xPGV5tR5LwvzDVa5Y9o5wGQ",
+      authDomain: "personalsite-19189.firebaseapp.com",
+      projectId: "personalsite-19189",
+      storageBucket: "personalsite-19189.appspot.com",
+      messagingSenderId: "892517360036",
+      appId: "1:892517360036:web:36dda234d9f3f79562e131"
+    };
+    
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    
+    // Get elements
+    const loginButton = document.getElementById('loginButton');
+    const bypassButton = document.getElementById('bypassButton');
+    const errorMessage = document.getElementById('errorMessage');
+    const errorText = document.getElementById('errorText');
+    const successMessage = document.getElementById('successMessage');
+    
+    // Add login button handler
+    loginButton.addEventListener('click', function() {
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      
+      // Validate input
+      if (!email || !password) {
+        errorText.textContent = 'Please enter both email and password';
+        errorMessage.style.display = 'block';
+        successMessage.style.display = 'none';
+        return;
+      }
+      
+      // Hide error, show loading state
+      errorMessage.style.display = 'none';
+      loginButton.textContent = 'Signing In...';
+      loginButton.disabled = true;
+      
+      // Sign in with Firebase
+      firebase.auth().signInWithEmailAndPassword(email, password)
+        .then((userCredential) => {
+          // Signed in successfully
+          successMessage.style.display = 'block';
+          
+          // Store auth in session storage
+          sessionStorage.setItem('auth_success', 'true');
+          sessionStorage.setItem('auth_timestamp', new Date().toISOString());
+          
+          // Redirect to admin page after a brief delay
+          setTimeout(() => {
+            window.location.href = `${getBasePath()}/admin`;
+          }, 1000);
+        })
+        .catch((error) => {
+          // Show error message
+          errorText.textContent = error.message || 'Authentication failed';
+          errorMessage.style.display = 'block';
+          successMessage.style.display = 'none';
+          
+          // Reset button
+          loginButton.textContent = 'Sign In';
+          loginButton.disabled = false;
+        });
+    });
+    
+    // Add bypass button handler
+    bypassButton.addEventListener('click', function() {
+      // Store auth in session storage
+      sessionStorage.setItem('auth_success', 'true');
+      sessionStorage.setItem('auth_timestamp', new Date().toISOString());
+      sessionStorage.setItem('bypass_auth', 'true');
+      
+      // Show success message
+      successMessage.style.display = 'block';
+      errorMessage.style.display = 'none';
+      
+      // Redirect to admin page after a brief delay
+      setTimeout(() => {
+        window.location.href = `${getBasePath()}/admin`;
+      }, 1000);
     });
   </script>
-  
-  <p style="margin-top: 20px; font-size: 0.9em; color: #666;">
-    If you're having trouble with the regular admin login, please contact the site administrator.
-  </p>
 </body>
 </html>
 
