@@ -342,13 +342,14 @@
                 <th>Author</th>
                 <th>Category</th>
                 <th>Year</th>
+                <th>ISBN</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody id="booksTableBody">
               <!-- Books will be loaded here -->
               <tr>
-                <td colspan="5" style="text-align: center;">No books found. Add some books to see them here.</td>
+                <td colspan="6" style="text-align: center;">No books found. Add some books to see them here.</td>
               </tr>
             </tbody>
           </table>
@@ -359,6 +360,51 @@
     <div id="addBookTab" class="tab-content">
       <div class="card">
         <h2>Add New Book</h2>
+        
+        <!-- Book Search Options -->
+        <div class="search-options" style="margin-bottom: 20px;">
+          <div style="display: flex; margin-bottom: 15px;">
+            <button type="button" id="searchByIsbnBtn" class="search-tab active" style="flex: 1; padding: 8px; border: none; border-radius: 4px 0 0 4px; cursor: pointer; background-color: var(--primary-color); color: white;">Search by ISBN</button>
+            <button type="button" id="searchByTitleBtn" class="search-tab" style="flex: 1; padding: 8px; border: none; border-radius: 0 4px 4px 0; cursor: pointer; background-color: #e5e7eb; color: var(--text-color);">Search by Title/Author</button>
+          </div>
+          
+          <!-- ISBN Search -->
+          <div id="isbnSearchContainer" class="search-container" style="margin-bottom: 20px;">
+            <div style="display: flex;">
+              <input type="text" id="isbnSearch" placeholder="Enter ISBN (e.g., 9780061122415)" style="flex-grow: 1; padding: 10px; border: 1px solid var(--border-color); border-radius: 4px 0 0 4px;">
+              <button type="button" id="isbnSearchBtn" style="padding: 10px 15px; border: none; border-radius: 0 4px 4px 0; background-color: var(--primary-color); color: white; cursor: pointer;">Lookup</button>
+            </div>
+          </div>
+          
+          <!-- Title/Author Search -->
+          <div id="titleSearchContainer" class="search-container" style="display: none; margin-bottom: 20px;">
+            <div style="display: flex;">
+              <input type="text" id="titleSearch" placeholder="Enter title or author name" style="flex-grow: 1; padding: 10px; border: 1px solid var(--border-color); border-radius: 4px 0 0 4px;">
+              <button type="button" id="titleSearchBtn" style="padding: 10px 15px; border: none; border-radius: 0 4px 4px 0; background-color: var(--primary-color); color: white; cursor: pointer;">Search</button>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Search Results -->
+        <div id="searchResults" style="display: none; max-height: 300px; overflow-y: auto; margin-bottom: 20px; border: 1px solid var(--border-color); border-radius: 4px;">
+          <div id="searchResultsList"></div>
+        </div>
+        
+        <!-- Book Preview -->
+        <div id="bookPreview" style="display: none; margin-bottom: 20px; padding: 15px; background-color: #f8f9fa; border-radius: 4px;">
+          <div style="display: flex; align-items: start;">
+            <div id="bookPreviewCover" style="width: 80px; height: 120px; background-color: #ddd; margin-right: 15px; text-align: center; line-height: 120px; font-size: 10px;">No Cover</div>
+            <div>
+              <h3 id="bookPreviewTitle" style="margin: 0 0 5px 0; font-size: 18px;">Book Title</h3>
+              <p id="bookPreviewAuthor" style="margin: 0 0 5px 0; font-size: 14px; color: #666;">Author Name</p>
+              <p id="bookPreviewPublisher" style="margin: 0; font-size: 12px; color: #666;">Publisher, Year</p>
+              <p id="bookPreviewIsbn" style="margin: 5px 0 0 0; font-size: 12px; color: #666;">ISBN: 1234567890</p>
+            </div>
+          </div>
+          <div id="bookPreviewDescription" style="margin-top: 15px; font-size: 14px; max-height: 100px; overflow-y: auto;"></div>
+        </div>
+        
+        <!-- Manual Book Form -->
         <form id="bookForm" class="book-form">
           <div class="form-group">
             <label for="title">Title</label>
@@ -391,6 +437,7 @@
           </div>
           
           <input type="hidden" id="bookId">
+          <input type="hidden" id="bookIsbn">
           <button type="submit" id="saveBookButton">Save Book</button>
         </form>
       </div>
@@ -592,6 +639,7 @@
       const year = parseInt(document.getElementById('year').value);
       const description = document.getElementById('description').value;
       const coverImage = document.getElementById('coverImage').value;
+      const isbn = document.getElementById('bookIsbn').value;
       
       const bookData = {
         title,
@@ -600,6 +648,7 @@
         year,
         description: description || '',
         coverImage: coverImage || '',
+        isbn: isbn || '',
         updatedAt: new Date()
       };
       
@@ -650,7 +699,7 @@
       booksCollection.orderBy('title').get()
         .then(function(querySnapshot) {
           if (querySnapshot.empty) {
-            booksTableBody.innerHTML = '<tr><td colspan="5" style="text-align: center;">No books found. Add some books to see them here.</td></tr>';
+            booksTableBody.innerHTML = '<tr><td colspan="6" style="text-align: center;">No books found. Add some books to see them here.</td></tr>';
             return;
           }
           
@@ -663,6 +712,7 @@
                 <td>${book.author}</td>
                 <td>${book.category}</td>
                 <td>${book.year}</td>
+                <td>${book.isbn || '-'}</td>
                 <td class="action-buttons">
                   <button class="btn-small btn-edit" data-id="${doc.id}">Edit</button>
                   <button class="btn-small btn-delete" data-id="${doc.id}">Delete</button>
@@ -706,6 +756,22 @@
             document.getElementById('year').value = book.year;
             document.getElementById('description').value = book.description || '';
             document.getElementById('coverImage').value = book.coverImage || '';
+            document.getElementById('bookIsbn').value = book.isbn || '';
+            
+            // Also update book preview if needed
+            if (book.coverImage || book.description) {
+              const previewData = {
+                title: book.title,
+                authors: [book.author],
+                publisher: '',
+                publishedDate: book.year ? book.year.toString() : '',
+                description: book.description || '',
+                imageLinks: book.coverImage ? { thumbnail: book.coverImage } : undefined
+              };
+              populateBookPreview(previewData, book.isbn || '');
+            } else {
+              document.getElementById('bookPreview').style.display = 'none';
+            }
             
             // Switch to add book tab
             tabs.forEach(t => t.classList.remove('active'));
@@ -742,8 +808,11 @@
     // Reset book form
     function resetBookForm() {
       document.getElementById('bookId').value = '';
+      document.getElementById('bookIsbn').value = '';
       bookForm.reset();
       document.getElementById('saveBookButton').textContent = 'Save Book';
+      document.getElementById('bookPreview').style.display = 'none';
+      document.getElementById('searchResults').style.display = 'none';
     }
     
     // Update statistics
@@ -790,6 +859,261 @@
         statusMessage.style.display = 'none';
       }, 3000);
     }
+    
+    // Google Books API Integration
+    
+    // Search tab handling
+    const searchByIsbnBtn = document.getElementById('searchByIsbnBtn');
+    const searchByTitleBtn = document.getElementById('searchByTitleBtn');
+    const isbnSearchContainer = document.getElementById('isbnSearchContainer');
+    const titleSearchContainer = document.getElementById('titleSearchContainer');
+    
+    searchByIsbnBtn.addEventListener('click', function() {
+      searchByIsbnBtn.style.backgroundColor = 'var(--primary-color)';
+      searchByIsbnBtn.style.color = 'white';
+      searchByTitleBtn.style.backgroundColor = '#e5e7eb';
+      searchByTitleBtn.style.color = 'var(--text-color)';
+      isbnSearchContainer.style.display = 'block';
+      titleSearchContainer.style.display = 'none';
+      document.getElementById('searchResults').style.display = 'none';
+    });
+    
+    searchByTitleBtn.addEventListener('click', function() {
+      searchByTitleBtn.style.backgroundColor = 'var(--primary-color)';
+      searchByTitleBtn.style.color = 'white';
+      searchByIsbnBtn.style.backgroundColor = '#e5e7eb';
+      searchByIsbnBtn.style.color = 'var(--text-color)';
+      titleSearchContainer.style.display = 'block';
+      isbnSearchContainer.style.display = 'none';
+      document.getElementById('searchResults').style.display = 'none';
+    });
+    
+    // ISBN Search
+    const isbnSearchBtn = document.getElementById('isbnSearchBtn');
+    const isbnSearchInput = document.getElementById('isbnSearch');
+    
+    isbnSearchBtn.addEventListener('click', function() {
+      const isbn = isbnSearchInput.value.trim();
+      if (!isbn) {
+        showMessage('Please enter an ISBN', 'error');
+        return;
+      }
+      
+      isbnSearchBtn.disabled = true;
+      isbnSearchBtn.textContent = 'Searching...';
+      
+      // Get Google Books API key from secure config if available
+      const apiKey = googleBooksConfig && googleBooksConfig.apiKey ? 
+        `&key=${googleBooksConfig.apiKey}` : '';
+      
+      // Fetch book data from Google Books API
+      fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}${apiKey}`)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`Google Books API error: ${response.statusText}`);
+          }
+          return response.json();
+        })
+        .then(data => {
+          isbnSearchBtn.disabled = false;
+          isbnSearchBtn.textContent = 'Lookup';
+          
+          if (!data.items || data.items.length === 0) {
+            showMessage('No books found with this ISBN. Please check and try again.', 'error');
+            return;
+          }
+          
+          // Get the first result
+          const book = data.items[0].volumeInfo;
+          populateBookPreview(book, isbn);
+          populateBookForm(book, isbn);
+        })
+        .catch(error => {
+          console.error('Error searching by ISBN:', error);
+          showMessage('Error looking up book. Please try again.', 'error');
+          isbnSearchBtn.disabled = false;
+          isbnSearchBtn.textContent = 'Lookup';
+        });
+    });
+    
+    // Title/Author Search
+    const titleSearchBtn = document.getElementById('titleSearchBtn');
+    const titleSearchInput = document.getElementById('titleSearch');
+    const searchResults = document.getElementById('searchResults');
+    const searchResultsList = document.getElementById('searchResultsList');
+    
+    titleSearchBtn.addEventListener('click', function() {
+      const query = titleSearchInput.value.trim();
+      if (!query) {
+        showMessage('Please enter a search term', 'error');
+        return;
+      }
+      
+      titleSearchBtn.disabled = true;
+      titleSearchBtn.textContent = 'Searching...';
+      
+      // Get Google Books API key from secure config if available
+      const apiKey = googleBooksConfig && googleBooksConfig.apiKey ? 
+        `&key=${googleBooksConfig.apiKey}` : '';
+      
+      // Fetch book data from Google Books API
+      fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=10${apiKey}`)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`Google Books API error: ${response.statusText}`);
+          }
+          return response.json();
+        })
+        .then(data => {
+          titleSearchBtn.disabled = false;
+          titleSearchBtn.textContent = 'Search';
+          
+          if (!data.items || data.items.length === 0) {
+            showMessage('No books found. Please try a different search term.', 'error');
+            return;
+          }
+          
+          // Display search results
+          displaySearchResults(data.items);
+        })
+        .catch(error => {
+          console.error('Error searching books:', error);
+          showMessage('Error searching books. Please try again.', 'error');
+          titleSearchBtn.disabled = false;
+          titleSearchBtn.textContent = 'Search';
+        });
+    });
+    
+    // Display search results
+    function displaySearchResults(books) {
+      searchResultsList.innerHTML = '';
+      
+      books.forEach(item => {
+        const book = item.volumeInfo;
+        const industryIdentifiers = book.industryIdentifiers || [];
+        const isbn = industryIdentifiers.find(id => id.type === 'ISBN_13')?.identifier || 
+                    industryIdentifiers.find(id => id.type === 'ISBN_10')?.identifier || '';
+        
+        const resultItem = document.createElement('div');
+        resultItem.className = 'result-item';
+        resultItem.style.padding = '10px';
+        resultItem.style.borderBottom = '1px solid var(--border-color)';
+        resultItem.style.cursor = 'pointer';
+        resultItem.style.display = 'flex';
+        resultItem.style.alignItems = 'start';
+        
+        // Book cover
+        const coverContainer = document.createElement('div');
+        coverContainer.style.width = '50px';
+        coverContainer.style.height = '75px';
+        coverContainer.style.marginRight = '10px';
+        coverContainer.style.backgroundColor = '#ddd';
+        coverContainer.style.display = 'flex';
+        coverContainer.style.alignItems = 'center';
+        coverContainer.style.justifyContent = 'center';
+        
+        if (book.imageLinks && book.imageLinks.thumbnail) {
+          const cover = document.createElement('img');
+          cover.src = book.imageLinks.thumbnail;
+          cover.style.width = '100%';
+          cover.style.height = '100%';
+          cover.style.objectFit = 'cover';
+          coverContainer.appendChild(cover);
+        } else {
+          coverContainer.textContent = 'No Cover';
+          coverContainer.style.fontSize = '8px';
+          coverContainer.style.textAlign = 'center';
+        }
+        
+        // Book info
+        const infoContainer = document.createElement('div');
+        infoContainer.style.flex = '1';
+        
+        const title = document.createElement('div');
+        title.textContent = book.title;
+        title.style.fontWeight = 'bold';
+        title.style.fontSize = '14px';
+        
+        const author = document.createElement('div');
+        author.textContent = book.authors ? book.authors.join(', ') : 'Unknown Author';
+        author.style.fontSize = '12px';
+        
+        const year = document.createElement('div');
+        year.textContent = book.publishedDate ? book.publishedDate.substring(0, 4) : '';
+        year.style.fontSize = '10px';
+        year.style.color = '#666';
+        
+        infoContainer.appendChild(title);
+        infoContainer.appendChild(author);
+        infoContainer.appendChild(year);
+        
+        resultItem.appendChild(coverContainer);
+        resultItem.appendChild(infoContainer);
+        
+        // Add click handler
+        resultItem.addEventListener('click', function() {
+          populateBookPreview(book, isbn);
+          populateBookForm(book, isbn);
+          searchResults.style.display = 'none';
+        });
+        
+        searchResultsList.appendChild(resultItem);
+      });
+      
+      searchResults.style.display = 'block';
+    }
+    
+    // Populate book preview
+    function populateBookPreview(book, isbn) {
+      const bookPreview = document.getElementById('bookPreview');
+      const bookPreviewTitle = document.getElementById('bookPreviewTitle');
+      const bookPreviewAuthor = document.getElementById('bookPreviewAuthor');
+      const bookPreviewPublisher = document.getElementById('bookPreviewPublisher');
+      const bookPreviewIsbn = document.getElementById('bookPreviewIsbn');
+      const bookPreviewDescription = document.getElementById('bookPreviewDescription');
+      const bookPreviewCover = document.getElementById('bookPreviewCover');
+      
+      bookPreviewTitle.textContent = book.title || 'Unknown Title';
+      bookPreviewAuthor.textContent = book.authors ? book.authors.join(', ') : 'Unknown Author';
+      bookPreviewPublisher.textContent = `${book.publisher || 'Unknown Publisher'}${book.publishedDate ? ', ' + book.publishedDate : ''}`;
+      bookPreviewIsbn.textContent = `ISBN: ${isbn || 'Unknown'}`;
+      bookPreviewDescription.textContent = book.description || 'No description available';
+      
+      // Handle cover image
+      if (book.imageLinks && book.imageLinks.thumbnail) {
+        bookPreviewCover.innerHTML = `<img src="${book.imageLinks.thumbnail}" alt="Book cover" style="width: 100%; height: 100%; object-fit: cover;">`;
+      } else {
+        bookPreviewCover.innerHTML = 'No Cover';
+      }
+      
+      bookPreview.style.display = 'block';
+    }
+    
+    // Populate book form
+    function populateBookForm(book, isbn) {
+      document.getElementById('title').value = book.title || '';
+      document.getElementById('author').value = book.authors ? book.authors.join(', ') : '';
+      document.getElementById('category').value = book.categories ? book.categories[0] : '';
+      document.getElementById('year').value = book.publishedDate ? book.publishedDate.substring(0, 4) : '';
+      document.getElementById('description').value = book.description || '';
+      document.getElementById('coverImage').value = book.imageLinks && book.imageLinks.thumbnail ? book.imageLinks.thumbnail : '';
+      document.getElementById('bookIsbn').value = isbn || '';
+    }
+    
+    // Add event listeners for enter key in search inputs
+    isbnSearchInput.addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        isbnSearchBtn.click();
+      }
+    });
+    
+    titleSearchInput.addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        titleSearchBtn.click();
+      }
+    });
   </script>
 </body>
 </html>
