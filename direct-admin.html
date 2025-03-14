@@ -403,10 +403,18 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   
+  <!-- Load secure configuration -->
+  <script src="secure-config.js"></script>
+  
   <script>
-    // Get base path from URL
+    // Get base path from URL or secure config
     function getBasePath() {
-      // Detect GitHub Pages path
+      // First try to get from secure config
+      if (window.SECURE_CONFIG && window.SECURE_CONFIG.basePath) {
+        return window.SECURE_CONFIG.basePath;
+      }
+      
+      // Fallback to path detection
       if (window.location.hostname.includes('github.io')) {
         const pathMatch = window.location.pathname.match(/^\/([^/]+)/);
         if (pathMatch) {
@@ -420,14 +428,15 @@
     console.log('Direct Admin Page - Current path:', window.location.pathname);
     console.log('Direct Admin Page - Base path:', getBasePath());
     
-    // Firebase Configuration
-    const firebaseConfig = {
-      apiKey: "AIzaSyD4a8iaxHP9xPGV5tR5LwvzDVa5Y9o5wGQ",
-      authDomain: "personalsite-19189.firebaseapp.com",
-      projectId: "personalsite-19189",
-      storageBucket: "personalsite-19189.appspot.com",
-      messagingSenderId: "892517360036",
-      appId: "1:892517360036:web:36dda234d9f3f79562e131"
+    // Get Firebase Configuration from secure config
+    const firebaseConfig = window.SECURE_CONFIG ? window.SECURE_CONFIG.firebase : {
+      // Fallback configuration (will be replaced by GitHub Actions during build)
+      apiKey: "placeholder-key",
+      authDomain: "placeholder-domain",
+      projectId: "placeholder-project",
+      storageBucket: "",
+      messagingSenderId: "",
+      appId: "placeholder-app-id"
     };
     
     // Initialize Firebase
