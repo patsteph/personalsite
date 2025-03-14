@@ -282,16 +282,15 @@
       <form id="loginForm" class="login-form">
         <div class="form-group">
           <label for="email">Email</label>
-          <input type="email" id="email" required placeholder="your@email.com">
+          <input type="email" id="email" required placeholder="your@email.com" autocomplete="username email">
         </div>
         
         <div class="form-group">
           <label for="password">Password</label>
-          <input type="password" id="password" required>
+          <input type="password" id="password" required autocomplete="current-password">
         </div>
         
         <button type="submit" id="loginButton">Sign In</button>
-        <button type="button" id="bypassButton" class="secondary-button">Skip Authentication</button>
       </form>
     </div>
   </div>
@@ -403,8 +402,37 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   
-  <!-- Load secure configuration -->
-  <script src="secure-config.js"></script>
+  <!-- Load secure configuration with multiple path attempts -->
+  <script>
+    // Try to load secure-config.js with different paths
+    function loadSecureConfig() {
+      const possiblePaths = [
+        'secure-config.js',
+        '/personalsite/secure-config.js',
+        '../secure-config.js'
+      ];
+      
+      let loaded = false;
+      
+      possiblePaths.forEach(path => {
+        if (!loaded) {
+          const script = document.createElement('script');
+          script.src = path;
+          script.onload = () => {
+            console.log('Successfully loaded secure config from:', path);
+            loaded = true;
+          };
+          script.onerror = () => {
+            console.warn('Failed to load secure config from:', path);
+          };
+          document.head.appendChild(script);
+        }
+      });
+    }
+    
+    // Initialize loading
+    loadSecureConfig();
+  </script>
   
   <script>
     // Get base path from URL or secure config
@@ -428,15 +456,19 @@
     console.log('Direct Admin Page - Current path:', window.location.pathname);
     console.log('Direct Admin Page - Base path:', getBasePath());
     
-    // Get Firebase Configuration from secure config
+    // Verify if secure config loaded
+    if (!window.SECURE_CONFIG) {
+      console.warn('Secure config not loaded, using fallback configuration');
+    }
+    
+    // Get Firebase Configuration from secure config or use fallback for direct testing
     const firebaseConfig = window.SECURE_CONFIG ? window.SECURE_CONFIG.firebase : {
-      // Fallback configuration (will be replaced by GitHub Actions during build)
-      apiKey: "placeholder-key",
-      authDomain: "placeholder-domain",
-      projectId: "placeholder-project",
-      storageBucket: "",
-      messagingSenderId: "",
-      appId: "placeholder-app-id"
+      apiKey: "AIzaSyD4a8iaxHP9xPGV5tR5LwvzDVa5Y9o5wGQ",
+      authDomain: "personalsite-19189.firebaseapp.com",
+      projectId: "personalsite-19189",
+      storageBucket: "personalsite-19189.appspot.com",
+      messagingSenderId: "892517360036",
+      appId: "1:892517360036:web:36dda234d9f3f79562e131"
     };
     
     // Initialize Firebase
@@ -448,7 +480,6 @@
     const loginPage = document.getElementById('loginPage');
     const loginForm = document.getElementById('loginForm');
     const loginButton = document.getElementById('loginButton');
-    const bypassButton = document.getElementById('bypassButton');
     const loginError = document.getElementById('loginError');
     const errorText = document.getElementById('errorText');
     
@@ -473,16 +504,11 @@
     
     // Check auth state
     auth.onAuthStateChanged(function(user) {
-      if (user || sessionStorage.getItem('bypass_auth') === 'true') {
-        // User is signed in or bypass auth is enabled
+      if (user) {
+        // User is signed in
         loginPage.style.display = 'none';
         adminDashboard.style.display = 'block';
-        
-        if (user) {
-          userEmail.textContent = user.email;
-        } else {
-          userEmail.textContent = 'Guest (Bypass)';
-        }
+        userEmail.textContent = user.email;
         
         // Load books data
         loadBooks();
@@ -522,22 +548,7 @@
         });
     });
     
-    // Bypass button click handler
-    bypassButton.addEventListener('click', function() {
-      // Store auth in session storage
-      sessionStorage.setItem('auth_success', 'true');
-      sessionStorage.setItem('auth_timestamp', new Date().toISOString());
-      sessionStorage.setItem('bypass_auth', 'true');
-      
-      // Update UI
-      loginPage.style.display = 'none';
-      adminDashboard.style.display = 'block';
-      userEmail.textContent = 'Guest (Bypass)';
-      
-      // Load books data
-      loadBooks();
-      updateStats();
-    });
+    // No bypass authentication
     
     // Logout button click handler
     logoutButton.addEventListener('click', function() {
@@ -545,7 +556,6 @@
         // Clear session storage
         sessionStorage.removeItem('auth_success');
         sessionStorage.removeItem('auth_timestamp');
-        sessionStorage.removeItem('bypass_auth');
         
         // Update UI
         loginPage.style.display = 'block';

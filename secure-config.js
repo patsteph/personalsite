@@ -3,12 +3,12 @@
 // It contains configuration that comes from secure environment variables
 window.SECURE_CONFIG = {
   firebase: {
-    apiKey: "placeholder-api-key",
-    authDomain: "placeholder-auth-domain",
-    projectId: "placeholder-project-id",
-    storageBucket: "",
-    messagingSenderId: "",
-    appId: "placeholder-app-id"
+    apiKey: "AIzaSyD4a8iaxHP9xPGV5tR5LwvzDVa5Y9o5wGQ",
+    authDomain: "personalsite-19189.firebaseapp.com",
+    projectId: "personalsite-19189",
+    storageBucket: "personalsite-19189.appspot.com",
+    messagingSenderId: "892517360036",
+    appId: "1:892517360036:web:36dda234d9f3f79562e131"
   },
   basePath: "",
   isProduction: false
