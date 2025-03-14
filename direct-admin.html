@@ -676,11 +676,14 @@
       
       const bookData = {
         title,
-        author,
-        category,
-        year,
+        authors: author.split(',').map(a => a.trim()),
+        categories: category ? [category] : [],
+        publishedDate: year ? year.toString() : '',
         description: description || '',
-        coverImage: coverImage || '',
+        imageLinks: coverImage ? {
+          thumbnail: coverImage,
+          smallThumbnail: coverImage
+        } : undefined,
         isbn: isbn || '',
         status: status || 'toRead',
         userRating,
@@ -742,6 +745,7 @@
           let booksHTML = '';
           querySnapshot.forEach(function(doc) {
             const book = doc.data();
+            
             // Format the status display
             let statusDisplay = '';
             if (book.status === 'read') statusDisplay = 'Read';
@@ -758,12 +762,27 @@
               ratingDisplay = '-';
             }
             
+            // Handle author display (support both string and array formats)
+            const authorDisplay = Array.isArray(book.authors) 
+              ? book.authors.join(', ')
+              : book.author || 'Unknown Author';
+              
+            // Handle category display (support both string and array formats)
+            const categoryDisplay = Array.isArray(book.categories) && book.categories.length > 0
+              ? book.categories[0]
+              : book.category || '-';
+            
+            // Handle year display (support both number and string formats)
+            const yearDisplay = book.year 
+              ? book.year 
+              : (book.publishedDate ? book.publishedDate.substring(0, 4) : '-');
+            
             booksHTML += `
               <tr>
                 <td>${book.title}</td>
-                <td>${book.author}</td>
-                <td>${book.category}</td>
-                <td>${book.year}</td>
+                <td>${authorDisplay}</td>
+                <td>${categoryDisplay}</td>
+                <td>${yearDisplay}</td>
                 <td>${statusDisplay}</td>
                 <td>${ratingDisplay}</td>
                 <td>${book.isbn || '-'}</td>
@@ -805,11 +824,45 @@
             // Fill form with book data
             document.getElementById('bookId').value = id;
             document.getElementById('title').value = book.title;
-            document.getElementById('author').value = book.author;
-            document.getElementById('category').value = book.category;
-            document.getElementById('year').value = book.year;
+            
+            // Handle authors array or string
+            if (Array.isArray(book.authors)) {
+              document.getElementById('author').value = book.authors.join(', ');
+            } else if (book.author) {
+              document.getElementById('author').value = book.author;
+            } else {
+              document.getElementById('author').value = '';
+            }
+            
+            // Handle categories array or single category
+            if (Array.isArray(book.categories) && book.categories.length > 0) {
+              document.getElementById('category').value = book.categories[0];
+            } else if (book.category) {
+              document.getElementById('category').value = book.category;
+            } else {
+              document.getElementById('category').value = '';
+            }
+            
+            // Handle year or publishedDate
+            if (book.year) {
+              document.getElementById('year').value = book.year;
+            } else if (book.publishedDate) {
+              document.getElementById('year').value = book.publishedDate.substring(0, 4);
+            } else {
+              document.getElementById('year').value = '';
+            }
+            
             document.getElementById('description').value = book.description || '';
-            document.getElementById('coverImage').value = book.coverImage || '';
+            
+            // Handle coverImage or imageLinks
+            if (book.imageLinks && book.imageLinks.thumbnail) {
+              document.getElementById('coverImage').value = book.imageLinks.thumbnail;
+            } else if (book.coverImage) {
+              document.getElementById('coverImage').value = book.coverImage;
+            } else {
+              document.getElementById('coverImage').value = '';
+            }
+            
             document.getElementById('bookIsbn').value = book.isbn || '';
             
             // Set status
@@ -841,15 +894,16 @@
             // Set notes
             document.getElementById('notes').value = book.notes || '';
             
-            // Also update book preview if needed
-            if (book.coverImage || book.description) {
+            // Update book preview
+            const coverImage = book.imageLinks?.thumbnail || book.coverImage;
+            if (coverImage || book.description) {
               const previewData = {
                 title: book.title,
-                authors: [book.author],
+                authors: Array.isArray(book.authors) ? book.authors : [book.author || 'Unknown Author'],
                 publisher: '',
-                publishedDate: book.year ? book.year.toString() : '',
+                publishedDate: book.publishedDate || (book.year ? book.year.toString() : ''),
                 description: book.description || '',
-                imageLinks: book.coverImage ? { thumbnail: book.coverImage } : undefined
+                imageLinks: coverImage ? { thumbnail: coverImage } : undefined
               };
               populateBookPreview(previewData, book.isbn || '');
             } else {
@@ -1194,7 +1248,10 @@
       document.getElementById('category').value = book.categories ? book.categories[0] : '';
       document.getElementById('year').value = book.publishedDate ? book.publishedDate.substring(0, 4) : '';
       document.getElementById('description').value = book.description || '';
-      document.getElementById('coverImage').value = book.imageLinks && book.imageLinks.thumbnail ? book.imageLinks.thumbnail : '';
+      
+      // Set the cover image URL - store in the right format for BookSpine component
+      const coverImageUrl = book.imageLinks && book.imageLinks.thumbnail ? book.imageLinks.thumbnail : '';
+      document.getElementById('coverImage').value = coverImageUrl;
       document.getElementById('bookIsbn').value = isbn || '';
       
       // Set default status to "Want to Read" for new books
