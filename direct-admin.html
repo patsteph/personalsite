@@ -342,6 +342,8 @@
                 <th>Author</th>
                 <th>Category</th>
                 <th>Year</th>
+                <th>Status</th>
+                <th>Rating</th>
                 <th>ISBN</th>
                 <th>Actions</th>
               </tr>
@@ -349,7 +351,7 @@
             <tbody id="booksTableBody">
               <!-- Books will be loaded here -->
               <tr>
-                <td colspan="6" style="text-align: center;">No books found. Add some books to see them here.</td>
+                <td colspan="8" style="text-align: center;">No books found. Add some books to see them here.</td>
               </tr>
             </tbody>
           </table>
@@ -427,7 +429,35 @@
           </div>
           
           <div class="form-group">
-            <label for="description">Description</label>
+            <label for="status">Reading Status</label>
+            <select id="status" required style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 4px;">
+              <option value="read">Read</option>
+              <option value="reading">Currently Reading</option>
+              <option value="toRead">Want to Read</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="userRating">My Rating</label>
+            <div style="display: flex; align-items: center;">
+              <select id="userRating" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 4px;">
+                <option value="">-- Select Rating --</option>
+                <option value="5">★★★★★ (5/5) - Excellent</option>
+                <option value="4">★★★★☆ (4/5) - Very Good</option>
+                <option value="3">★★★☆☆ (3/5) - Good</option>
+                <option value="2">★★☆☆☆ (2/5) - Fair</option>
+                <option value="1">★☆☆☆☆ (1/5) - Poor</option>
+              </select>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label for="notes">My Notes & Review</label>
+            <textarea id="notes" rows="4" style="padding: 10px; border: 1px solid var(--border-color); border-radius: 4px;" placeholder="Your personal thoughts, reviews, or notes about the book..."></textarea>
+          </div>
+          
+          <div class="form-group">
+            <label for="description">Book Description</label>
             <textarea id="description" rows="4" style="padding: 10px; border: 1px solid var(--border-color); border-radius: 4px;"></textarea>
           </div>
           
@@ -640,6 +670,9 @@
       const description = document.getElementById('description').value;
       const coverImage = document.getElementById('coverImage').value;
       const isbn = document.getElementById('bookIsbn').value;
+      const status = document.getElementById('status').value;
+      const userRating = document.getElementById('userRating').value ? parseInt(document.getElementById('userRating').value) : null;
+      const notes = document.getElementById('notes').value;
       
       const bookData = {
         title,
@@ -649,6 +682,9 @@
         description: description || '',
         coverImage: coverImage || '',
         isbn: isbn || '',
+        status: status || 'toRead',
+        userRating,
+        notes: notes || '',
         updatedAt: new Date()
       };
       
@@ -699,19 +735,37 @@
       booksCollection.orderBy('title').get()
         .then(function(querySnapshot) {
           if (querySnapshot.empty) {
-            booksTableBody.innerHTML = '<tr><td colspan="6" style="text-align: center;">No books found. Add some books to see them here.</td></tr>';
+            booksTableBody.innerHTML = '<tr><td colspan="8" style="text-align: center;">No books found. Add some books to see them here.</td></tr>';
             return;
           }
           
           let booksHTML = '';
           querySnapshot.forEach(function(doc) {
             const book = doc.data();
+            // Format the status display
+            let statusDisplay = '';
+            if (book.status === 'read') statusDisplay = 'Read';
+            else if (book.status === 'reading') statusDisplay = 'Reading';
+            else if (book.status === 'toRead') statusDisplay = 'To Read';
+            else statusDisplay = book.status || '-';
+            
+            // Format the rating display with stars
+            let ratingDisplay = '';
+            if (book.userRating) {
+              const stars = '★'.repeat(book.userRating) + '☆'.repeat(5 - book.userRating);
+              ratingDisplay = `${stars} (${book.userRating}/5)`;
+            } else {
+              ratingDisplay = '-';
+            }
+            
             booksHTML += `
               <tr>
                 <td>${book.title}</td>
                 <td>${book.author}</td>
                 <td>${book.category}</td>
                 <td>${book.year}</td>
+                <td>${statusDisplay}</td>
+                <td>${ratingDisplay}</td>
                 <td>${book.isbn || '-'}</td>
                 <td class="action-buttons">
                   <button class="btn-small btn-edit" data-id="${doc.id}">Edit</button>
@@ -757,6 +811,35 @@
             document.getElementById('description').value = book.description || '';
             document.getElementById('coverImage').value = book.coverImage || '';
             document.getElementById('bookIsbn').value = book.isbn || '';
+            
+            // Set status
+            const statusSelect = document.getElementById('status');
+            if (book.status) {
+              // Find the option with the matching value
+              for (let i = 0; i < statusSelect.options.length; i++) {
+                if (statusSelect.options[i].value === book.status) {
+                  statusSelect.selectedIndex = i;
+                  break;
+                }
+              }
+            }
+            
+            // Set rating
+            const ratingSelect = document.getElementById('userRating');
+            if (book.userRating) {
+              // Find the option with the matching value
+              for (let i = 0; i < ratingSelect.options.length; i++) {
+                if (ratingSelect.options[i].value === book.userRating.toString()) {
+                  ratingSelect.selectedIndex = i;
+                  break;
+                }
+              }
+            } else {
+              ratingSelect.selectedIndex = 0;
+            }
+            
+            // Set notes
+            document.getElementById('notes').value = book.notes || '';
             
             // Also update book preview if needed
             if (book.coverImage || book.description) {
@@ -810,6 +893,11 @@
       document.getElementById('bookId').value = '';
       document.getElementById('bookIsbn').value = '';
       bookForm.reset();
+      
+      // Reset select elements to defaults
+      document.getElementById('status').selectedIndex = 2; // toRead by default
+      document.getElementById('userRating').selectedIndex = 0; // No rating by default
+      
       document.getElementById('saveBookButton').textContent = 'Save Book';
       document.getElementById('bookPreview').style.display = 'none';
       document.getElementById('searchResults').style.display = 'none';
@@ -1077,7 +1165,17 @@
       bookPreviewAuthor.textContent = book.authors ? book.authors.join(', ') : 'Unknown Author';
       bookPreviewPublisher.textContent = `${book.publisher || 'Unknown Publisher'}${book.publishedDate ? ', ' + book.publishedDate : ''}`;
       bookPreviewIsbn.textContent = `ISBN: ${isbn || 'Unknown'}`;
+      
+      // Set description
       bookPreviewDescription.textContent = book.description || 'No description available';
+      
+      // If we have Google ratings, add them to the description
+      if (book.averageRating) {
+        const googleRating = '★'.repeat(Math.round(book.averageRating)) + 
+                             '☆'.repeat(5 - Math.round(book.averageRating));
+        const ratingsInfo = `\n\nGoogle Rating: ${googleRating} (${book.averageRating}/5 from ${book.ratingsCount} ratings)`;
+        bookPreviewDescription.textContent += ratingsInfo;
+      }
       
       // Handle cover image
       if (book.imageLinks && book.imageLinks.thumbnail) {
@@ -1098,6 +1196,14 @@
       document.getElementById('description').value = book.description || '';
       document.getElementById('coverImage').value = book.imageLinks && book.imageLinks.thumbnail ? book.imageLinks.thumbnail : '';
       document.getElementById('bookIsbn').value = isbn || '';
+      
+      // Set default status to "Want to Read" for new books
+      const statusSelect = document.getElementById('status');
+      statusSelect.value = 'toRead';
+      
+      // Reset notes and rating for new books
+      document.getElementById('notes').value = '';
+      document.getElementById('userRating').selectedIndex = 0;
     }
     
     // Add event listeners for enter key in search inputs
