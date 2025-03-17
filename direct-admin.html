@@ -480,6 +480,8 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="secure-config.js"></script>
+  <script src="firebase-check.js"></script>
   
   <!-- Load secure configuration with multiple path attempts -->
   <script>
@@ -1555,27 +1557,37 @@
       `;
       document.getElementById('adminDashboard').appendChild(blogTab);
       
-      // Add event listeners for blog management
-      document.addEventListener('DOMContentLoaded', function() {
-        // Tab navigation
-        const blogTabs = document.querySelectorAll('[data-blog-tab]');
-        if (blogTabs.length > 0) {
-          blogTabs.forEach(tab => {
-            tab.addEventListener('click', function() {
-              // Remove active class from all tabs
-              blogTabs.forEach(t => t.classList.remove('active'));
-              this.classList.add('active');
-              
-              // Hide all tab content
-              document.querySelectorAll('.blog-tab-content').forEach(content => {
-                content.style.display = 'none';
-              });
-              
-              // Show selected tab content
-              const tabId = this.getAttribute('data-blog-tab') + 'Tab';
-              document.getElementById(tabId).style.display = 'block';
+      // Add event listeners for blog management - run immediately instead of waiting for DOMContentLoaded
+      // Tab navigation
+      const blogTabs = document.querySelectorAll('[data-blog-tab]');
+      console.log('Blog tabs found:', blogTabs.length);
+      
+      if (blogTabs.length > 0) {
+        blogTabs.forEach(tab => {
+          tab.addEventListener('click', function() {
+            console.log('Blog tab clicked:', this.getAttribute('data-blog-tab'));
+            
+            // Remove active class from all tabs
+            blogTabs.forEach(t => t.classList.remove('active'));
+            this.classList.add('active');
+            
+            // Hide all tab content
+            document.querySelectorAll('.blog-tab-content').forEach(content => {
+              content.style.display = 'none';
             });
+            
+            // Show selected tab content
+            const tabId = this.getAttribute('data-blog-tab') + 'Tab';
+            const tabContent = document.getElementById(tabId);
+            
+            if (tabContent) {
+              console.log('Showing tab content:', tabId);
+              tabContent.style.display = 'block';
+            } else {
+              console.error('Tab content not found:', tabId);
+            }
           });
+        });
         }
         
         // New Post button
@@ -1739,11 +1751,22 @@
         
         // Function to load blog posts
         function loadBlogPosts() {
+          console.log('Loading blog posts...');
           const postsCollection = firebase.firestore().collection('blog-posts');
           const postsTableBody = document.getElementById('postsTableBody');
           
+          if (!postsTableBody) {
+            console.error('Posts table body element not found!');
+            return;
+          }
+          
+          // Show loading indicator
+          postsTableBody.innerHTML = '<tr><td colspan="5" class="text-center py-4">Loading posts...</td></tr>';
+          
           postsCollection.orderBy('createdAt', 'desc').get()
             .then(snapshot => {
+              console.log('Blog posts query completed, found:', snapshot.size);
+              
               if (snapshot.empty) {
                 postsTableBody.innerHTML = '<tr><td colspan="5" class="text-center py-4">No posts found. Create one to get started!</td></tr>';
                 return;
@@ -1751,12 +1774,17 @@
               
               let postsHTML = '';
               snapshot.forEach(doc => {
+                console.log('Processing post:', doc.id);
                 const post = doc.data();
-                const postDate = post.createdAt ? new Date(post.createdAt).toLocaleDateString() : 'Unknown';
+                const postDate = post.createdAt ? 
+                  (typeof post.createdAt === 'object' && post.createdAt.toDate ? 
+                    post.createdAt.toDate().toLocaleDateString() : 
+                    new Date(post.createdAt).toLocaleDateString()
+                  ) : 'Unknown';
                 
                 let statusDisplay = '';
-                if (post.status === 'published') statusDisplay = '<span class="px-2 py-1 bg-green-100 text-green-800 rounded text-xs">Published</span>';
-                else if (post.status === 'draft') statusDisplay = '<span class="px-2 py-1 bg-gray-100 text-gray-800 rounded text-xs">Draft</span>';
+                if (post.status === 'published' || post.published) statusDisplay = '<span class="px-2 py-1 bg-green-100 text-green-800 rounded text-xs">Published</span>';
+                else if (post.status === 'draft' || !post.published) statusDisplay = '<span class="px-2 py-1 bg-gray-100 text-gray-800 rounded text-xs">Draft</span>';
                 else if (post.status === 'scheduled') statusDisplay = '<span class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">Scheduled</span>';
                 
                 postsHTML += `
