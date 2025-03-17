@@ -962,25 +962,47 @@
       booksCollection.get()
         .then(function(querySnapshot) {
           const books = [];
-          const categories = new Set();
+          const categoriesSet = new Set();
           let fiction = 0;
           let nonFiction = 0;
           
           querySnapshot.forEach(function(doc) {
             const book = doc.data();
             books.push(book);
-            categories.add(book.category.toLowerCase());
             
-            // Count fiction vs non-fiction (simplified)
-            if (book.category.toLowerCase().includes('fiction')) {
-              fiction++;
-            } else {
-              nonFiction++;
+            // Handle categories properly - could be array or string
+            if (Array.isArray(book.categories) && book.categories.length > 0) {
+              // Add each category to the set
+              book.categories.forEach(cat => {
+                if (cat) categoriesSet.add(cat.toLowerCase());
+              });
+              
+              // Count fiction vs non-fiction
+              const isFiction = book.categories.some(cat => 
+                cat && cat.toLowerCase().includes('fiction'));
+              if (isFiction) {
+                fiction++;
+              } else {
+                nonFiction++;
+              }
+            } else if (book.category) {
+              // Legacy format with single category
+              categoriesSet.add(book.category.toLowerCase());
+              
+              // Count fiction vs non-fiction
+              if (book.category.toLowerCase().includes('fiction')) {
+                fiction++;
+              } else {
+                nonFiction++;
+              }
             }
           });
           
+          console.log(`Stats: Found ${books.length} books, ${categoriesSet.size} categories`);
+          console.log(`Fiction: ${fiction}, Non-Fiction: ${nonFiction}`);
+          
           totalBooks.textContent = books.length;
-          totalCategories.textContent = categories.size;
+          totalCategories.textContent = categoriesSet.size;
           fictionBooks.textContent = fiction;
           nonFictionBooks.textContent = nonFiction;
         })
