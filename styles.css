@@ -517,6 +517,9 @@ video {
 .left-0 {
   left: 0px;
 }
+.m-1 {
+  margin: 0.25rem;
+}
 .mx-2 {
   margin-left: 0.5rem;
   margin-right: 0.5rem;
@@ -589,6 +592,12 @@ video {
 .mt-8 {
   margin-top: 2rem;
 }
+.line-clamp-3 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
 .block {
   display: block;
 }
@@ -613,14 +622,14 @@ video {
 .h-16 {
   height: 4rem;
 }
+.h-32 {
+  height: 8rem;
+}
 .h-4 {
   height: 1rem;
 }
 .h-40 {
   height: 10rem;
-}
-.h-44 {
-  height: 11rem;
 }
 .h-5 {
   height: 1.25rem;
@@ -658,6 +667,9 @@ video {
 .max-h-96 {
   max-height: 24rem;
 }
+.min-h-\[11rem\] {
+  min-height: 11rem;
+}
 .min-h-screen {
   min-height: 100vh;
 }
@@ -669,6 +681,9 @@ video {
 }
 .w-20 {
   width: 5rem;
+}
+.w-28 {
+  width: 7rem;
 }
 .w-3\/4 {
   width: 75%;
@@ -973,6 +988,9 @@ video {
 .bg-opacity-20 {
   --tw-bg-opacity: 0.2;
 }
+.bg-gradient-to-b {
+  background-image: linear-gradient(to bottom, var(--tw-gradient-stops));
+}
 .bg-gradient-to-t {
   background-image: linear-gradient(to top, var(--tw-gradient-stops));
 }
@@ -981,8 +999,22 @@ video {
   --tw-gradient-to: rgba(0, 0, 0, 0) var(--tw-gradient-to-position);
   --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
 }
+.from-gray-100 {
+  --tw-gradient-from: #f3f4f6 var(--tw-gradient-from-position);
+  --tw-gradient-to: rgb(243 244 246 / 0) var(--tw-gradient-to-position);
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+}
+.to-gray-300 {
+  --tw-gradient-to: #d1d5db var(--tw-gradient-to-position);
+}
 .to-transparent {
   --tw-gradient-to: transparent var(--tw-gradient-to-position);
+}
+.bg-cover {
+  background-size: cover;
+}
+.bg-center {
+  background-position: center;
 }
 .object-cover {
   -o-object-fit: cover;
@@ -990,6 +1022,9 @@ video {
 }
 .p-1 {
   padding: 0.25rem;
+}
+.p-2 {
+  padding: 0.5rem;
 }
 .p-3 {
   padding: 0.75rem;
@@ -1066,6 +1101,9 @@ video {
 .text-3xl {
   font-size: 1.875rem;
   line-height: 2.25rem;
+}
+.text-\[10px\] {
+  font-size: 10px;
 }
 .text-base {
   font-size: 1rem;
