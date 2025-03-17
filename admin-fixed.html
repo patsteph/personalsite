@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Access</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background-color: #f5f7fa;
+      margin: 0;
+      padding: 20px;
+      line-height: 1.6;
+    }
+    .container {
+      max-width: 500px;
+      margin: 40px auto;
+      padding: 30px;
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    h1 {
+      color: #3b82f6;
+      margin-top: 0;
+      text-align: center;
+    }
+    .error {
+      background-color: #fee2e2;
+      padding: 12px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+      color: #b91c1c;
+      display: none;
+    }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 500;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #d1d5db;
+      border-radius: 4px;
+      font-size: 16px;
+    }
+    button {
+      background-color: #3b82f6;
+      color: white;
+      border: none;
+      padding: 12px 16px;
+      border-radius: 4px;
+      font-size: 16px;
+      width: 100%;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #2563eb;
+    }
+    button:disabled {
+      background-color: #93c5fd;
+      cursor: not-allowed;
+    }
+    .credits {
+      text-align: center;
+      font-size: 14px;
+      color: #6b7280;
+      margin-top: 30px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Admin Access</h1>
+    
+    <div id="error-container" class="error">
+      <div id="error-message">Invalid credentials.</div>
+    </div>
+    
+    <form id="login-form">
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input type="email" id="email" required>
+      </div>
+      
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" required>
+      </div>
+      
+      <button type="submit" id="login-button">Sign In</button>
+    </form>
+    
+    <div class="credits">
+      Personal Website Admin
+    </div>
+  </div>
+  
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+
+  <script>
+    // Hardcoded configuration for testing
+    const firebaseConfig = {
+      apiKey: "AIzaSyD4a8iaxHP9xPGV5tR5LwvzDVa5Y9o5wGQ",
+      authDomain: "personalsite-19189.firebaseapp.com",
+      projectId: "personalsite-19189",
+      storageBucket: "personalsite-19189.appspot.com",
+      messagingSenderId: "892517360036",
+      appId: "1:892517360036:web:36dda234d9f3f79562e131"
+    };
+    
+    // Initialize Firebase
+    console.log("Initializing Firebase");
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    
+    // DOM elements
+    const loginForm = document.getElementById('login-form');
+    const loginButton = document.getElementById('login-button');
+    const errorContainer = document.getElementById('error-container');
+    const errorMessage = document.getElementById('error-message');
+    
+    // Handle form submission
+    loginForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      
+      // Update UI
+      loginButton.textContent = 'Signing in...';
+      loginButton.disabled = true;
+      errorContainer.style.display = 'none';
+      
+      // Attempt login
+      console.log("Attempting login with email:", email);
+      auth.signInWithEmailAndPassword(email, password)
+        .then((userCredential) => {
+          console.log("Login successful");
+          // Redirect to admin dashboard
+          window.location.href = 'direct-admin.html';
+        })
+        .catch((error) => {
+          console.error("Login error:", error);
+          // Show error message
+          errorMessage.textContent = error.message;
+          errorContainer.style.display = 'block';
+          
+          // Reset button
+          loginButton.textContent = 'Sign In';
+          loginButton.disabled = false;
+        });
+    });
+    
+    // Check if user is already logged in
+    auth.onAuthStateChanged(function(user) {
+      if (user) {
+        console.log("User is already signed in");
+        // Redirect to admin dashboard
+        window.location.href = 'direct-admin.html';
+      }
+    });
+  </script>
+</body>
+</html>

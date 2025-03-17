@@ -543,7 +543,8 @@
     }
     
     // Get Firebase Configuration from secure config or use fallback for direct testing
-    const firebaseConfig = window.SECURE_CONFIG ? window.SECURE_CONFIG.firebase : {
+    // Always use hardcoded Firebase config to ensure it works
+    const firebaseConfig = {
       apiKey: "AIzaSyD4a8iaxHP9xPGV5tR5LwvzDVa5Y9o5wGQ",
       authDomain: "personalsite-19189.firebaseapp.com",
       projectId: "personalsite-19189",
@@ -551,6 +552,8 @@
       messagingSenderId: "892517360036",
       appId: "1:892517360036:web:36dda234d9f3f79562e131"
     };
+    
+    console.log("Using hardcoded Firebase config for reliability");
     
     // Get Google Books API configuration
     const googleBooksConfig = window.SECURE_CONFIG && window.SECURE_CONFIG.googleBooks ? window.SECURE_CONFIG.googleBooks : {
@@ -590,13 +593,17 @@
     
     // Check auth state
     auth.onAuthStateChanged(function(user) {
+      console.log("Auth state changed", user ? "User logged in: " + user.email : "No user logged in");
+      
       if (user) {
         // User is signed in
+        console.log("Showing admin dashboard for user:", user.email);
         loginPage.style.display = 'none';
         adminDashboard.style.display = 'block';
         userEmail.textContent = user.email;
         
         // Load books data
+        console.log("Loading books data and updating stats");
         loadBooks();
         updateStats();
       } else {
@@ -609,9 +616,12 @@
     // Login form submit handler
     loginForm.addEventListener('submit', function(e) {
       e.preventDefault();
+      console.log("Login form submitted");
       
       const email = document.getElementById('email').value;
       const password = document.getElementById('password').value;
+      
+      console.log("Attempting login with email:", email);
       
       loginButton.textContent = 'Signing in...';
       loginButton.disabled = true;
@@ -619,11 +629,16 @@
       
       auth.signInWithEmailAndPassword(email, password)
         .then(function(userCredential) {
+          console.log("Login successful!", userCredential.user.email);
           // Store auth in session storage
           sessionStorage.setItem('auth_success', 'true');
           sessionStorage.setItem('auth_timestamp', new Date().toISOString());
+          
+          // Force reload the page to ensure UI updates
+          window.location.reload();
         })
         .catch(function(error) {
+          console.error("Login error:", error);
           // Show error message
           errorText.textContent = error.message;
           loginError.classList.remove('hidden');
