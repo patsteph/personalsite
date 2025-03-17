@@ -298,7 +298,7 @@
   <!-- Admin Dashboard -->
   <div id="adminDashboard" class="container admin-dashboard">
     <div class="header">
-      <h1>Book Management Dashboard</h1>
+      <h1>Admin Dashboard</h1>
       <div class="user-info">
         <span id="userEmail"></span>
         <button id="logoutButton" class="btn-small">Logout</button>
@@ -325,8 +325,10 @@
     </div>
     
     <div class="tabs">
-      <div class="tab active" data-tab="bookList">Book List</div>
+      <div class="tab active" data-tab="bookList">Book Management</div>
       <div class="tab" data-tab="addBook">Add New Book</div>
+      <div class="tab" data-tab="blogManagement">Blog Management</div>
+      <div class="tab" data-tab="siteAdmin">Site Analytics</div>
     </div>
     
     <div id="statusMessage"></div>
@@ -1299,6 +1301,52 @@
         titleSearchBtn.click();
       }
     });
+    // Create new tab content divs if they don't exist
+    if (!document.getElementById('blogManagementTab')) {
+      // Blog Management Tab
+      const blogTab = document.createElement('div');
+      blogTab.id = 'blogManagementTab';
+      blogTab.className = 'tab-content';
+      blogTab.style.display = 'none';
+      blogTab.innerHTML = `
+        <div class="card">
+          <h2>Blog Management</h2>
+          <div class="coming-soon">
+            <p class="text-center text-gray-600 my-8">Blog management features coming soon. This will include:</p>
+            <ul class="list-disc pl-8 text-gray-600 space-y-2">
+              <li>Post creation and editing with rich text formatting</li>
+              <li>Image uploads and management</li>
+              <li>Post scheduling and publishing workflow</li>
+              <li>SEO optimization tools</li>
+              <li>Blog analytics and performance metrics</li>
+            </ul>
+          </div>
+        </div>
+      `;
+      document.getElementById('adminDashboard').appendChild(blogTab);
+      
+      // Site Analytics Tab
+      const siteTab = document.createElement('div');
+      siteTab.id = 'siteAdminTab';
+      siteTab.className = 'tab-content';
+      siteTab.style.display = 'none';
+      siteTab.innerHTML = `
+        <div class="card">
+          <h2>Site Analytics</h2>
+          <div class="coming-soon">
+            <p class="text-center text-gray-600 my-8">Site analytics features coming soon. This will include:</p>
+            <ul class="list-disc pl-8 text-gray-600 space-y-2">
+              <li>Visitor count and traffic trends</li>
+              <li>Page view statistics</li>
+              <li>User journey and navigation flow analysis</li>
+              <li>Click tracking and heatmaps</li>
+              <li>Performance monitoring</li>
+            </ul>
+          </div>
+        </div>
+      `;
+      document.getElementById('adminDashboard').appendChild(siteTab);
+    }
   </script>
 </body>
 </html>
