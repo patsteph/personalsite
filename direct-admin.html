@@ -1722,7 +1722,7 @@
         
         // Function to save the post to Firebase
         function savePostToFirebase(postData) {
-          const postsCollection = firebase.firestore().collection('blogPosts');
+          const postsCollection = firebase.firestore().collection('blog-posts');
           
           postsCollection.add(postData)
             .then(docRef => {
@@ -1739,7 +1739,7 @@
         
         // Function to load blog posts
         function loadBlogPosts() {
-          const postsCollection = firebase.firestore().collection('blogPosts');
+          const postsCollection = firebase.firestore().collection('blog-posts');
           const postsTableBody = document.getElementById('postsTableBody');
           
           postsCollection.orderBy('createdAt', 'desc').get()
@@ -1802,7 +1802,7 @@
         
         // Function to edit a post
         function editPost(postId) {
-          const postsCollection = firebase.firestore().collection('blogPosts');
+          const postsCollection = firebase.firestore().collection('blog-posts');
           
           postsCollection.doc(postId).get()
             .then(doc => {
@@ -1856,7 +1856,7 @@
         
         // Function to delete a post
         function deletePost(postId) {
-          const postsCollection = firebase.firestore().collection('blogPosts');
+          const postsCollection = firebase.firestore().collection('blog-posts');
           
           postsCollection.doc(postId).delete()
             .then(() => {
