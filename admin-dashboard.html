@@ -929,7 +929,32 @@
           
           // Add active class to clicked tab and corresponding content
           this.classList.add('active');
-          document.getElementById(this.dataset.tab + 'Tab').classList.add('active');
+          const targetTabId = this.dataset.tab + 'Tab';
+          const targetTab = document.getElementById(targetTabId);
+          
+          if (targetTab) {
+            targetTab.classList.add('active');
+            
+            // If switching to blog management tab, ensure the blog sub-tabs are properly initialized
+            if (targetTabId === 'blogManagementTab') {
+              // Find the active blog tab and ensure its content is displayed
+              const activeBlogTab = document.querySelector('[data-blog-tab].active');
+              if (activeBlogTab) {
+                const blogTabId = activeBlogTab.getAttribute('data-blog-tab') + 'Tab';
+                const blogTabContent = document.getElementById(blogTabId);
+                if (blogTabContent) {
+                  // Hide all blog tabs first
+                  document.querySelectorAll('.blog-tab-content').forEach(content => {
+                    content.style.display = 'none';
+                  });
+                  // Show the active one
+                  blogTabContent.style.display = 'block';
+                }
+              }
+            }
+          } else {
+            console.error(`Tab content with id ${targetTabId} not found!`);
+          }
         });
       });
       
@@ -1587,7 +1612,12 @@
             
             // Show selected tab content
             const tabId = this.getAttribute('data-blog-tab') + 'Tab';
-            document.getElementById(tabId).style.display = 'block';
+            const tabContent = document.getElementById(tabId);
+            if (tabContent) {
+              tabContent.style.display = 'block';
+            } else {
+              console.error(`Tab content with id ${tabId} not found!`);
+            }
           });
         });
       }
