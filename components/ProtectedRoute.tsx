@@ -2,7 +2,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '@/lib/auth';
-import Loading from './ui/Loading';
+import Loading from '@/components/ui/Loading';
 import { getBasePath } from '@/lib/firebase';
 
 type ProtectedRouteProps = {
