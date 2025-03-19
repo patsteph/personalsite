@@ -2,8 +2,17 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '@/lib/auth';
-import Loading from '@/components/ui/Loading';
 import { getBasePath } from '@/lib/firebase';
+
+// Simple inline loading component
+function SimpleLoading({ message = 'Loading...' }: { message?: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center p-8">
+      <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-500 border-r-transparent align-[-0.125em]" />
+      <p className="mt-4 text-gray-600">{message}</p>
+    </div>
+  );
+}
 
 type ProtectedRouteProps = {
   children: React.ReactNode;
@@ -23,7 +32,7 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
   
   // Show loading indicator while checking auth status
   if (loading) {
-    return <Loading message="Checking authentication..." />;
+    return <SimpleLoading message="Checking authentication..." />;
   }
   
   // Only render children if user is authenticated
