@@ -195,11 +195,30 @@ This project is optimized for deployment on Vercel:
    # Login to Vercel
    vercel login
 
-   # Deploy
+   # Initial Deployment (interactive, will ask questions)
    vercel
-   
-   # For production deployment
+
+   # Subsequent Development Deployments (creates a preview deployment)
+   npm run deploy:vercel
+   # or directly
+   vercel
+
+   # Production Deployment
+   npm run deploy:vercel:prod
+   # or directly
    vercel --prod
+   
+   # Add Environment Variables
+   vercel env add NEXT_PUBLIC_FIREBASE_API_KEY
+   
+   # List Environment Variables
+   vercel env ls
+   
+   # Pull Environment Variables to Local .env.local
+   vercel env pull .env.local
+   
+   # Link Existing Project (if you deployed from the website first)
+   vercel link
    ```
 
 3. **Post-Deployment Steps**:
