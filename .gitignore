@@ -16,6 +16,9 @@
 # next.js
 /.next/
 /out/
+# Ignore any auto-generated code in _next directories
+/_next/
+**/_next/
 
 # production
 /build
@@ -30,8 +33,22 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
-.env*
+# env files
+.env
+.env.local
+.env.development
+.env.development.local
+.env.test
+.env.test.local
+.env.production
+.env.production.local
+# Include example/template files though
+!.env.*.example
+!.env.*.template
+
+# Generated secure config
+/public/secure-config.js
+/out/secure-config.js
 
 # vercel
 .vercel
