@@ -4,6 +4,9 @@ import { useRouter } from 'next/router';
 import { useAuth } from '@/lib/auth';
 import { getBasePath } from '@/lib/firebase';
 
+// For debugging
+console.log('Auth hooks loaded:', useAuth);
+
 // Simple inline loading component
 function SimpleLoading({ message = 'Loading...' }: { message?: string }) {
   return (
@@ -19,7 +22,10 @@ type ProtectedRouteProps = {
 };
 
 export default function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const { user, loading, isAuthenticated } = useAuth();
+  const auth = useAuth();
+  const { user, loading } = auth;
+  // Use a computed property instead of directly destructuring isAuthenticated
+  const isAuthenticated = !!user;
   const router = useRouter();
   
   useEffect(() => {
