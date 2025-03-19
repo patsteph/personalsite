@@ -2,8 +2,6 @@
 
 A sophisticated personal website built with Next.js, TypeScript, Tailwind CSS, and Firebase, featuring a virtual bookshelf, blog platform, CV showcase, and multi-language support.
 
-![Project Preview](project-preview.jpg)
-
 ## ✨ Features
 
 - **🏗️ Responsive Two-Column Design**: Clean 25%/75% split layout that adapts beautifully to any device
@@ -11,8 +9,9 @@ A sophisticated personal website built with Next.js, TypeScript, Tailwind CSS, a
 - **✏️ Blog Platform**: Markdown-based blog with featured image support and syntax highlighting
 - **📄 CV/Resume Section**: Elegant display of professional experience, skills, and education
 - **🌐 Multi-language Support**: Content localization for English, Spanish, German, Japanese, and Ukrainian
-- **🔒 Secure Admin Interface**: Firebase authentication for managing book collection
+- **🔒 Secure Admin Interface**: Firebase authentication for managing book collection and blog posts
 - **🚀 Optimized Performance**: Static site generation with incremental static regeneration
+- **🔥 Server-side API**: Next.js API routes with Firebase Admin SDK
 
 ## 🛠️ Technology Stack
 
@@ -22,11 +21,32 @@ A sophisticated personal website built with Next.js, TypeScript, Tailwind CSS, a
 - **Firebase**: Authentication and Firestore database for dynamic content
 - **MDX**: Enhanced Markdown for blog content
 
+## 📋 Architecture Overview
+
+### Authentication Flow
+
+The authentication system uses a multi-layered approach:
+
+1. **Edge Middleware**: Protects admin routes at the edge (middleware.js)
+2. **Client-side Protection**: ProtectedRoute component verifies authentication
+3. **Server-side Verification**: API routes verify Firebase tokens
+4. **Session Management**: Tracks user activity and refreshes tokens
+5. **Automatic Timeout**: Logs out inactive users after 60 minutes
+
+### API Pattern
+
+The application uses a "server-first, client-fallback" pattern:
+
+1. Server-side API routes in `/pages/api/` provide secure operations
+2. Client-side API modules in `/lib/api/` call server endpoints first
+3. If server endpoints fail, the system falls back to direct Firebase access
+4. Graceful degradation ensures functionality across environments
+
 ## 🚀 Getting Started
 
 ### Prerequisites
 
-- Node.js (v14 or later)
+- Node.js (v18 or later)
 - npm or yarn
 - Firebase account
 
@@ -53,18 +73,35 @@ A sophisticated personal website built with Next.js, TypeScript, Tailwind CSS, a
    - Add a web app to your project
    - Enable Authentication (Email/Password)
    - Create a Firestore database
+   - Generate a Firebase Admin SDK private key for server-side operations:
+     - Go to Project Settings > Service Accounts
+     - Click "Generate new private key"
+     - Save the JSON file securely
 
 4. **Set up environment variables**
    - Copy the `.env.local.example` file to `.env.local`
    - Fill in your Firebase configuration details
 
    ```
+   # Firebase Configuration (Client-side)
    NEXT_PUBLIC_FIREBASE_API_KEY=your-api-key
    NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
    NEXT_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
    NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
    NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your-messaging-sender-id
    NEXT_PUBLIC_FIREBASE_APP_ID=your-app-id
+   NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=your-measurement-id
+
+   # Firebase Admin SDK (Server-side)
+   FIREBASE_PROJECT_ID=your-project-id
+   FIREBASE_CLIENT_EMAIL=firebase-adminsdk-xxxx@your-project-id.iam.gserviceaccount.com
+   FIREBASE_PRIVATE_KEY=-----BEGIN PRIVATE KEY-----\nYour private key here\n-----END PRIVATE KEY-----
+
+   # Contact Info
+   NEXT_PUBLIC_CONTACT_EMAIL=your-email@example.com
+
+   # Base Path - empty for standard hosting
+   NEXT_PUBLIC_BASE_PATH=
    ```
 
 5. **Create an admin user in Firebase**
@@ -88,6 +125,8 @@ A sophisticated personal website built with Next.js, TypeScript, Tailwind CSS, a
 ```
 personal-website/
 ├── components/            # React components
+│   ├── AppProviders.tsx   # Global providers (Auth, Translations)
+│   ├── ProtectedRoute.tsx # Route protection wrapper
 │   ├── admin/             # Admin interface components
 │   ├── blog/              # Blog-related components
 │   ├── books/             # Book-related components
@@ -99,71 +138,91 @@ personal-website/
 │   ├── blog/              # Blog posts (Markdown)
 │   └── cv/                # CV data (JSON)
 ├── lib/                   # Utility functions and services
+│   ├── api/               # API client modules
+│   │   ├── auth.ts        # Authentication API
+│   │   ├── blog.ts        # Blog API
+│   │   ├── books.ts       # Books API
+│   │   └── index.ts       # API exports
+│   ├── auth.tsx           # Authentication context
+│   ├── blog.ts            # Blog compatibility layer
+│   ├── books.ts           # Books compatibility layer
+│   ├── config.ts          # App configuration
+│   ├── firebase.ts        # Firebase client initialization
+│   ├── firebase-admin.ts  # Firebase Admin SDK
+│   └── translations.tsx   # i18n functionality
+├── middleware.js          # Edge middleware for route protection
 ├── pages/                 # Next.js pages
-│   ├── admin/             # Admin pages
+│   ├── _app.tsx           # App entry with providers
+│   ├── _document.tsx      # Custom document component
+│   ├── admin/             # Admin pages (protected)
 │   ├── blog/              # Blog pages
 │   ├── api/               # API routes
+│   │   ├── auth.ts        # Authentication API
+│   │   ├── blog.ts        # Blog API
+│   │   └── books.ts       # Books API
 │   └── ...                # Other pages
 ├── public/                # Static assets
 │   ├── images/            # Images
-│   └── files/             # Downloadable files
+│   └── runtime-config.js  # Runtime configuration
 ├── styles/                # Global styles
 └── types/                 # TypeScript type definitions
 ```
 
-## 🌐 Deploying to GitHub Pages
+## 🌐 Deployment Options
 
-Next.js can be deployed to GitHub Pages with a static export. Here's how to set it up:
+### Vercel Deployment (Recommended)
 
-1. **Update the `next.config.js` file**
-   - Update the `basePath` and `assetPrefix` with your repository name
-   - Make sure `trailingSlash` is set to `true`
+This project is optimized for deployment on Vercel:
 
-   ```js
-   const nextConfig = {
-     // ...
-     basePath: process.env.NODE_ENV === 'production' ? '/your-repo-name' : '',
-     assetPrefix: process.env.NODE_ENV === 'production' ? '/your-repo-name/' : '',
-     trailingSlash: true,
-   }
-   ```
+1. **Set up your environment variables in Vercel**:
+   - Copy all variables from your `.env.local` file to Vercel's environment variables
+   - Make sure to properly escape the Firebase private key
+   - Leave `NEXT_PUBLIC_BASE_PATH` empty
 
-2. **Create a GitHub repository**
-   - Create a new repository named `your-username.github.io` for a user site, or `any-name` for a project site
+2. **Deploy using Vercel CLI or GitHub integration**:
+   
+   **Using Vercel Dashboard:**
+   - Connect your GitHub repository to Vercel
+   - Configure the framework preset to Next.js
+   - Add all environment variables
+   - Deploy
 
-3. **Update your `package.json` with a deploy script**
-
-   ```json
-   "scripts": {
-     // ...
-     "export": "next build && next export",
-     "deploy": "npm run export && touch out/.nojekyll && gh-pages -d out"
-   }
-   ```
-
-4. **Install the GitHub Pages deployment package**
-
+   **Using Vercel CLI:**
    ```bash
-   npm install --save-dev gh-pages
-   # or
-   yarn add --dev gh-pages
+   # Install Vercel CLI
+   npm install -g vercel
+
+   # Login to Vercel
+   vercel login
+
+   # Deploy
+   vercel
+   
+   # For production deployment
+   vercel --prod
    ```
 
-5. **Build and deploy your site**
+3. **Post-Deployment Steps**:
+   - Set up custom domain if needed
+   - Verify all functionality works in production
+   - Test the authentication system
+   - Verify API routes are working correctly
+   - Check book and blog management
 
-   ```bash
-   npm run deploy
-   # or
-   yarn deploy
-   ```
+### Netlify or Other Next.js-Compatible Hosting
 
-6. **Configure GitHub Pages**
-   - Go to your repository on GitHub
-   - Navigate to Settings > Pages
-   - Set the source to the `gh-pages` branch
-   - Save the changes
+The setup is similar to Vercel with these differences:
 
-7. **Your site should now be live at `https://your-username.github.io` or `https://your-username.github.io/your-repo-name`**
+1. **Environment Variables**:
+   - Set up environment variables in your hosting platform
+   - Ensure Firebase private key has newlines correctly escaped
+
+2. **Build Commands**:
+   - Build command: `npm run build`
+   - Publish directory: `.next`
+
+3. **Node.js Version**:
+   - Ensure your hosting environment uses Node.js 18+
 
 ## 📝 Adding Content
 
@@ -226,65 +285,60 @@ Books are managed through the admin interface. To add a book:
 5. Add your reading status and notes
 6. Click "Add to Collection"
 
-## 🔧 Customization
+## 📄 Security Considerations
 
-### Styling
+1. **Firebase Admin SDK Private Key**:
+   - Store this securely as an environment variable
+   - Never commit it to your repository
+   - Ensure it's properly escaped with `\n` for newlines
 
-The site uses Tailwind CSS for styling. Customize the theme colors in `tailwind.config.js`:
+2. **Protected Routes**:
+   - Edge middleware provides first-layer protection
+   - ProtectedRoute component enforces client-side authentication
+   - API routes verify tokens server-side
 
-```js
-module.exports = {
-  theme: {
-    extend: {
-      colors: {
-        'linen': '#FAF0E6',
-        'steel-blue': '#4682B4',
-        'accent': '#2a4d69',
-        'light-accent': '#d6e1e8',
-      },
-      // ...
-    },
-  },
-  // ...
-}
-```
+3. **Session Management**:
+   - Automatic timeout after 60 minutes of inactivity
+   - Token refresh every 10 minutes
+   - Activity monitoring to keep sessions alive
 
-### Translations
+4. **Firebase Rules**:
+   - Set up proper Firestore security rules for your collections
 
-Add or update translations in the `lib/translations.ts` file:
+## 🔧 Troubleshooting
 
-```typescript
-const commonTranslations: TranslationSet = {
-  en: {
-    'nav.welcome': 'Welcome',
-    // ...
-  },
-  es: {
-    'nav.welcome': 'Bienvenido',
-    // ...
-  },
-  // ...
-}
-```
+### Deployment Issues
 
-### Personal Information
+1. **Firebase Admin SDK errors**:
+   - Check that `FIREBASE_PRIVATE_KEY` is correctly formatted with escaped newlines
+   - Verify the service account has the correct permissions
 
-Update your personal information in the corresponding page files:
+2. **API route errors**:
+   - Check that the Firebase Admin SDK is initialized correctly
+   - Verify that API endpoints return proper status codes
+   - Check browser console for client-side errors
 
-- Basic info: `components/layout/Sidebar.tsx`
-- Contact info: `pages/contact.tsx`
-- Social links: Various components
+3. **Authentication issues**:
+   - Verify Firebase configuration is correct
+   - Check that the admin user exists in Firebase Authentication
+   - Make sure cookies and localStorage are enabled
 
-## 🤝 Contributing
+## 🔧 GitHub to Standard Hosting Migration
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+If you previously deployed on GitHub Pages:
 
-## 📄 License
+1. **Remove GitHub Pages specific settings**:
+   - Update `next.config.js` to remove `basePath` and `assetPrefix`
+   - Set `NEXT_PUBLIC_BASE_PATH` to an empty string
+   - Update any hardcoded '/personalsite' references
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+2. **Add Server-side Functionality**:
+   - Ensure Firebase Admin SDK is properly configured
+   - Test API routes are functioning correctly
+   - Set up environment variables in your hosting platform
 
 ---
 
 <p align="center">
-  Made with ❤️ by "Your Name"
+  Made with ❤️ by [Your Name]
 </p>
