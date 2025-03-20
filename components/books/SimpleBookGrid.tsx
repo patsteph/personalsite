@@ -28,15 +28,22 @@ export default function SimpleBookGrid({ initialBooks }: SimpleBookGridProps) {
           // Process books to ensure they have all required properties
           const safeBooks = data.data
             .filter((book: any) => book) // Filter out null/undefined books
-            .map((book: any) => ({
-              ...book,
-              // Ensure these properties exist with safe defaults
-              id: book.id || `temp-${Math.random().toString(36).substr(2, 9)}`,
-              title: book.title || 'Untitled Book',
-              authors: Array.isArray(book.authors) ? book.authors : ['Unknown Author'],
-              status: book.status || 'read',
-              dateAdded: book.dateAdded || new Date().toISOString()
-            }));
+            .map((book: any) => {
+              // Debug information
+              console.log(`Processing book ${book.id || 'unknown'}: authors=${JSON.stringify(book.authors)}`);
+              
+              return {
+                ...book,
+                // Ensure these properties exist with safe defaults
+                id: book.id || `temp-${Math.random().toString(36).substr(2, 9)}`,
+                title: book.title || 'Untitled Book',
+                authors: Array.isArray(book.authors) ? book.authors : 
+                         typeof book.authors === 'string' ? [book.authors] : 
+                         ['Unknown Author'],
+                status: book.status || 'read',
+                dateAdded: book.dateAdded || new Date().toISOString()
+              };
+            });
           
           setBooks(safeBooks);
           console.log(`Loaded ${safeBooks.length} books from API`);

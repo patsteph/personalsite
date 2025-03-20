@@ -63,7 +63,9 @@ export default async function handler(
           status: data.status || 'read',
           dateAdded: data.dateAdded || new Date().toISOString(),
           // Add fallbacks for all other properties to prevent undefined errors
-          authors: Array.isArray(data.authors) ? data.authors : ['Unknown Author'],
+          authors: Array.isArray(data.authors) ? data.authors : 
+                   typeof data.authors === 'string' ? [data.authors] : 
+                   ['Unknown Author'],
           categories: Array.isArray(data.categories) ? data.categories : [],
           userRating: typeof data.userRating === 'number' ? data.userRating : undefined,
           averageRating: typeof data.averageRating === 'number' ? data.averageRating : undefined,
@@ -74,9 +76,7 @@ export default async function handler(
           pageCount: typeof data.pageCount === 'number' ? data.pageCount : undefined,
           notes: data.notes || '',
           // Handle nested imageLinks object safely
-          imageLinks: data.imageLinks || {},
-          // Support direct coverImage property if present
-          coverImage: data.coverImage || undefined
+          imageLinks: data.imageLinks || {}
         });
       });
       
