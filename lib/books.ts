@@ -312,10 +312,22 @@ export const getBooks = async (): Promise<Book[]> => {
               }
             });
             
-            return {
+            // Sanitize data before returning
+            const safeData = {
               id: doc.id,
-              ...serializedData
+              ...serializedData,
+              // Ensure critical fields have safe defaults
+              title: serializedData.title || 'Untitled Book',
+              // Handle authors field which can be string, array, or undefined
+              authors: Array.isArray(serializedData.authors) ? serializedData.authors : 
+                      typeof serializedData.authors === 'string' ? [serializedData.authors] : 
+                      ['Unknown Author'],
+              status: serializedData.status || 'read',
+              dateAdded: serializedData.dateAdded || new Date().toISOString()
             };
+            
+            console.log(`Sanitized book ${doc.id}, authors: ${JSON.stringify(safeData.authors)}`);
+            return safeData;
           }) as Book[];
           
           console.log(`Retrieved ${books.length} books from Firestore "${collName}" collection:`, books);

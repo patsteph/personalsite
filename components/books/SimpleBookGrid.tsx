@@ -71,8 +71,8 @@ export default function SimpleBookGrid({ initialBooks }: SimpleBookGridProps) {
       return null;
     }
     
-    // Safe author text handling
-    const authorText = Array.isArray(book.authors) ? 
+    // Extra safe author text handling with comprehensive checks
+    const authorText = book.authors && Array.isArray(book.authors) && book.authors.length > 0 ? 
       book.authors.join(', ') : 
       typeof book.authors === 'string' ? 
         book.authors : 
@@ -161,8 +161,8 @@ export default function SimpleBookGrid({ initialBooks }: SimpleBookGridProps) {
       return null;
     }
     
-    // Safe handling of all properties
-    const authorText = Array.isArray(book.authors) ? 
+    // Extra safe handling of all properties with comprehensive checks
+    const authorText = book.authors && Array.isArray(book.authors) && book.authors.length > 0 ? 
       book.authors.join(', ') : 
       typeof book.authors === 'string' ? 
         book.authors : 
@@ -172,7 +172,7 @@ export default function SimpleBookGrid({ initialBooks }: SimpleBookGridProps) {
                        book.imageLinks?.smallThumbnail || 
                        'https://placehold.co/200x300/e0e0e0/808080?text=No+Cover';
                        
-    const categories = Array.isArray(book.categories) ? 
+    const categories = book.categories && Array.isArray(book.categories) && book.categories.length > 0 ? 
       book.categories.join(', ') : 
       typeof book.categories === 'string' ? 
         book.categories : 
@@ -298,9 +298,13 @@ export default function SimpleBookGrid({ initialBooks }: SimpleBookGridProps) {
   
   // Filter controls
   const [filter, setFilter] = useState('all');
+  
+  // Extra safety checks for filtering books
+  const safeBooksArray = Array.isArray(books) ? books : [];
+  
   const filteredBooks = filter === 'all' 
-    ? books.filter(book => book) // Filter out null/undefined books 
-    : books.filter(book => book && book.status === filter);
+    ? safeBooksArray.filter(book => book && Array.isArray(book.authors)) // Ensure book has valid authors array
+    : safeBooksArray.filter(book => book && Array.isArray(book.authors) && book.status === filter);
   
   return (
     <div>
