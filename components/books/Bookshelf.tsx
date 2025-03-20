@@ -18,36 +18,30 @@ export default function Bookshelf({ initialBooks, booksPerShelf = 16 }: Bookshel
   const [filter, setFilter] = useState<BookFilter>('all');
   const [sortBy, setSortBy] = useState<BookSortOption>('title');
   const [loading, setLoading] = useState(!initialBooks);
-  // Temporarily skip useTranslation to fix build errors
-  // const { t } = useTranslation();
-  // Simply return the fallback text directly
-  const translate = (key: string, fallback: string) => fallback;
+  
+  // Skip translations temporarily to avoid build errors
+  const t = (key: string, fallback: string) => fallback;
   const { user } = useAuth();
   
   // Fetch books when component mounts or filter/sort changes
   useEffect(() => {
-    // Define a function to load books
     async function loadBooks() {
-      // Show loading state
       setLoading(true);
-      
       try {
-        // Call getBooks without any parameters
-        const books = await getBooks();
-        // Update state with fetched books
-        setAllBooks(books);
+        // Get all books from Firebase
+        const bookData = await getBooks();
+        console.log('Loaded books:', bookData);
+        setAllBooks(bookData);
       } catch (error) {
-        // Log any errors
         console.error('Error loading books:', error);
       } finally {
-        // Hide loading state
         setLoading(false);
       }
     }
     
-    // Call the function when component mounts
+    // Always reload books even if initialBooks is provided
     loadBooks();
-  }, []); // Only run on mount
+  }, []); // Remove filter and sortBy dependencies to prevent constant reloading
 
   // Apply filters and sorting
   const filteredAndSortedBooks = useMemo(() => {
@@ -94,7 +88,7 @@ export default function Bookshelf({ initialBooks, booksPerShelf = 16 }: Bookshel
         <div className="flex flex-wrap gap-4">
           <div className="flex items-center gap-2">
             <label htmlFor="book-filter" className="text-sm font-medium">
-              {translate('books.view', 'View:')}
+              {t('books.view', 'View:')}
             </label>
             <select 
               id="book-filter"
@@ -102,16 +96,16 @@ export default function Bookshelf({ initialBooks, booksPerShelf = 16 }: Bookshel
               onChange={(e) => setFilter(e.target.value as BookFilter)}
               className="px-3 py-2 rounded border border-steel-blue bg-linen text-sm"
             >
-              <option value="all">{translate('books.all', 'All Books')}</option>
-              <option value="read">{translate('books.read', 'Read')}</option>
-              <option value="reading">{translate('books.reading', 'Currently Reading')}</option>
-              <option value="toRead">{translate('books.toRead', 'Want to Read')}</option>
+              <option value="all">{t('books.all', 'All Books')}</option>
+              <option value="read">{t('books.read', 'Read')}</option>
+              <option value="reading">{t('books.reading', 'Currently Reading')}</option>
+              <option value="toRead">{t('books.toRead', 'Want to Read')}</option>
             </select>
           </div>
           
           <div className="flex items-center gap-2">
             <label htmlFor="book-sort" className="text-sm font-medium">
-              {translate('books.sortBy', 'Sort By:')}
+              {t('books.sortBy', 'Sort By:')}
             </label>
             <select 
               id="book-sort"
@@ -119,10 +113,10 @@ export default function Bookshelf({ initialBooks, booksPerShelf = 16 }: Bookshel
               onChange={(e) => setSortBy(e.target.value as BookSortOption)}
               className="px-3 py-2 rounded border border-steel-blue bg-linen text-sm"
             >
-              <option value="title">{translate('books.title', 'Title')}</option>
-              <option value="author">{translate('books.author', 'Author')}</option>
-              <option value="genre">{translate('books.genre', 'Genre')}</option>
-              <option value="rating">{translate('books.rating', 'Rating')}</option>
+              <option value="title">{t('books.title', 'Title')}</option>
+              <option value="author">{t('books.author', 'Author')}</option>
+              <option value="genre">{t('books.genre', 'Genre')}</option>
+              <option value="rating">{t('books.rating', 'Rating')}</option>
             </select>
           </div>
         </div>
