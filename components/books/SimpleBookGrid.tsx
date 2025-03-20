@@ -35,8 +35,8 @@ export default function SimpleBookGrid({ initialBooks }: SimpleBookGridProps) {
               
               // Apply all our safety checks to the fetched books
               const fullyValidatedBooks = firebaseBooks.map(book => {
-                // Deep clone to avoid mutation issues
-                const safeBook = {...book};
+                // Deep clone to avoid mutation issues with a more flexible type that allows for variations in our data
+                const safeBook: Record<string, any> = {...book};
                 
                 console.log(`Processing book: ${safeBook.id}, title: ${safeBook.title}`);
                 
@@ -58,11 +58,13 @@ export default function SimpleBookGrid({ initialBooks }: SimpleBookGridProps) {
                   safeBook.dateAdded = new Date().toISOString();
                 }
                 
-                // Special handling for author(s)
+                // Special handling for author(s) - some data may have 'author' instead of 'authors'
                 if (safeBook.author && !safeBook.authors) {
                   // Convert single author field to authors array
                   safeBook.authors = [safeBook.author];
                   console.log(`Converted author to authors array for book: ${safeBook.id}`);
+                  // Remove the non-standard author field to ensure type consistency
+                  delete safeBook.author;
                 }
                 
                 // Return book with additional protection for authors field
@@ -88,8 +90,27 @@ export default function SimpleBookGrid({ initialBooks }: SimpleBookGridProps) {
                   safeBook.imageLinks = {};
                 }
                 
-                // Book should now be valid with all required fields
-                return safeBook;
+                // Convert back to proper Book type before returning
+                const validatedBook: Book = {
+                  id: safeBook.id,
+                  isbn: safeBook.isbn || '',
+                  title: safeBook.title,
+                  authors: safeBook.authors,
+                  status: safeBook.status as ('read' | 'reading' | 'toRead'),
+                  dateAdded: safeBook.dateAdded,
+                  // Optional fields
+                  publisher: safeBook.publisher,
+                  publishedDate: safeBook.publishedDate,
+                  description: safeBook.description,
+                  pageCount: safeBook.pageCount,
+                  categories: Array.isArray(safeBook.categories) ? safeBook.categories : [],
+                  imageLinks: safeBook.imageLinks || {},
+                  userRating: typeof safeBook.userRating === 'number' ? safeBook.userRating : undefined,
+                  averageRating: typeof safeBook.averageRating === 'number' ? safeBook.averageRating : undefined,
+                  notes: safeBook.notes
+                };
+                
+                return validatedBook;
               });
               
               console.log(`Processed ${fullyValidatedBooks.length} validated books`);
