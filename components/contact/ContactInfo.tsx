@@ -12,18 +12,13 @@ type ContactInfoProps = {
   };
 };
 
-export default function ContactInfo({
-  businessEmail,
-  personalEmail,
-  location,
-  socials
-}: ContactInfoProps) {
+export default function ContactInfo(props: ContactInfoProps) {
+  const { businessEmail, personalEmail, socials } = props;
+  // We're not using location directly, but keeping it in the props type for future use
   const { t } = useTranslation();
   
-  // Open Google Maps with the location
-  const handleLocationClick = () => {
-    window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location)}`, '_blank');
-  };
+  // This function is no longer needed with OpenStreetMap implementation
+  // as we're providing a direct link below the map
   
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -63,11 +58,25 @@ export default function ContactInfo({
         <h2 className="text-xl font-bold text-accent mb-4">
           {t('contact.location', 'Location')}
         </h2>
-        <div 
-          className="p-4 h-32 bg-light-accent rounded-lg flex items-center justify-center cursor-pointer hover:bg-opacity-80 transition-all"
-          onClick={handleLocationClick}
-        >
-          <span>{location}</span>
+        <div className="h-64 rounded-lg overflow-hidden">
+          <iframe
+            width="100%"
+            height="100%"
+            frameBorder="0"
+            title="Location Map"
+            src={`https://www.openstreetmap.org/export/embed.html?bbox=-96.2144422531128%2C41.14762182740735%2C-96.19888544082643%2C41.16061156160396&amp;layer=mapnik`}
+            allowFullScreen
+          ></iframe>
+          <small>
+            <a 
+              href={`https://www.openstreetmap.org/?#map=16/41.15412/-96.20666`} 
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-steel-blue hover:text-accent block mt-2 text-center"
+            >
+              View Larger Map
+            </a>
+          </small>
         </div>
       </div>
       
@@ -126,9 +135,10 @@ export default function ContactInfo({
               rel="noopener noreferrer"
               className="flex items-center text-steel-blue hover:text-accent transition-colors"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16" className="mr-3">
-                <path d="M13.5 8a.5.5 0 0 1-.5.5H2a.5.5 0 0 1 0-1h11a.5.5 0 0 1 .5.5zm0-4a.5.5 0 0 1-.5.5H2a.5.5 0 0 1 0-1h11a.5.5 0 0 1 .5.5zm0 8a.5.5 0 0 1-.5.5H2a.5.5 0 0 1 0-1h11a.5.5 0 0 1 .5.5z"/>
-              </svg>
+              {/* Use a "B" for BlueSky instead of the 3 lines icon */}
+              <div className="w-5 h-5 mr-3 font-bold flex items-center justify-center text-steel-blue">
+                B
+              </div>
               <span>{socials.bluesky.replace('https://bsky.app/profile/', '')}</span>
             </a>
           )}

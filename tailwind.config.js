@@ -4,10 +4,11 @@ module.exports = {
     './pages/**/*.{js,ts,jsx,tsx}',
     './components/**/*.{js,ts,jsx,tsx}',
   ],
+  safelist: ['html', 'body'],
   theme: {
     extend: {
       colors: {
-        'linen': '#FAF0E6',
+        'linen': '#F0EFE7',
         'steel-blue': '#4682B4',
         'accent': '#2a4d69',
         'light-accent': '#d6e1e8',

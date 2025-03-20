@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Login | Personal Website</title>
+  <style>
+    :root {
+      --primary-color: #3b82f6;
+      --primary-hover: #2563eb;
+      --text-color: #333;
+      --bg-color: #f5f7fa;
+      --card-bg: #fff;
+      --border-color: #e5e7eb;
+      --success-color: #22c55e;
+      --error-color: #ef4444;
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      line-height: 1.6;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    
+    .container {
+      max-width: 400px;
+      width: 100%;
+      background-color: var(--card-bg);
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      padding: 30px;
+    }
+    
+    .logo {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    
+    .logo h1 {
+      color: var(--primary-color);
+      font-size: 24px;
+      margin-bottom: 5px;
+    }
+    
+    .logo p {
+      color: #64748b;
+      font-size: 14px;
+    }
+    
+    h2 {
+      margin-bottom: 20px;
+      color: var(--text-color);
+      text-align: center;
+    }
+    
+    .form-group {
+      margin-bottom: 15px;
+    }
+    
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 500;
+      color: #4b5563;
+    }
+    
+    input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      font-size: 16px;
+      transition: border-color 0.2s;
+    }
+    
+    input:focus {
+      outline: none;
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+    }
+    
+    button {
+      width: 100%;
+      padding: 12px;
+      background-color: var(--primary-color);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    
+    button:hover {
+      background-color: var(--primary-hover);
+    }
+    
+    button:disabled {
+      background-color: #93c5fd;
+      cursor: not-allowed;
+    }
+    
+    .alert {
+      padding: 12px 15px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+      font-size: 14px;
+    }
+    
+    .alert-error {
+      background-color: #fee2e2;
+      color: var(--error-color);
+      border-left: 4px solid var(--error-color);
+    }
+    
+    .alert-success {
+      background-color: #dcfce7;
+      color: var(--success-color);
+      border-left: 4px solid var(--success-color);
+    }
+    
+    .hidden {
+      display: none;
+    }
+    
+    .footer {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 13px;
+      color: #64748b;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo">
+      <h1>Admin Portal</h1>
+      <p>Personal Website Management</p>
+    </div>
+    
+    <div id="alert-container" class="alert hidden">
+      <div id="alert-message"></div>
+    </div>
+    
+    <form id="login-form">
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input type="email" id="email" placeholder="your@email.com" required>
+      </div>
+      
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" required>
+      </div>
+      
+      <button type="submit" id="login-button">Sign In</button>
+    </form>
+    
+    <div class="footer">
+      Return to <a href="index.html" id="home-link">Main Site</a>
+    </div>
+  </div>
+  
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  
+  <!-- Load secure configuration -->
+  <script src="secure-config.js"></script>
+  
+  <script>
+    // Get base path from URL or secure config
+    function getBasePath() {
+      // First try to get from secure config
+      if (window.SECURE_CONFIG && window.SECURE_CONFIG.basePath) {
+        return window.SECURE_CONFIG.basePath;
+      }
+      
+      // No longer using GitHub Pages, return empty base path
+      return '';
+    }
+    
+    // Try to load secure-config.js with different paths
+    function loadSecureConfig() {
+      const possiblePaths = [
+        'secure-config.js',
+        '../secure-config.js'
+      ];
+      
+      let loaded = false;
+      
+      possiblePaths.forEach(path => {
+        if (!loaded) {
+          const script = document.createElement('script');
+          script.src = path;
+          script.onload = () => {
+            console.log('Successfully loaded secure config from:', path);
+            loaded = true;
+            initializeApp();
+          };
+          script.onerror = () => {
+            console.warn('Failed to load secure config from:', path);
+          };
+          document.head.appendChild(script);
+        }
+      });
+      
+      // Fallback initialization if no config loads
+      setTimeout(() => {
+        if (!loaded) {
+          console.warn('Using fallback Firebase configuration');
+          initializeApp();
+        }
+      }, 2000);
+    }
+    
+    // Initialize Firebase with configuration
+    function initializeApp() {
+      // Get Firebase config from secure-config.js or use fallback
+      const firebaseConfig = window.SECURE_CONFIG && window.SECURE_CONFIG.firebase 
+        ? window.SECURE_CONFIG.firebase 
+        : {
+            // Fallback config - this will be removed in production
+            // and replaced by GitHub Actions during build
+            apiKey: "AIzaSyD4a8iaxHP9xPGV5tR5LwvzDVa5Y9o5wGQ",
+            authDomain: "personalsite-19189.firebaseapp.com",
+            projectId: "personalsite-19189",
+            storageBucket: "personalsite-19189.appspot.com",
+            messagingSenderId: "892517360036",
+            appId: "1:892517360036:web:36dda234d9f3f79562e131"
+          };
+      
+      // Initialize Firebase if not already initialized
+      if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+      }
+      
+      // Set up auth state listener
+      const auth = firebase.auth();
+      
+      // Check if user is already signed in
+      auth.onAuthStateChanged(function(user) {
+        if (user) {
+          showAlert('Already signed in! Redirecting to dashboard...', 'success');
+          
+          // Set auth session storage
+          sessionStorage.setItem('auth_success', 'true');
+          sessionStorage.setItem('auth_timestamp', new Date().toISOString());
+          
+          // Redirect to admin dashboard
+          setTimeout(() => {
+            window.location.href = `${getBasePath()}/admin-dashboard.html`;
+          }, 1000);
+        }
+      });
+      
+      // Update home link
+      document.getElementById('home-link').href = `${getBasePath()}/index.html`;
+      
+      // Set up login form
+      const loginForm = document.getElementById('login-form');
+      const loginButton = document.getElementById('login-button');
+      
+      loginForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        
+        // Disable button and show loading state
+        loginButton.disabled = true;
+        loginButton.textContent = 'Signing in...';
+        
+        // Hide any existing alerts
+        hideAlert();
+        
+        // Sign in with Firebase
+        auth.signInWithEmailAndPassword(email, password)
+          .then(function(userCredential) {
+            // Authentication successful
+            showAlert('Sign in successful! Redirecting...', 'success');
+            
+            // Set auth session storage
+            sessionStorage.setItem('auth_success', 'true');
+            sessionStorage.setItem('auth_timestamp', new Date().toISOString());
+            
+            // Redirect to admin dashboard
+            setTimeout(() => {
+              window.location.href = `${getBasePath()}/admin-dashboard.html`;
+            }, 1000);
+          })
+          .catch(function(error) {
+            // Authentication failed
+            console.error('Login error:', error);
+            showAlert(`Login failed: ${error.message}`, 'error');
+            
+            // Reset button
+            loginButton.disabled = false;
+            loginButton.textContent = 'Sign In';
+          });
+      });
+    }
+    
+    // Helper functions for alerts
+    function showAlert(message, type) {
+      const alertContainer = document.getElementById('alert-container');
+      const alertMessage = document.getElementById('alert-message');
+      
+      alertMessage.textContent = message;
+      alertContainer.className = `alert alert-${type}`;
+      alertContainer.classList.remove('hidden');
+    }
+    
+    function hideAlert() {
+      document.getElementById('alert-container').classList.add('hidden');
+    }
+    
+    // Initialize on load
+    loadSecureConfig();
+  </script>
+</body>
+</html>

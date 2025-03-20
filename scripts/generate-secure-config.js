@@ -6,15 +6,13 @@
 const fs = require('fs');
 const path = require('path');
 
-// Get environment variables with fallbacks
-// For development only - these fallbacks are just for testing and will work for this specific project
-// In production, these should be set as GitHub secrets
-const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY || 'AIzaSyD4a8iaxHP9xPGV5tR5LwvzDVa5Y9o5wGQ';
-const FIREBASE_AUTH_DOMAIN = process.env.FIREBASE_AUTH_DOMAIN || 'personalsite-19189.firebaseapp.com';
-const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID || 'personalsite-19189';
-const FIREBASE_STORAGE_BUCKET = process.env.FIREBASE_STORAGE_BUCKET || 'personalsite-19189.appspot.com';
-const FIREBASE_MESSAGING_SENDER_ID = process.env.FIREBASE_MESSAGING_SENDER_ID || '892517360036';
-const FIREBASE_APP_ID = process.env.FIREBASE_APP_ID || '1:892517360036:web:36dda234d9f3f79562e131';
+// Get environment variables - these MUST be set in the hosting environment
+const FIREBASE_API_KEY = process.env.NEXT_PUBLIC_FIREBASE_API_KEY || '';
+const FIREBASE_AUTH_DOMAIN = process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || '';
+const FIREBASE_PROJECT_ID = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || '';
+const FIREBASE_STORAGE_BUCKET = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || '';
+const FIREBASE_MESSAGING_SENDER_ID = process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || '';
+const FIREBASE_APP_ID = process.env.NEXT_PUBLIC_FIREBASE_APP_ID || '';
 // Google Books API key for ISBN lookup
 const GOOGLE_BOOKS_API_KEY = process.env.GOOGLE_BOOKS_API_KEY || '';
 

@@ -23,12 +23,12 @@ export default function HomePage({ recentPosts }: HomePageProps) {
         
         <div className="bg-white rounded-lg shadow p-6 mb-8">
           <p className="text-xl text-steel-blue leading-relaxed mb-4">
-            {t('welcome.intro', 'Hello! I\'m a Senior Engineering Manager with a passion for building high-performing teams and scalable systems.')}
+            {t('welcome.intro', 'Hello! I\'m a Senior Engineering Manager with a passion for building high-performing teams.')}
           </p>
           
           <p className="text-steel-blue leading-relaxed">
-            With over 15 years in the technology industry, I've led teams across various domains, from financial services to cloud platforms. 
-            My approach combines technical excellence with people-centered leadership, focusing on creating environments where engineers can do their best work.
+            With over 20 years in the technology industry, my approach combines technical excellence with people-centered leadership. 
+            I am committed to creating environments that empower people to thrive in their work.
           </p>
         </div>
       </section>
@@ -44,8 +44,7 @@ export default function HomePage({ recentPosts }: HomePageProps) {
               {t('nav.blog', 'Blog')}
             </h3>
             <p className="text-gray-700 mb-4">
-              Thoughts on engineering leadership, technology trends, and team building. 
-              I share lessons learned from both successes and failures throughout my career.
+              Thoughts on engineering leadership, technology, and team building. 
             </p>
             <Link 
               href="/blog"
@@ -62,8 +61,7 @@ export default function HomePage({ recentPosts }: HomePageProps) {
             <h3 className="text-xl font-semibold text-steel-blue mb-3">
               {t('nav.cv', 'CV')}
             </h3>
-            <p className="text-gray-700 mb-4">
-              A detailed look at my professional experience, technical skills, and educational background. 
+            <p className="text-gray-700 mb-4"> 
               See the path that led me to where I am today.
             </p>
             <Link 
@@ -81,8 +79,7 @@ export default function HomePage({ recentPosts }: HomePageProps) {
             <h3 className="text-xl font-semibold text-steel-blue mb-3">
               {t('nav.books', 'Books')}
             </h3>
-            <p className="text-gray-700 mb-4">
-              Browse my virtual bookshelf of technical, leadership, and industry reads. 
+            <p className="text-gray-700 mb-4"> 
               I'm an avid reader and believe that continuous learning is essential for growth.
             </p>
             <Link 
@@ -102,7 +99,6 @@ export default function HomePage({ recentPosts }: HomePageProps) {
             </h3>
             <p className="text-gray-700 mb-4">
               Get in touch for collaborations, speaking opportunities, or just to connect. 
-              I'm always interested in meeting fellow technology leaders and sharing experiences.
             </p>
             <Link 
               href="/contact"
@@ -136,7 +132,7 @@ export default function HomePage({ recentPosts }: HomePageProps) {
                 </h3>
                 
                 <div className="text-sm text-gray-600 mb-3">
-                  {format(new Date(post.date), 'MMMM d, yyyy')} • {post.readingTime} min read
+                  {post.date ? format(new Date(post.date), 'MMMM d, yyyy') : ''} {post.readingTime ? `• ${post.readingTime} min read` : ''}
                 </div>
                 
                 <p className="text-gray-700">{post.summary}</p>
@@ -167,12 +163,21 @@ export default function HomePage({ recentPosts }: HomePageProps) {
 
 // Fetch data at build time
 export const getStaticProps: GetStaticProps<HomePageProps> = async () => {
-  // Get recent blog posts
-  const recentPosts = getRecentPosts(3);
-  
-  return {
-    props: {
-      recentPosts,
-    },
-  };
+  try {
+    // Get recent blog posts
+    const recentPosts = await getRecentPosts(3);
+    
+    return {
+      props: {
+        recentPosts,
+      },
+    };
+  } catch (error) {
+    console.error('Error fetching recent posts:', error);
+    return {
+      props: {
+        recentPosts: [],
+      },
+    };
+  }
 };

@@ -1,0 +1,140 @@
+{
+  "common": {
+    "title": "[DE] Personal Website",
+    "navigation": {
+      "home": "[DE] Home",
+      "blog": "[DE] Blog",
+      "books": "[DE] Books",
+      "cv": "[DE] CV",
+      "contact": "[DE] Contact"
+    },
+    "buttons": {
+      "readMore": "[DE] Read More",
+      "submit": "[DE] Submit",
+      "cancel": "[DE] Cancel",
+      "save": "[DE] Save",
+      "delete": "[DE] Delete",
+      "edit": "[DE] Edit",
+      "back": "[DE] Back",
+      "next": "[DE] Next"
+    },
+    "footer": {
+      "copyright": "[DE] © 2023 All Rights Reserved",
+      "privacyPolicy": "[DE] Privacy Policy",
+      "termsOfService": "[DE] Terms of Service"
+    }
+  },
+  "home": {
+    "welcome": "[DE] Welcome to my website",
+    "intro": "[DE] I'm a software developer passionate about creating beautiful and functional web applications",
+    "latestPosts": "[DE] Latest Posts",
+    "featuredProjects": "[DE] Featured Projects"
+  },
+  "blog": {
+    "title": "[DE] Blog",
+    "readTime": "[DE] {{time}} min read",
+    "publishedOn": "[DE] Published on {{date}}",
+    "categories": "[DE] Categories",
+    "tags": "[DE] Tags",
+    "relatedPosts": "[DE] Related Posts",
+    "comments": "[DE] Comments",
+    "noComments": "[DE] No comments yet",
+    "leaveComment": "[DE] Leave a comment"
+  },
+  "books": {
+    "title": "[DE] My Book Collection",
+    "totalBooks": "[DE] Total Books: {{count}}",
+    "status": {
+      "read": "[DE] Read",
+      "reading": "[DE] Currently Reading",
+      "toRead": "[DE] To Read"
+    },
+    "bookDetails": {
+      "author": "[DE] Author",
+      "isbn": "[DE] ISBN",
+      "publishedDate": "[DE] Published",
+      "pages": "[DE] Pages",
+      "genre": "[DE] Genre",
+      "rating": "[DE] Rating"
+    },
+    "stats": {
+      "total": "[DE] Total Books",
+      "read": "[DE] Books Read",
+      "reading": "[DE] Currently Reading",
+      "toRead": "[DE] To Read"
+    }
+  },
+  "cv": {
+    "title": "[DE] Curriculum Vitae",
+    "sections": {
+      "education": "[DE] Education",
+      "experience": "[DE] Professional Experience",
+      "skills": "[DE] Skills",
+      "projects": "[DE] Projects",
+      "certifications": "[DE] Certifications",
+      "languages": "[DE] Languages"
+    },
+    "download": "[DE] Download PDF"
+  },
+  "contact": {
+    "title": "[DE] Contact Me",
+    "form": {
+      "name": "[DE] Name",
+      "email": "[DE] Email",
+      "subject": "[DE] Subject",
+      "message": "[DE] Message",
+      "submit": "[DE] Send Message"
+    },
+    "success": "[DE] Your message has been sent successfully!",
+    "error": "[DE] There was an error sending your message. Please try again.",
+    "required": "[DE] This field is required",
+    "invalidEmail": "[DE] Please enter a valid email address"
+  },
+  "admin": {
+    "login": {
+      "title": "[DE] Admin Login",
+      "email": "[DE] Email",
+      "password": "[DE] Password",
+      "submit": "[DE] Login",
+      "error": "[DE] Invalid email or password",
+      "forgotPassword": "[DE] Forgot Password?"
+    },
+    "dashboard": {
+      "title": "[DE] Admin Dashboard",
+      "welcome": "[DE] Welcome back",
+      "stats": "[DE] Website Statistics",
+      "manageContent": "[DE] Manage Content"
+    },
+    "books": {
+      "addBook": "[DE] Add Book",
+      "editBook": "[DE] Edit Book",
+      "deleteBook": "[DE] Delete Book",
+      "confirmDelete": "[DE] Are you sure you want to delete this book?",
+      "form": {
+        "title": "[DE] Title",
+        "author": "[DE] Author",
+        "isbn": "[DE] ISBN",
+        "publishedDate": "[DE] Published Date",
+        "pages": "[DE] Pages",
+        "genre": "[DE] Genre",
+        "status": "[DE] Status",
+        "rating": "[DE] Rating",
+        "coverImage": "[DE] Cover Image URL",
+        "description": "[DE] Description"
+      }
+    }
+  },
+  "errors": {
+    "404": {
+      "title": "[DE] Page Not Found",
+      "message": "[DE] The page you are looking for does not exist",
+      "backToHome": "[DE] Back to Home"
+    },
+    "500": {
+      "title": "[DE] Server Error",
+      "message": "[DE] Something went wrong on our end",
+      "tryAgain": "[DE] Please try again"
+    }
+  }
+}
+

@@ -7,14 +7,14 @@ export default function ContactPage() {
   
   // Contact information
   const contactInfo = {
-    businessEmail: 'business@example.com',
-    personalEmail: 'personal@example.com',
-    location: 'San Francisco, CA',
+    businessEmail: 'patsteph@cisco.com',
+    personalEmail: 'stephensuc@gmail.com',
+    location: 'Gretna, NE',
     socials: {
-      github: 'https://github.com/yourusername',
-      linkedin: 'https://linkedin.com/in/yourusername',
-      twitter: 'https://twitter.com/yourusername',
-      bluesky: 'https://bsky.app/profile/yourusername'
+      github: 'https://github.com/patsteph',
+      linkedin: 'https://linkedin.com/in/patrickjstephens/',
+      twitter: 'https://twitter.com/StephensCisco',
+      bluesky: 'https://bsky.app/stephenspatrickj/'
     }
   };
   
@@ -27,7 +27,7 @@ export default function ContactPage() {
       <div className="bg-white rounded-lg shadow p-6 mb-8">
         <p className="text-steel-blue leading-relaxed">
           I'm always interested in connecting with fellow technology leaders, engineers, and anyone passionate 
-          about building great teams and products. Whether you'd like to discuss a collaboration, 
+          about building great teams or products. Whether you'd like to discuss a collaboration, 
           speaking opportunity, or just share ideas, feel free to reach out through any of these channels.
         </p>
       </div>

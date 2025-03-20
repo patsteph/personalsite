@@ -37,8 +37,8 @@ export default function BlogPostPage({ post }: BlogPostPageProps) {
     );
   }
   
-  // Format the date
-  const formattedDate = format(new Date(post.date), 'MMMM d, yyyy');
+  // Format the date (using a default date if none is provided)
+  const formattedDate = format(new Date(post.date || new Date().toISOString()), 'MMMM d, yyyy');
   
   return (
     <Layout 
@@ -79,7 +79,7 @@ export default function BlogPostPage({ post }: BlogPostPageProps) {
 
 // Generate the paths for all blog posts
 export const getStaticPaths: GetStaticPaths = async () => {
-  const slugs = getAllPostSlugs();
+  const slugs = await getAllPostSlugs();
   
   return {
     paths: slugs.map(slug => ({
@@ -93,7 +93,7 @@ export const getStaticPaths: GetStaticPaths = async () => {
 // Fetch data for a specific blog post
 export const getStaticProps: GetStaticProps<BlogPostPageProps> = async ({ params }) => {
   const slug = params?.slug as string;
-  const post = getPostBySlug(slug);
+  const post = await getPostBySlug(slug);
   
   // If post not found, return 404
   if (!post) {
@@ -103,7 +103,7 @@ export const getStaticProps: GetStaticProps<BlogPostPageProps> = async ({ params
   }
   
   // Serialize the MDX content
-  const mdxContent = await serialize(post.content);
+  const mdxContent = await serialize(post.content || '');
   
   return {
     props: {

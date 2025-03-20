@@ -2,6 +2,18 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --color-linen: #F0EFE7;
+  --color-steel-blue: #4682B4;
+  --color-accent: #2a4d69;
+  --color-light-accent: #d6e1e8;
+}
+
+body {
+  background-color: var(--color-linen);
+  color: var(--color-steel-blue);
+}
+
 /* Custom animations */
 @keyframes fadeIn {
   from { opacity: 0; }

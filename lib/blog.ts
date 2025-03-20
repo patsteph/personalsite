@@ -1,109 +1,30 @@
-import fs from 'fs';
-import path from 'path';
-import matter from 'gray-matter';
+/**
+ * Blog module - Re-exports functions from the API layer for backward compatibility
+ */
+import { blog as blogApi } from './api';
 import { BlogPost } from '@/types/blog';
 
-// Directory for blog posts
-const postsDirectory = path.join(process.cwd(), 'content/blog');
+// Re-export all functions from blog API
+export const getPublishedPosts = blogApi.getPublishedPosts;
+export const getAllPosts = blogApi.getAllPosts;
+export const getPostBySlug = blogApi.getPostBySlug;
+export const addBlogPost = blogApi.addBlogPost;
+export const updateBlogPost = blogApi.updateBlogPost;
+export const deleteBlogPost = blogApi.deleteBlogPost;
+export const getPostsByTag = blogApi.getPostsByTag;
 
-/**
- * Get all blog posts, sorted by date
- */
-export function getAllPosts(): BlogPost[] {
-  // Ensure the posts directory exists
-  if (!fs.existsSync(postsDirectory)) {
-    return [];
-  }
-  
-  // Get all the files in the posts directory
-  const fileNames = fs.readdirSync(postsDirectory);
-  
-  const posts = fileNames
-    .filter(fileName => fileName.endsWith('.md')) // Only include markdown files
-    .map(fileName => {
-      // Remove ".md" from file name to get slug
-      const slug = fileName.replace(/\.md$/, '');
-      
-      // Read markdown file as string
-      const fullPath = path.join(postsDirectory, fileName);
-      const fileContents = fs.readFileSync(fullPath, 'utf8');
-      
-      // Use gray-matter to parse the post metadata section
-      const { data, content } = matter(fileContents);
-      
-      // Estimate reading time (words per minute)
-      const wordsPerMinute = 200;
-      const wordCount = content.split(/\s+/g).length;
-      const readingTime = Math.ceil(wordCount / wordsPerMinute);
-      
-      // Combine the data with the slug
-      return {
-        slug,
-        title: data.title,
-        date: data.date,
-        summary: data.summary,
-        content,
-        readingTime
-      } as BlogPost;
-    })
-    // Sort posts by date in descending order
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  
-  return posts;
-}
+// Function to get recent posts
+export const getRecentPosts = async (count: number = 3): Promise<BlogPost[]> => {
+  return blogApi.getPublishedPosts(count);
+};
 
-/**
- * Get recent blog posts
- */
-export function getRecentPosts(count: number = 3): BlogPost[] {
-  return getAllPosts().slice(0, count);
-}
-
-/**
- * Get a specific blog post by slug
- */
-export function getPostBySlug(slug: string): BlogPost | null {
+// Get all post slugs for static generation
+export const getAllPostSlugs = async (): Promise<string[]> => {
   try {
-    const fullPath = path.join(postsDirectory, `${slug}.md`);
-    
-    // Check if the file exists
-    if (!fs.existsSync(fullPath)) {
-      return null;
-    }
-    
-    const fileContents = fs.readFileSync(fullPath, 'utf8');
-    const { data, content } = matter(fileContents);
-    
-    // Estimate reading time
-    const wordsPerMinute = 200;
-    const wordCount = content.split(/\s+/g).length;
-    const readingTime = Math.ceil(wordCount / wordsPerMinute);
-    
-    return {
-      slug,
-      title: data.title,
-      date: data.date,
-      summary: data.summary,
-      content,
-      readingTime
-    } as BlogPost;
+    const posts = await getAllPosts();
+    return posts.map(post => post.slug);
   } catch (error) {
-    console.error(`Error fetching post ${slug}:`, error);
-    return null;
-  }
-}
-
-/**
- * Get all post slugs for static path generation
- * This is the function that was missing!
- */
-export function getAllPostSlugs(): string[] {
-  if (!fs.existsSync(postsDirectory)) {
+    console.error('Error getting all post slugs:', error);
     return [];
   }
-  
-  const fileNames = fs.readdirSync(postsDirectory);
-  return fileNames
-    .filter(fileName => fileName.endsWith('.md'))
-    .map(fileName => fileName.replace(/\.md$/, ''));
-}
+};

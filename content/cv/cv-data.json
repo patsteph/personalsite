@@ -1,70 +1,61 @@
 {
-    "about": "Senior Engineering Manager with over 15 years of experience in building and leading high-performing technology teams. Passionate about fostering innovation, mentoring engineers, and delivering scalable software solutions that drive business value.",
+    "about": "Senior Engineering Manager with over 20 years of experience in building and leading high-performing technology teams. Passionate about fostering innovation, mentoring engineers, and delivering solutions that drive business value.",
     
     "experience": [
       {
-        "title": "Senior Engineering Manager",
-        "company": "Tech Innovation Inc.",
-        "location": "San Francisco, CA",
+        "title": "Senior Systems Engineering Manager",
+        "company": "Cisco",
+        "location": "Gretna,NE",
         "period": "2020 - Present",
-        "description": "Leading a team of 25 engineers across 4 product squads. Responsible for the development and delivery of the company's flagship cloud platform."
+        "description": "Leading a high-performing team of 8 engineers, I drive growth and adoption by aligning customer needs with cutting-edge collaboration solutions. Partnering with sales specialists, I bridge technical expertise with business outcomes to deliver impactful, customer-centric solutions that accelerate success."
       },
       {
-        "title": "Engineering Manager",
-        "company": "Global Software Solutions",
-        "location": "Seattle, WA",
-        "period": "2016 - 2020",
-        "description": "Managed two development teams focused on building enterprise-grade data analytics tools."
+        "title": "Technical Solutions Architect",
+        "company": "Cisco",
+        "location": "Omaha, NE",
+        "period": "2017 - 2020",
+        "description": "As a trusted advisor, I designed and delivered cutting-edge collaboration solutions, aligning technology with business needs to drive customer success. Partnering with sales teams, I translated complex technical requirements into strategic solutions, enabling seamless adoption and long-term value for customers."
       },
       {
-        "title": "Senior Software Engineer",
-        "company": "NextGen Technologies",
-        "location": "Boston, MA",
-        "period": "2010 - 2016",
-        "description": "Led the architecture and implementation of distributed systems for financial services clients."
+        "title": "Consulting Systems Engineer - Collaboration",
+        "company": "Cisco",
+        "location": "Omaha, NE",
+        "period": "2012 - 2017",
+        "description": "Advising customers on innovative collaboration solutions, I bridged business needs with technical capabilities to drive seamless adoption. Working closely with stakeholders, I provided strategic guidance, solution design, and technical expertise to optimize collaboration experiences and deliver measurable business outcomes."
       }
     ],
     
     "skills": [
-      "Engineering Leadership",
-      "Agile & Lean Methodologies",
-      "Cloud Architecture (AWS, Azure)",
-      "CI/CD Implementation",
-      "Microservices Design",
-      "Distributed Systems",
-      "Performance Optimization",
-      "Technical Mentorship",
+      "Technical Leadership",
       "Cross-functional Collaboration",
-      "Strategic Planning"
+      "Strategic Business Alignment",
+      "Customer-Centirc Selling",
+      "Stakeholder & Relationship Management",
+      "Data-Driven Decision Making",
+      "Change Management & Adaptability",
+      "Solution Architecture",
+      "Cloud & Hybrid Expertise",
+      "Security & Compliance"
+    ],
+    
+    "Training": [
+      {
+        "name": "SE Manager/Director Development Program - SMDD",
+        "year": "2024"
+      },
+      {
+        "name": "SE Transitions & Leadership Development Program - STLDP",
+        "year": "2018"
+      }
     ],
     
     "education": [
       {
-        "degree": "Master of Science in Computer Science",
-        "institution": "Stanford University",
-        "location": "Stanford, CA",
-        "year": "2010"
-      },
-      {
-        "degree": "Bachelor of Science in Software Engineering",
-        "institution": "MIT",
-        "location": "Cambridge, MA",
-        "year": "2008"
+        "school": "University of Nebraska at Omaha"
       }
     ],
     
-    "certifications": [
-      {
-        "name": "AWS Certified Solutions Architect - Professional",
-        "year": "2022"
-      },
-      {
-        "name": "Certified Scrum Master (CSM)",
-        "year": "2018"
-      },
-      {
-        "name": "Google Cloud Professional Cloud Architect",
-        "year": "2021"
-      }
-    ]
+    "publications": [],
+    
+    "languages": []
   }

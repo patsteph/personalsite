@@ -25,7 +25,11 @@ export default function BookDetails({ book, onClose }: BookDetailsProps) {
   };
   
   // Default image if no thumbnail available
-  const coverImage = book.imageLinks?.thumbnail || '/images/default-book-cover.jpg';
+  const coverImage = book.imageLinks?.thumbnail || `https://placehold.co/400x600/e0e0e0/808080?text=No+Cover+Available`;
+  
+  // Standard book cover dimensions 
+  const coverWidth = 160;
+  const coverHeight = 240;
   
   return (
     <div className="bg-white rounded-lg p-6 shadow-md mt-8 animate-fadeIn">
@@ -36,10 +40,17 @@ export default function BookDetails({ book, onClose }: BookDetailsProps) {
             <Image
               src={coverImage}
               alt={`Cover of ${book.title}`}
-              layout="fill"
-              objectFit="cover"
-              className="rounded"
-              unoptimized // For static export
+              width={coverWidth}
+              height={coverHeight}
+              quality={85}
+              priority={true}
+              className="rounded object-cover w-full h-full"
+              sizes="(max-width: 768px) 160px, 160px"
+              style={{
+                maxWidth: '100%',
+                height: 'auto',
+                objectFit: 'cover'
+              }}
             />
           </div>
         </div>

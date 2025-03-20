@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useAuth } from '@/lib/auth';
-import { useTranslation } from '@/lib/translations';
 
 type LoginFormProps = {
   onSuccess?: () => void;
@@ -12,7 +11,6 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { signIn } = useAuth();
-  const { t } = useTranslation();
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,7 +24,11 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
     setError('');
     
     try {
+      // Perform authentication
       await signIn(email, password);
+      console.log('LoginForm: Sign in successful');
+      
+      // Call onSuccess which will handle the redirect in the parent component
       if (onSuccess) {
         onSuccess();
       }
@@ -39,15 +41,15 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
   };
   
   return (
-    <div className="max-w-md mx-auto bg-white rounded-lg shadow p-8">
+    <div className="max-w-md mx-auto bg-white rounded-lg shadow p-4 sm:p-8">
       <h2 className="text-2xl font-bold text-accent mb-6">
-        {t('admin.login', 'Admin Login')}
+        Admin Login
       </h2>
       
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} id="admin-login-form">
         {error && (
-          <div className="bg-red-100 text-red-700 p-3 rounded mb-4">
-            {error}
+          <div className="bg-red-100 text-red-700 p-3 rounded mb-4" role="alert">
+            <span className="font-medium">Error: </span>{error}
           </div>
         )}
         
@@ -56,15 +58,22 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
             htmlFor="email" 
             className="block text-sm font-medium text-gray-700 mb-1"
           >
-            {t('admin.email', 'Email')}
+            Email
           </label>
           <input
             id="email"
+            name="email"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-steel-blue focus:border-steel-blue"
+            className="w-full px-3 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-steel-blue focus:border-steel-blue"
             required
+            autoComplete="email"
+            inputMode="email"
+            aria-label="Email address"
+            minLength={5}
+            maxLength={50}
+            placeholder="your@email.com"
           />
         </div>
         
@@ -73,15 +82,19 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
             htmlFor="password" 
             className="block text-sm font-medium text-gray-700 mb-1"
           >
-            {t('admin.password', 'Password')}
+            Password
           </label>
           <input
             id="password"
+            name="password"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-steel-blue focus:border-steel-blue"
+            className="w-full px-3 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-steel-blue focus:border-steel-blue"
             required
+            autoComplete="current-password"
+            aria-label="Password"
+            minLength={6}
           />
         </div>
         
@@ -89,22 +102,14 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
           type="submit"
           disabled={loading}
           className={`
-            w-full bg-steel-blue hover:bg-accent text-white font-medium py-2 px-4 rounded
+            w-full h-12 bg-steel-blue hover:bg-accent text-white font-medium py-3 px-4 rounded
             transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-steel-blue
             ${loading ? 'opacity-70 cursor-not-allowed' : ''}
+            text-base sm:text-lg
           `}
+          aria-label={loading ? 'Signing in...' : 'Sign In'}
         >
-          {loading ? (
-            <span className="flex items-center justify-center">
-              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              Loading...
-            </span>
-          ) : (
-            t('admin.signIn', 'Sign In')
-          )}
+          {loading ? 'Signing in...' : 'Sign In'}
         </button>
       </form>
     </div>

@@ -1,14 +1,15 @@
 import { GetStaticProps } from 'next';
 import Layout from '@/components/layout/Layout';
-import Bookshelf from '@/components/books/Bookshelf';
+import BookGrid from '@/components/books/BookGrid';
 import { getBooks, getBookStats } from '@/lib/books';
 import { Book } from '@/types/book';
 import { useTranslation } from '@/lib/translations';
+import { useEffect, useState } from 'react';
 
 // Props type definition
 type BooksPageProps = {
   initialBooks: Book[];
-  stats: {
+  initialStats: {
     total: number;
     read: number;
     reading: number;
@@ -16,9 +17,46 @@ type BooksPageProps = {
   };
 };
 
-export default function BooksPage({ initialBooks, stats }: BooksPageProps) {
+export default function BooksPage({ initialBooks, initialStats }: BooksPageProps) {
   const { t } = useTranslation();
+  const [stats, setStats] = useState(initialStats);
   
+  // Refresh stats on client side
+  useEffect(() => {
+    async function refreshStats() {
+      try {
+        const freshStats = await getBookStats();
+        setStats(freshStats);
+      } catch (error) {
+        console.error('Error refreshing book stats:', error);
+      }
+    }
+    
+    refreshStats();
+  }, []);
+  
+  // Add script tag for Firebase check
+  useEffect(() => {
+    // Only run on client
+    if (typeof window !== 'undefined') {
+      // Add script to head
+      const script = document.createElement('script');
+      script.src = '/firebase-check.js';
+      script.async = true;
+      document.head.appendChild(script);
+      
+      // Clean up
+      return () => {
+        if (script.parentNode) {
+          script.parentNode.removeChild(script);
+        }
+      };
+    }
+    
+    // Return empty cleanup function for server-side rendering
+    return () => {}; 
+  }, []);
+
   return (
     <Layout section="books">
       <h1 className="text-3xl md:text-4xl font-bold text-accent mb-3">
@@ -48,14 +86,13 @@ export default function BooksPage({ initialBooks, stats }: BooksPageProps) {
       {/* Introduction */}
       <div className="bg-white rounded-lg shadow p-6 mb-8">
         <p className="text-steel-blue leading-relaxed">
-          Browse my virtual bookshelf to see what I've been reading. I believe in continuous learning 
+          Browse my book collection to see what I've been reading. I believe in continuous learning 
           and often find inspiration in books related to technology, leadership, and business strategy. 
-          You can filter by reading status or sort by different criteria to explore the collection.
         </p>
       </div>
       
-      {/* Bookshelf component */}
-      <Bookshelf initialBooks={initialBooks} booksPerShelf={16} />
+      {/* BookGrid component - simpler approach than the bookshelf */}
+      <BookGrid initialBooks={initialBooks} />
     </Layout>
   );
 }
@@ -63,17 +100,18 @@ export default function BooksPage({ initialBooks, stats }: BooksPageProps) {
 // Fetch data at build time
 export const getStaticProps: GetStaticProps<BooksPageProps> = async () => {
   try {
-    // Get all books (for initial static generation)
-    const books = await getBooks();
+    // For simplicity and to avoid SSG serialization issues, 
+    // return empty array for initialBooks
+    // The actual books will be loaded client-side
     
     // Get book statistics
     const stats = await getBookStats();
     
     return {
       props: {
-        initialBooks: books,
-        stats,
-      },
+        initialBooks: [], // Empty array to avoid serialization issues
+        initialStats: stats,
+      }
     };
   } catch (error) {
     console.error('Error fetching book data:', error);
@@ -82,15 +120,13 @@ export const getStaticProps: GetStaticProps<BooksPageProps> = async () => {
     return {
       props: {
         initialBooks: [],
-        stats: {
+        initialStats: {
           total: 0,
           read: 0,
           reading: 0,
           toRead: 0,
         },
       },
-      // Retry sooner on error
-      revalidate: 60,
     };
   }
 };

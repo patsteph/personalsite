@@ -21,8 +21,7 @@ export default function BlogPage({ posts }: BlogPageProps) {
         </h1>
         
         <p className="text-xl text-steel-blue mb-8">
-          Thoughts on engineering leadership, technology trends, and team building. 
-          I share lessons learned from both successes and failures throughout my career.
+          Thoughts on engineering leadership, technology, and team building. 
         </p>
         
         <BlogList posts={posts} />
@@ -34,7 +33,7 @@ export default function BlogPage({ posts }: BlogPageProps) {
 // Fetch data at build time
 export const getStaticProps: GetStaticProps<BlogPageProps> = async () => {
   // Get all blog posts
-  const posts = getAllPosts();
+  const posts = await getAllPosts();
   
   return {
     props: {

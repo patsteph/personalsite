@@ -68,8 +68,8 @@ export default function AdminBooksPage() {
     }
   };
   
-  // Handle book deletion
-  const handleDeleteBook = async (id: string) => {
+  // Handle book deletion (commented out for now until UI wires it up)
+  const _handleDeleteBook = async (id: string) => {
     if (!confirm('Are you sure you want to delete this book?')) {
       return;
     }

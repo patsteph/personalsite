@@ -4,6 +4,7 @@ import AboutSection from '@/components/cv/AboutSection';
 import ExperienceSection from '@/components/cv/ExperienceSection';
 import SkillsSection from '@/components/cv/SkillsSection';
 import EducationSection from '@/components/cv/EducationSection';
+import TrainingSection from '@/components/cv/TrainingSection';
 import { getCVData } from '@/lib/cv';
 import { CVData } from '@/types/cv';
 import { useTranslation } from '@/lib/translations';
@@ -28,10 +29,9 @@ export default function CVPage({ cvData }: CVPageProps) {
       
       <SkillsSection skills={cvData.skills} />
       
-      <EducationSection 
-        education={cvData.education} 
-        certifications={cvData.certifications} 
-      />
+      <TrainingSection certifications={cvData.Training || []} />
+      
+      <EducationSection education={cvData.education} />
       
       {/* Publications section if available */}
       {cvData.publications && cvData.publications.length > 0 && (
