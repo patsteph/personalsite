@@ -562,6 +562,9 @@
                 <button type="button" data-format="list" style="padding: 5px 10px; background-color: white; border: 1px solid var(--border-color); border-radius: 4px; min-width: 36px;" title="List">List</button>
               </div>
               <textarea id="postContent" style="border-radius: 0 0 4px 4px; min-height: 300px;" placeholder="Write your post content..."></textarea>
+        <div id="wordCounter" style="text-align: right; margin-top: 5px; color: #6b7280; font-size: 14px;">
+          Words: 0 | Characters: 0
+        </div>
             </div>
             
             <div class="form-group" style="border: 1px solid var(--border-color); border-radius: 4px; padding: 15px; background-color: #f8fafc; margin-bottom: 20px;">
@@ -1988,6 +1991,98 @@
     
     // Start the initialization process
     loadSecureConfig();
-  </script>
+  
+// Fix blog tab switching
+document.addEventListener('DOMContentLoaded', function() {
+  // Get all blog tabs
+  const blogTabs = document.querySelectorAll('[data-blog-tab]');
+  
+  // Add event listeners to each blog tab
+  blogTabs.forEach(tab => {
+    tab.addEventListener('click', function() {
+      // Remove active class from all tabs
+      blogTabs.forEach(t => t.classList.remove('active'));
+      
+      // Add active class to the clicked tab
+      this.classList.add('active');
+      
+      // Get the target tab content
+      const targetTabId = this.getAttribute('data-blog-tab') + 'Tab';
+      const targetTabContent = document.getElementById(targetTabId);
+      
+      // Hide all tab content
+      document.querySelectorAll('.blog-tab-content').forEach(content => {
+        content.style.display = 'none';
+      });
+      
+      // Show the target tab content
+      if (targetTabContent) {
+        targetTabContent.style.display = 'block';
+      }
+    });
+  });
+  
+  // Initialize word counter
+  const postContent = document.getElementById('postContent');
+  const wordCounter = document.getElementById('wordCounter');
+  
+  if (postContent && wordCounter) {
+    postContent.addEventListener('input', function() {
+      const text = this.value;
+      const wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
+      const charCount = text.length;
+      
+      wordCounter.textContent = `Words: ${wordCount} | Characters: ${charCount}`;
+    });
+  }
+  
+  // Initialize preview button
+  const previewBtn = document.getElementById('previewPostBtn');
+  const previewModal = document.getElementById('previewModal');
+  const closePreviewBtn = document.getElementById('closePreviewBtn');
+  
+  if (previewBtn && previewModal) {
+    previewBtn.addEventListener('click', function() {
+      const postTitle = document.getElementById('postTitle').value || 'Untitled Post';
+      const postCategory = document.getElementById('postCategory').options[document.getElementById('postCategory').selectedIndex].text;
+      const content = document.getElementById('postContent').value || 'No content';
+      
+      // Set preview content
+      document.getElementById('previewTitle').textContent = postTitle;
+      document.getElementById('previewCategory').textContent = postCategory;
+      document.getElementById('previewDate').textContent = new Date().toLocaleDateString();
+      
+      // Convert markdown to HTML (simplified)
+      let htmlContent = content
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.+?)\*/g, '<em>$1</em>')
+        .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2">$1</a>')
+        .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+        .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+        .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+        .replace(/^\* (.+)$/gm, '<ul><li>$1</li></ul>')
+        .replace(/^\d+\. (.+)$/gm, '<ol><li>$1</li></ol>')
+        .split('\n').join('<br>');
+      
+      document.getElementById('previewBody').innerHTML = htmlContent;
+      
+      // Show the modal
+      previewModal.style.display = 'flex';
+    });
+    
+    // Close preview modal
+    closePreviewBtn.addEventListener('click', function() {
+      previewModal.style.display = 'none';
+    });
+    
+    // Close modal when clicking outside
+    previewModal.addEventListener('click', function(e) {
+      if (e.target === previewModal) {
+        previewModal.style.display = 'none';
+      }
+    });
+  }
+});
+</script>
 </body>
 </html>

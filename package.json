@@ -14,6 +14,7 @@
     "generate-runtime-config": "node scripts/generate-runtime-config.js",
     "generate-standard-config": "node scripts/generate-standard-config.js",
     "generate-secure-config": "node scripts/generate-secure-config.js",
+    "fix-blog-admin": "node scripts/blog-fixes/update-blog-admin.js",
     "deploy:vercel": "vercel",
     "deploy:vercel:prod": "vercel --prod",
     "deploy:netlify": "netlify deploy"
