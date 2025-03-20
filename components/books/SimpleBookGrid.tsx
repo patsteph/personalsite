@@ -15,23 +15,28 @@ export default function SimpleBookGrid({ initialBooks }: SimpleBookGridProps) {
     // Load books from API
     async function loadBooks() {
       try {
+        console.log('Fetching books from API...');
         const response = await fetch('/api/public-books');
         if (!response.ok) {
           throw new Error(`API returned status ${response.status}`);
         }
         
         const data = await response.json();
+        console.log('API response:', data);
+        
         if (data.success && Array.isArray(data.data)) {
           // Process books to ensure they have all required properties
-          const safeBooks = data.data.map((book: any) => ({
-            ...book,
-            // Ensure these properties exist with safe defaults
-            id: book.id || `temp-${Math.random().toString(36).substr(2, 9)}`,
-            title: book.title || 'Untitled Book',
-            authors: Array.isArray(book.authors) ? book.authors : ['Unknown Author'],
-            status: book.status || 'read',
-            dateAdded: book.dateAdded || new Date().toISOString()
-          }));
+          const safeBooks = data.data
+            .filter((book: any) => book) // Filter out null/undefined books
+            .map((book: any) => ({
+              ...book,
+              // Ensure these properties exist with safe defaults
+              id: book.id || `temp-${Math.random().toString(36).substr(2, 9)}`,
+              title: book.title || 'Untitled Book',
+              authors: Array.isArray(book.authors) ? book.authors : ['Unknown Author'],
+              status: book.status || 'read',
+              dateAdded: book.dateAdded || new Date().toISOString()
+            }));
           
           setBooks(safeBooks);
           console.log(`Loaded ${safeBooks.length} books from API`);
@@ -53,6 +58,12 @@ export default function SimpleBookGrid({ initialBooks }: SimpleBookGridProps) {
 
   // Simple book card component
   const BookCard = ({ book }: { book: Book }) => {
+    // Safety check for book object
+    if (!book) {
+      console.error('Received undefined book in BookCard');
+      return null;
+    }
+    
     // Safe author text handling
     const authorText = Array.isArray(book.authors) ? 
       book.authors.join(', ') : 
@@ -137,6 +148,12 @@ export default function SimpleBookGrid({ initialBooks }: SimpleBookGridProps) {
   
   // Book details modal
   const BookDetailsModal = ({ book, onClose }: { book: Book, onClose: () => void }) => {
+    // Safety check for book object
+    if (!book) {
+      console.error('Received undefined book in BookDetailsModal');
+      return null;
+    }
+    
     // Safe handling of all properties
     const authorText = Array.isArray(book.authors) ? 
       book.authors.join(', ') : 
@@ -275,8 +292,8 @@ export default function SimpleBookGrid({ initialBooks }: SimpleBookGridProps) {
   // Filter controls
   const [filter, setFilter] = useState('all');
   const filteredBooks = filter === 'all' 
-    ? books 
-    : books.filter(book => book.status === filter);
+    ? books.filter(book => book) // Filter out null/undefined books 
+    : books.filter(book => book && book.status === filter);
   
   return (
     <div>
@@ -325,9 +342,9 @@ export default function SimpleBookGrid({ initialBooks }: SimpleBookGridProps) {
         <>
           {filteredBooks.length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
-              {filteredBooks.map(book => (
-                <BookCard key={book.id} book={book} />
-              ))}
+              {filteredBooks.map(book => 
+                book ? <BookCard key={book.id || `book-${Math.random()}`} book={book} /> : null
+              )}
             </div>
           ) : (
             <div className="text-center py-12 bg-white rounded-lg shadow">
