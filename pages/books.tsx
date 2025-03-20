@@ -1,10 +1,12 @@
 import { GetStaticProps } from 'next';
 import Layout from '@/components/layout/Layout';
 import BookGrid from '@/components/books/BookGrid';
+import DirectBookGrid from '@/components/books/DirectBookGrid';
 import { getBooks, getBookStats } from '@/lib/books';
 import { Book } from '@/types/book';
 import { useTranslation } from '@/lib/translations';
 import { useEffect, useState } from 'react';
+import Script from 'next/script';
 
 // Props type definition
 type BooksPageProps = {
@@ -59,6 +61,44 @@ export default function BooksPage({ initialBooks, initialStats }: BooksPageProps
 
   return (
     <Layout section="books">
+      {/* Inline configuration backup script */}
+      <Script id="config-backup" strategy="beforeInteractive">
+        {`
+          // Ensure runtimeConfig exists
+          if (typeof window !== 'undefined' && !window.runtimeConfig) {
+            console.log('Creating fallback runtimeConfig');
+            window.runtimeConfig = {
+              firebase: {
+                projectId: "personalsite-19189",
+                apiKey: "AIzaSyD4a8iaxHP9xPGV5tR5LwvzDVa5Y9o5wGQ",
+                authDomain: "personalsite-19189.firebaseapp.com",
+                storageBucket: "personalsite-19189.appspot.com",
+                messagingSenderId: "892517360036",
+                appId: "1:892517360036:web:36dda234d9f3f79562e131"
+              },
+              isProduction: true,
+              basePath: ""
+            };
+          }
+          
+          // Ensure SECURE_CONFIG exists
+          if (typeof window !== 'undefined' && !window.SECURE_CONFIG) {
+            console.log('Creating fallback SECURE_CONFIG');
+            window.SECURE_CONFIG = {
+              firebase: {
+                projectId: "personalsite-19189",
+                apiKey: "AIzaSyD4a8iaxHP9xPGV5tR5LwvzDVa5Y9o5wGQ",
+                authDomain: "personalsite-19189.firebaseapp.com",
+                storageBucket: "personalsite-19189.appspot.com",
+                messagingSenderId: "892517360036",
+                appId: "1:892517360036:web:36dda234d9f3f79562e131"
+              },
+              basePath: ""
+            };
+          }
+        `}
+      </Script>
+      
       <h1 className="text-3xl md:text-4xl font-bold text-accent mb-3">
         {t('books.title', 'My Book Collection')}
       </h1>
@@ -91,8 +131,8 @@ export default function BooksPage({ initialBooks, initialStats }: BooksPageProps
         </p>
       </div>
       
-      {/* BookGrid component - simpler approach than the bookshelf */}
-      <BookGrid initialBooks={initialBooks} />
+      {/* Use DirectBookGrid as a more reliable fallback */}
+      <DirectBookGrid initialBooks={initialBooks} />
     </Layout>
   );
 }

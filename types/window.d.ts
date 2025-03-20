@@ -35,4 +35,8 @@ interface Window {
   __RUNTIME_CONFIG__?: RuntimeConfig;
   SECURE_CONFIG?: SecureConfig;
   firebase?: any; // Added for firebase global object
+  // These fields are added for direct Firebase access 
+  firebaseApp?: any;
+  firebaseAuth?: any;
+  firebaseFirestore?: any;
 }
