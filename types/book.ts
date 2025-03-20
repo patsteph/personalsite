@@ -1,23 +1,45 @@
-export type Book = {
+// types/book.ts
+export type BookStatus = 'read' | 'reading' | 'toRead';
+
+export type BookFilter = 'all' | BookStatus;
+
+export type BookSortOption = 'title' | 'author' | 'genre' | 'rating';
+
+export interface Book {
   id: string;
+  isbn: string;
   title: string;
   authors: string[];
   publisher?: string;
   publishedDate?: string;
   description?: string;
-  categories?: string[];
   pageCount?: number;
-  averageRating?: number;
-  ratingsCount?: number;
+  categories?: string[];
   imageLinks?: {
     thumbnail?: string;
     smallThumbnail?: string;
   };
-  status: 'read' | 'reading' | 'toRead';
+  averageRating?: number;
+  ratingsCount?: number;
+  status: BookStatus;
   notes?: string;
+  userRating?: number; // 1-5 stars
   dateAdded: string;
-  isbn: string;
 }
 
-export type BookFilter = 'all' | 'read' | 'reading' | 'toRead';
-export type BookSortOption = 'title' | 'author' | 'genre' | 'rating';
+export interface BookSearchResult {
+  title: string;
+  authors: string[];
+  publisher?: string;
+  publishedDate?: string;
+  description?: string;
+  pageCount?: number;
+  categories?: string[];
+  imageLinks?: {
+    thumbnail?: string;
+    smallThumbnail?: string;
+  };
+  averageRating?: number;
+  ratingsCount?: number;
+  isbn: string;
+}
