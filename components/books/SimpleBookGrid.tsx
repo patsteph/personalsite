@@ -5,31 +5,7 @@ import Image from 'next/image';
 import { initializeApp, getApps } from 'firebase/app';
 import { getFirestore, collection, getDocs } from 'firebase/firestore';
 
-// Type augmentation for window global
-declare global {
-  interface Window {
-    runtimeConfig?: {
-      firebase?: {
-        apiKey: string;
-        authDomain: string;
-        projectId: string;
-        storageBucket: string;
-        messagingSenderId: string;
-        appId: string;
-      };
-    };
-    SECURE_CONFIG?: {
-      firebase?: {
-        apiKey: string;
-        authDomain: string;
-        projectId: string;
-        storageBucket: string;
-        messagingSenderId: string;
-        appId: string;
-      };
-    };
-  }
-}
+// No need to re-declare Window types - they're already defined in /types/window.d.ts
 
 type SimpleBookGridProps = {
   initialBooks: Book[];
