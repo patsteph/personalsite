@@ -1,5 +1,5 @@
 import { Book } from '@/types/book';
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 import Image from 'next/image';
 
 type BookSpineProps = {
@@ -8,6 +8,18 @@ type BookSpineProps = {
 };
 
 export default function BookSpine({ book, onClick }: BookSpineProps) {
+  // Debug log for each book
+  useEffect(() => {
+    console.log('BookSpine rendering book:', {
+      id: book.id,
+      title: book.title,
+      hasAuthors: Boolean(book.authors),
+      authorsIsArray: Array.isArray(book.authors),
+      authorsLength: book.authors?.length,
+      authors: book.authors
+    });
+  }, [book]);
+
   const hasCover = book.imageLinks && (book.imageLinks.thumbnail || book.imageLinks.smallThumbnail);
   
   // Generate a color based on the book's genre or first letter of title
