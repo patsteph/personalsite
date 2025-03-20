@@ -63,6 +63,14 @@ export default function BookSpine({ book, onClick }: BookSpineProps) {
     return Math.max(minWidth, Math.min(maxWidth, book.pageCount / 30));
   }, [book.pageCount]);
 
+  // Get authors as a formatted string with fallback
+  const authorText = useMemo(() => {
+    if (!book.authors || !Array.isArray(book.authors) || book.authors.length === 0) {
+      return 'Unknown Author';
+    }
+    return book.authors.join(', ');
+  }, [book.authors]);
+
   // Determine if we should show book as cover or spine
   const showAsCover = true; // Always show as cover for now
   
@@ -78,7 +86,7 @@ export default function BookSpine({ book, onClick }: BookSpineProps) {
         onMouseOut={(e) => {
           e.currentTarget.style.transform = 'translateY(0)';
         }}
-        title={`${book.title} by ${book.authors.join(', ')}`}
+        title={`${book.title} by ${authorText}`}
       >
         {/* Book cover */}
         <div className="relative w-full h-32 bg-gray-200 flex items-center justify-center overflow-hidden">
@@ -115,7 +123,7 @@ export default function BookSpine({ book, onClick }: BookSpineProps) {
         <div className="w-full p-1 bg-white text-center">
           <h4 className="text-xs font-medium text-gray-800 truncate">{book.title}</h4>
           <p className="text-[10px] text-gray-600 truncate">
-            {book.authors && book.authors.length > 0 ? book.authors[0] : 'Unknown Author'}
+            {authorText}
           </p>
         </div>
       </div>
@@ -145,7 +153,7 @@ export default function BookSpine({ book, onClick }: BookSpineProps) {
         onMouseOut={(e) => {
           e.currentTarget.style.transform = 'translateY(0)';
         }}
-        title={`${book.title} by ${book.authors.join(', ')}`}
+        title={`${book.title} by ${authorText}`}
       >
         {!hasCover && (
           <div className="overflow-hidden p-1 text-center whitespace-nowrap text-ellipsis max-h-36">
