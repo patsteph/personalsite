@@ -63,7 +63,6 @@ export default function SimpleBookGrid({ initialBooks }: SimpleBookGridProps) {
     // Default cover handling
     const coverImage = book.imageLinks?.thumbnail || 
                        book.imageLinks?.smallThumbnail || 
-                       book.coverImage || 
                        'https://placehold.co/200x300/e0e0e0/808080?text=No+Cover';
     
     // Status badge color
@@ -147,7 +146,6 @@ export default function SimpleBookGrid({ initialBooks }: SimpleBookGridProps) {
     
     const coverImage = book.imageLinks?.thumbnail || 
                        book.imageLinks?.smallThumbnail || 
-                       book.coverImage || 
                        'https://placehold.co/200x300/e0e0e0/808080?text=No+Cover';
                        
     const categories = Array.isArray(book.categories) ? 
