@@ -94,10 +94,28 @@ const configPath = path.join(publicDir, 'runtime-config.js');
 fs.writeFileSync(configPath, configContent);
 console.log(`Runtime config written to ${configPath}`);
 
+// Add config to the personalsite directory (needed for Vercel deployment)
+const personalSiteDir = path.join(publicDir, 'personalsite');
+if (!fs.existsSync(personalSiteDir)) {
+  fs.mkdirSync(personalSiteDir, { recursive: true });
+}
+const personalSiteConfigPath = path.join(personalSiteDir, 'runtime-config.js');
+fs.writeFileSync(personalSiteConfigPath, configContent);
+console.log(`Runtime config copied to ${personalSiteConfigPath}`);
+
 // Check if 'out' directory exists (for static export), and copy the config there as well
 const outDir = path.join(process.cwd(), 'out');
 if (fs.existsSync(outDir)) {
   const outConfigPath = path.join(outDir, 'runtime-config.js');
   fs.copyFileSync(configPath, outConfigPath);
   console.log(`Runtime config copied to ${outConfigPath}`);
+  
+  // Also add to out/personalsite directory
+  const outPersonalSiteDir = path.join(outDir, 'personalsite');
+  if (!fs.existsSync(outPersonalSiteDir)) {
+    fs.mkdirSync(outPersonalSiteDir, { recursive: true });
+  }
+  const outPersonalSiteConfigPath = path.join(outPersonalSiteDir, 'runtime-config.js');
+  fs.writeFileSync(outPersonalSiteConfigPath, configContent);
+  console.log(`Runtime config copied to ${outPersonalSiteConfigPath}`);
 }

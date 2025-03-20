@@ -140,13 +140,21 @@ export default function Bookshelf({ initialBooks, booksPerShelf = 16 }: Bookshel
                 className="min-h-[11rem] bg-amber-900 rounded relative flex flex-wrap items-end justify-center px-2 py-2 shadow-lg after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-full after:h-2 after:-mb-2 after:bg-amber-950 after:rounded-b"
               >
                 {/* Books on this shelf */}
-                {shelfBooks.map(book => (
-                  <BookSpine
-                    key={book.id}
-                    book={book}
-                    onClick={() => setSelectedBook(book)}
-                  />
-                ))}
+                {shelfBooks.map(book => {
+                  // Ensure book has an authors array before rendering
+                  const safeBook = {
+                    ...book,
+                    authors: Array.isArray(book.authors) ? book.authors : ['Unknown Author']
+                  };
+                  
+                  return (
+                    <BookSpine
+                      key={book.id}
+                      book={safeBook}
+                      onClick={() => setSelectedBook(safeBook)}
+                    />
+                  );
+                })}
               </div>
             );
           })}

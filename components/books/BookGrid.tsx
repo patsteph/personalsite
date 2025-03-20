@@ -133,13 +133,21 @@ export default function BookGrid({ initialBooks }: BookGridProps) {
         <>
           {/* Book Grid */}
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-            {filteredAndSortedBooks.map(book => (
-              <BookSpine
-                key={book.id}
-                book={book}
-                onClick={() => setSelectedBook(book)}
-              />
-            ))}
+            {filteredAndSortedBooks.map(book => {
+              // Ensure book has an authors array before rendering
+              const safeBook = {
+                ...book,
+                authors: Array.isArray(book.authors) ? book.authors : ['Unknown Author']
+              };
+              
+              return (
+                <BookSpine
+                  key={book.id}
+                  book={safeBook}
+                  onClick={() => setSelectedBook(safeBook)}
+                />
+              );
+            })}
           </div>
           
           {/* Selected book details */}

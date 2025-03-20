@@ -74,7 +74,7 @@ export default function BookDetails({ book, onClose }: BookDetailsProps) {
           </div>
           
           <p className="text-lg mb-2">
-            {t('books.by', 'by')} {book.authors && book.authors.length > 0 ? book.authors.join(', ') : 'Unknown Author'}
+            {t('books.by', 'by')} {Array.isArray(book.authors) && book.authors.length > 0 ? book.authors.join(', ') : 'Unknown Author'}
           </p>
           
           {book.categories && (
