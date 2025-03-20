@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Book, BookStatus } from '@/types/book';
 import Image from 'next/image';
 // Import Firebase modules directly at the top level
@@ -336,13 +336,25 @@ export default function SimpleBookGrid({ initialBooks }: SimpleBookGridProps) {
     
     return (
       <div 
-        className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+        className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 animate-fadeIn"
         onClick={onClose}
+        style={{ backdropFilter: 'blur(5px)' }}
       >
         <div 
-          className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+          className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto transform animate-scaleIn"
           onClick={e => e.stopPropagation()}
         >
+          {/* Close button - positioned absolute in top-right */}
+          <button 
+            onClick={onClose}
+            className="absolute top-3 right-3 bg-gray-200 hover:bg-gray-300 rounded-full p-2 text-gray-700 transition-colors z-10"
+            aria-label="Close modal"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+          
           <div className="flex flex-col md:flex-row">
             {/* Book cover */}
             <div className="md:w-1/3 p-6 flex justify-center">
@@ -355,17 +367,9 @@ export default function SimpleBookGrid({ initialBooks }: SimpleBookGridProps) {
             </div>
             
             {/* Book details */}
-            <div className="md:w-2/3 p-6">
+            <div className="md:w-2/3 p-6 pt-10 md:pt-6"> {/* Add padding-top on mobile for close button */}
               <div className="flex justify-between items-start">
                 <h2 className="text-2xl font-bold text-gray-900">{book.title}</h2>
-                <button 
-                  onClick={onClose}
-                  className="text-gray-500 hover:text-gray-700"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
               </div>
               
               <div className="text-lg text-gray-700 mb-4">by {authorText}</div>
@@ -453,7 +457,8 @@ export default function SimpleBookGrid({ initialBooks }: SimpleBookGridProps) {
   };
   
   // Filter controls
-  const [filter, setFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [genreFilter, setGenreFilter] = useState('all');
   
   // Extra safety checks for filtering books
   const safeBooksArray = Array.isArray(books) ? books : [];
@@ -478,46 +483,99 @@ export default function SimpleBookGrid({ initialBooks }: SimpleBookGridProps) {
     return true;
   });
   
-  const filteredBooks = filter === 'all' 
-    ? validBooks 
-    : validBooks.filter(book => book.status === filter);
+  // Extract all unique genres from books
+  const genres = useMemo(() => {
+    const genreSet = new Set<string>();
+    genreSet.add('all'); // Always include "all" option
+    
+    validBooks.forEach(book => {
+      if (book.categories && Array.isArray(book.categories)) {
+        book.categories.forEach(category => {
+          if (typeof category === 'string' && category.trim()) {
+            genreSet.add(category.trim());
+          }
+        });
+      }
+    });
+    
+    return Array.from(genreSet).sort();
+  }, [validBooks]);
+  
+  // Apply filters (both status and genre)
+  const filteredBooks = validBooks.filter(book => {
+    // Apply status filter
+    const statusMatch = statusFilter === 'all' || book.status === statusFilter;
+    
+    // Apply genre filter
+    const genreMatch = genreFilter === 'all' || 
+      (Array.isArray(book.categories) && book.categories.some(
+        category => category === genreFilter
+      ));
+    
+    // Book must match both filters
+    return statusMatch && genreMatch;
+  });
   
   return (
     <div>
-      {/* Filter controls */}
-      <div className="mb-6 flex flex-wrap gap-2">
-        <button 
-          onClick={() => setFilter('all')}
-          className={`px-4 py-2 rounded-lg text-sm font-medium ${
-            filter === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-          }`}
-        >
-          All Books
-        </button>
-        <button 
-          onClick={() => setFilter('read')}
-          className={`px-4 py-2 rounded-lg text-sm font-medium ${
-            filter === 'read' ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-          }`}
-        >
-          Read
-        </button>
-        <button 
-          onClick={() => setFilter('reading')}
-          className={`px-4 py-2 rounded-lg text-sm font-medium ${
-            filter === 'reading' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-          }`}
-        >
-          Currently Reading
-        </button>
-        <button 
-          onClick={() => setFilter('toRead')}
-          className={`px-4 py-2 rounded-lg text-sm font-medium ${
-            filter === 'toRead' ? 'bg-yellow-600 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-          }`}
-        >
-          Want to Read
-        </button>
+      {/* Filter controls - now with two rows: Status and Genre */}
+      <div className="mb-8 space-y-4">
+        {/* Status filter */}
+        <div>
+          <h3 className="text-sm text-gray-600 font-semibold mb-2">Reading Status</h3>
+          <div className="flex flex-wrap gap-2">
+            <button 
+              onClick={() => setStatusFilter('all')}
+              className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                statusFilter === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+              }`}
+            >
+              All Books
+            </button>
+            <button 
+              onClick={() => setStatusFilter('read')}
+              className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                statusFilter === 'read' ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+              }`}
+            >
+              Read
+            </button>
+            <button 
+              onClick={() => setStatusFilter('reading')}
+              className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                statusFilter === 'reading' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+              }`}
+            >
+              Currently Reading
+            </button>
+            <button 
+              onClick={() => setStatusFilter('toRead')}
+              className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                statusFilter === 'toRead' ? 'bg-yellow-600 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+              }`}
+            >
+              Want to Read
+            </button>
+          </div>
+        </div>
+        
+        {/* Genre filter */}
+        <div>
+          <h3 className="text-sm text-gray-600 font-semibold mb-2">Genre</h3>
+          <div className="flex flex-wrap gap-2">
+            {genres.map(genre => (
+              <button 
+                key={genre}
+                onClick={() => setGenreFilter(genre)}
+                className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                  genreFilter === genre ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                }`}
+              >
+                {genre === 'all' ? 'All Genres' : genre}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
       
       {loading ? (
@@ -538,17 +596,29 @@ export default function SimpleBookGrid({ initialBooks }: SimpleBookGridProps) {
             <div className="text-center py-12 bg-white rounded-lg shadow">
               <p className="text-xl text-gray-700">No books found.</p>
               <p className="mt-2 text-gray-600">
-                {filter === 'all' 
+                {statusFilter === 'all' && genreFilter === 'all'
                   ? 'Firebase connection may have failed. Please check your network connection and try again.'
-                  : `You don't have any books with "${filter}" status.`}
+                  : `No books match your current filters. Try adjusting your selections.`}
               </p>
               <div className="mt-4">
-                <button 
-                  onClick={() => window.location.reload()}
-                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-                >
-                  Reload Page
-                </button>
+                {statusFilter === 'all' && genreFilter === 'all' ? (
+                  <button 
+                    onClick={() => window.location.reload()}
+                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                  >
+                    Reload Page
+                  </button>
+                ) : (
+                  <button 
+                    onClick={() => {
+                      setStatusFilter('all');
+                      setGenreFilter('all');
+                    }}
+                    className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors"
+                  >
+                    Reset Filters
+                  </button>
+                )}
               </div>
             </div>
           )}
