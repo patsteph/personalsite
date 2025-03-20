@@ -17,8 +17,31 @@
     "paths": {
       "@/*": ["./*"]
     },
-    "incremental": true
+    "incremental": true,
+    
+    /* Enhanced type checking */
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "strictPropertyInitialization": true,
+    "noImplicitThis": true,
+    "alwaysStrict": true,
+    
+    /* Additional checks */
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    
+    /* Module resolution */
+    "allowSyntheticDefaultImports": true
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"],
-  "exclude": ["node_modules"]
+  "include": [
+    "next-env.d.ts", 
+    "**/*.ts", 
+    "**/*.tsx",
+    "types/**/*.d.ts"
+  ],
+  "exclude": ["node_modules", ".next", "out", "archived", "to_archive", "to_archive/**/*"]
 }
