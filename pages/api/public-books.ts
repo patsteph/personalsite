@@ -56,16 +56,27 @@ export default async function handler(
       snapshot.forEach(doc => {
         const data = doc.data();
         
-        // Add extra safety for arrays
+        // Create a sanitized book object with proper fallbacks for all fields
         books.push({
           id: doc.id,
-          ...data,
-          // Ensure authors is always an array
+          title: data.title || 'Untitled Book',
+          status: data.status || 'read',
+          dateAdded: data.dateAdded || new Date().toISOString(),
+          // Add fallbacks for all other properties to prevent undefined errors
           authors: Array.isArray(data.authors) ? data.authors : ['Unknown Author'],
-          // Ensure categories is always an array if it exists
-          categories: data.categories ? 
-            (Array.isArray(data.categories) ? data.categories : []) : 
-            undefined
+          categories: Array.isArray(data.categories) ? data.categories : [],
+          userRating: typeof data.userRating === 'number' ? data.userRating : undefined,
+          averageRating: typeof data.averageRating === 'number' ? data.averageRating : undefined,
+          description: data.description || '',
+          isbn: data.isbn || '',
+          publisher: data.publisher || '',
+          publishedDate: data.publishedDate || '',
+          pageCount: typeof data.pageCount === 'number' ? data.pageCount : undefined,
+          notes: data.notes || '',
+          // Handle nested imageLinks object safely
+          imageLinks: data.imageLinks || {},
+          // Support direct coverImage property if present
+          coverImage: data.coverImage || undefined
         });
       });
       

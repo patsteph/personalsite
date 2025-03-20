@@ -1,7 +1,6 @@
 import { GetStaticProps } from 'next';
 import Layout from '@/components/layout/Layout';
-import BookGrid from '@/components/books/BookGrid';
-import DirectBookGrid from '@/components/books/DirectBookGrid';
+import SimpleBookGrid from '@/components/books/SimpleBookGrid';
 import { getBooks, getBookStats } from '@/lib/books';
 import { Book } from '@/types/book';
 import { useTranslation } from '@/lib/translations';
@@ -92,8 +91,8 @@ export default function BooksPage({ initialBooks, initialStats }: BooksPageProps
         </p>
       </div>
       
-      {/* Use DirectBookGrid as a more reliable fallback */}
-      <DirectBookGrid initialBooks={initialBooks} />
+      {/* Use SimpleBookGrid for a more reliable and modern book display */}
+      <SimpleBookGrid initialBooks={initialBooks} />
     </Layout>
   );
 }
