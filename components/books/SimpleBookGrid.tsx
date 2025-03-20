@@ -27,38 +27,72 @@ export default function SimpleBookGrid({ initialBooks }: SimpleBookGridProps) {
             // Get books directly from Firestore
             const firebaseBooks = await getBooks();
             
+            // Add debugging to see what we're getting
+            console.log(`Raw Firebase books:`, firebaseBooks);
+            
             if (Array.isArray(firebaseBooks) && firebaseBooks.length > 0) {
               console.log(`Loaded ${firebaseBooks.length} books directly from Firebase client SDK`);
               
               // Apply all our safety checks to the fetched books
               const fullyValidatedBooks = firebaseBooks.map(book => {
-                // Return book with additional protection
-                if (book.authors === undefined || book.authors === null) {
-                  return { ...book, authors: ['Unknown Author'] };
+                // Deep clone to avoid mutation issues
+                const safeBook = {...book};
+                
+                console.log(`Processing book: ${safeBook.id}, title: ${safeBook.title}`);
+                
+                // Ensure required fields are present
+                if (!safeBook.id) {
+                  safeBook.id = `temp-${Math.random().toString(36).substr(2, 9)}`;
                 }
                 
-                // If authors is a string, convert to array
-                if (typeof book.authors === 'string') {
-                  return { ...book, authors: [book.authors] };
+                if (!safeBook.title) {
+                  safeBook.title = 'Untitled Book';
                 }
                 
-                // If authors is not an array, fix it
-                if (!Array.isArray(book.authors)) {
-                  return { ...book, authors: ['Unknown Author'] };
+                if (!safeBook.status || !['read', 'reading', 'toRead'].includes(safeBook.status)) {
+                  console.log(`Setting default status for book: ${safeBook.title}`);
+                  safeBook.status = 'read';
                 }
                 
-                // If the array contains non-string values, filter them out
-                if (book.authors.some(author => typeof author !== 'string')) {
-                  const validAuthors = book.authors.filter(author => 
+                if (!safeBook.dateAdded) {
+                  safeBook.dateAdded = new Date().toISOString();
+                }
+                
+                // Special handling for author(s)
+                if (safeBook.author && !safeBook.authors) {
+                  // Convert single author field to authors array
+                  safeBook.authors = [safeBook.author];
+                  console.log(`Converted author to authors array for book: ${safeBook.id}`);
+                }
+                
+                // Return book with additional protection for authors field
+                if (safeBook.authors === undefined || safeBook.authors === null) {
+                  console.log(`Adding missing authors for book: ${safeBook.id}`);
+                  safeBook.authors = ['Unknown Author'];
+                } else if (typeof safeBook.authors === 'string') {
+                  console.log(`Converting string author to array for: ${safeBook.title}`);
+                  safeBook.authors = [safeBook.authors];
+                } else if (!Array.isArray(safeBook.authors)) {
+                  console.log(`Fixing invalid authors format for: ${safeBook.title}`);
+                  safeBook.authors = ['Unknown Author'];
+                } else if (safeBook.authors.some(author => typeof author !== 'string')) {
+                  console.log(`Filtering non-string authors for: ${safeBook.title}`);
+                  const validAuthors = safeBook.authors.filter(author => 
                     author !== undefined && author !== null && typeof author === 'string'
                   );
-                  return { ...book, authors: validAuthors.length ? validAuthors : ['Unknown Author'] };
+                  safeBook.authors = validAuthors.length ? validAuthors : ['Unknown Author'];
                 }
                 
-                // Book is already valid
-                return book;
+                // Handle imageLinks or create empty object
+                if (!safeBook.imageLinks) {
+                  safeBook.imageLinks = {};
+                }
+                
+                // Book should now be valid with all required fields
+                return safeBook;
               });
               
+              console.log(`Processed ${fullyValidatedBooks.length} validated books`);
               setBooks(fullyValidatedBooks);
               setLoading(false);
               return; // Exit early - we have our books
