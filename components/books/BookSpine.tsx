@@ -1,5 +1,6 @@
 import { Book } from '@/types/book';
 import { useMemo } from 'react';
+import Image from 'next/image';
 
 type BookSpineProps = {
   book: Book;
@@ -7,6 +8,8 @@ type BookSpineProps = {
 };
 
 export default function BookSpine({ book, onClick }: BookSpineProps) {
+  const hasCover = book.imageLinks && (book.imageLinks.thumbnail || book.imageLinks.smallThumbnail);
+  
   // Generate a color based on the book's genre or first letter of title
   const bookColor = useMemo(() => {
     // Common genres and their colors
@@ -59,29 +62,97 @@ export default function BookSpine({ book, onClick }: BookSpineProps) {
     const maxWidth = 40;
     return Math.max(minWidth, Math.min(maxWidth, book.pageCount / 30));
   }, [book.pageCount]);
+
+  // Determine if we should show book as cover or spine
+  const showAsCover = true; // Always show as cover for now
   
-  return (
-    <div
-      className="h-40 cursor-pointer transition-transform duration-300 flex items-center justify-center text-white text-xs rounded-sm select-none"
-      style={{
-        backgroundColor: bookColor,
-        width: `${spineWidth}px`,
-        marginRight: '3px',
-        writingMode: 'vertical-rl',
-        textOrientation: 'mixed'
-      }}
-      onClick={onClick}
-      onMouseOver={(e) => {
-        e.currentTarget.style.transform = 'translateY(-10px)';
-      }}
-      onMouseOut={(e) => {
-        e.currentTarget.style.transform = 'translateY(0)';
-      }}
-      title={`${book.title} by ${book.authors.join(', ')}`}
-    >
-      <div className="overflow-hidden p-1 text-center whitespace-nowrap text-ellipsis max-h-36">
-        {book.title}
+  if (showAsCover) {
+    // Show as book cover (front facing)
+    return (
+      <div
+        className="h-40 w-28 cursor-pointer transition-transform duration-300 flex flex-col items-center rounded overflow-hidden shadow-md select-none m-1"
+        onClick={onClick}
+        onMouseOver={(e) => {
+          e.currentTarget.style.transform = 'translateY(-10px)';
+        }}
+        onMouseOut={(e) => {
+          e.currentTarget.style.transform = 'translateY(0)';
+        }}
+        title={`${book.title} by ${book.authors.join(', ')}`}
+      >
+        {/* Book cover */}
+        <div className="relative w-full h-32 bg-gray-200 flex items-center justify-center overflow-hidden">
+          {hasCover ? (
+            <div 
+              className="w-full h-full bg-cover bg-center"
+              style={{ 
+                backgroundImage: `url(${book.imageLinks?.thumbnail || book.imageLinks?.smallThumbnail})` 
+              }}
+            >
+              {/* Debug - if image fails to load, show error */}
+              <img 
+                src={book.imageLinks?.thumbnail || book.imageLinks?.smallThumbnail} 
+                alt="" 
+                className="hidden" 
+                onError={(e) => {
+                  console.error('Image failed to load:', book.imageLinks);
+                  if (e.currentTarget.parentElement) {
+                    e.currentTarget.parentElement.innerHTML = `<div class="w-full h-full flex items-center justify-center bg-red-100 p-2"><p class="text-xs text-center font-medium text-red-700">Image Error</p></div>`;
+                  }
+                }}
+              />
+            </div>
+          ) : (
+            <div className="w-full h-full flex items-center justify-center bg-gradient-to-b from-gray-100 to-gray-300 p-2">
+              <p className="text-xs text-center font-medium text-gray-700 line-clamp-3">
+                {book.title}
+              </p>
+            </div>
+          )}
+        </div>
+        
+        {/* Book title and author */}
+        <div className="w-full p-1 bg-white text-center">
+          <h4 className="text-xs font-medium text-gray-800 truncate">{book.title}</h4>
+          <p className="text-[10px] text-gray-600 truncate">
+            {book.authors && book.authors.length > 0 ? book.authors[0] : 'Unknown Author'}
+          </p>
+        </div>
       </div>
-    </div>
-  );
+    );
+  } else {
+    // Show as book spine (original style)
+    const style = {
+      backgroundColor: bookColor,
+      width: `${spineWidth}px`,
+      marginRight: '3px',
+      writingMode: 'vertical-rl' as const,
+      textOrientation: 'mixed' as const,
+      backgroundSize: hasCover ? 'cover' : 'auto',
+      backgroundPosition: 'center',
+      backgroundRepeat: 'no-repeat',
+      ...(hasCover ? { backgroundImage: `url(${book.imageLinks?.thumbnail || book.imageLinks?.smallThumbnail})` } : {})
+    };
+  
+    return (
+      <div
+        className={`h-40 cursor-pointer transition-transform duration-300 flex items-center justify-center text-white text-xs rounded-sm select-none ${hasCover ? 'book-with-cover' : ''}`}
+        style={style}
+        onClick={onClick}
+        onMouseOver={(e) => {
+          e.currentTarget.style.transform = 'translateY(-10px)';
+        }}
+        onMouseOut={(e) => {
+          e.currentTarget.style.transform = 'translateY(0)';
+        }}
+        title={`${book.title} by ${book.authors.join(', ')}`}
+      >
+        {!hasCover && (
+          <div className="overflow-hidden p-1 text-center whitespace-nowrap text-ellipsis max-h-36">
+            {book.title}
+          </div>
+        )}
+      </div>
+    );
+  }
 }

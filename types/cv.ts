@@ -3,7 +3,7 @@ export type CVData = {
     experience: Experience[];
     skills: string[];
     education: Education[];
-    certifications?: Certification[];
+    Training?: Certification[];
     publications?: Publication[];
     languages?: Language[];
   }
@@ -17,10 +17,9 @@ export type CVData = {
   }
   
   export type Education = {
-    degree: string;
-    institution: string;
-    location: string;
-    year: string;
+    school: string;
+    location?: string;
+    year?: string;
   }
   
   export type Certification = {
