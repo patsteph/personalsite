@@ -12,8 +12,11 @@ type BlogCardProps = {
 export default function BlogCard({ post, expanded = false, onToggle }: BlogCardProps) {
   const { t } = useTranslation();
   
-  // Format the date
-  const formattedDate = format(new Date(post.date), 'MMMM d, yyyy');
+  // Format the date - use date if available, otherwise published date or current date
+  const dateToFormat = post.date 
+    ? new Date(post.date) 
+    : (post.publishedAt || new Date());
+  const formattedDate = format(dateToFormat, 'MMMM d, yyyy');
   
   return (
     <article className={`
