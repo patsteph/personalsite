@@ -45,8 +45,48 @@ export default function SimpleBookGrid({ initialBooks }: SimpleBookGridProps) {
               };
             });
           
-          setBooks(safeBooks);
-          console.log(`Loaded ${safeBooks.length} books from API`);
+          // Add additional validation logging before setting books
+          console.log(`Validating ${safeBooks.length} books before setting state`);
+          
+          // Extra safety validation on all books
+          const fullyValidatedBooks = safeBooks.map(book => {
+            // Debug book info for troubleshooting
+            console.log(`Book ID: ${book.id}, Title: ${book.title}, Authors type: ${typeof book.authors}, Is array: ${Array.isArray(book.authors)}`);
+            
+            // Return book with additional protection
+            if (book.authors === undefined || book.authors === null) {
+              // Create empty array if authors is missing
+              console.log(`Fixing missing authors for book: ${book.id}`);
+              return { ...book, authors: ['Unknown Author'] };
+            }
+            
+            // If authors is a string, convert to array
+            if (typeof book.authors === 'string') {
+              console.log(`Converting string author to array for book: ${book.id}`);
+              return { ...book, authors: [book.authors] };
+            }
+            
+            // If authors is not an array (which should never happen at this point), fix it
+            if (!Array.isArray(book.authors)) {
+              console.log(`Fixing invalid authors format for book: ${book.id}`);
+              return { ...book, authors: ['Unknown Author'] };
+            }
+            
+            // If the array contains non-string values, filter them out
+            if (book.authors.some(author => typeof author !== 'string')) {
+              console.log(`Filtering non-string authors for book: ${book.id}`);
+              const validAuthors = book.authors.filter(author => 
+                author !== undefined && author !== null && typeof author === 'string'
+              );
+              return { ...book, authors: validAuthors.length ? validAuthors : ['Unknown Author'] };
+            }
+            
+            // Book is already valid
+            return book;
+          });
+          
+          setBooks(fullyValidatedBooks);
+          console.log(`Loaded ${fullyValidatedBooks.length} books from API`);
         }
       } catch (error) {
         console.error('Error loading books from API:', error);
@@ -71,12 +111,32 @@ export default function SimpleBookGrid({ initialBooks }: SimpleBookGridProps) {
       return null;
     }
     
-    // Extra safe author text handling with comprehensive checks
-    const authorText = book.authors && Array.isArray(book.authors) && book.authors.length > 0 ? 
-      book.authors.join(', ') : 
-      typeof book.authors === 'string' ? 
-        book.authors : 
-        'Unknown Author';
+    // Ultra-safe author text handling with fallbacks at every level
+    let authorText = 'Unknown Author';
+    
+    try {
+      // First, ensure authors exists
+      if (book.authors !== undefined && book.authors !== null) {
+        // Handle string case
+        if (typeof book.authors === 'string') {
+          authorText = book.authors;
+        }
+        // Handle array case with additional safety
+        else if (Array.isArray(book.authors)) {
+          // Additional safety: check if every element is a string
+          const validAuthors = book.authors.filter(author => 
+            author !== undefined && author !== null && typeof author === 'string'
+          );
+          
+          if (validAuthors.length > 0) {
+            authorText = validAuthors.join(', ');
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error formatting author text:', error);
+      // Fallback to unknown author on any error
+    }
     
     // Default cover handling
     const coverImage = book.imageLinks?.thumbnail || 
@@ -161,22 +221,63 @@ export default function SimpleBookGrid({ initialBooks }: SimpleBookGridProps) {
       return null;
     }
     
-    // Extra safe handling of all properties with comprehensive checks
-    const authorText = book.authors && Array.isArray(book.authors) && book.authors.length > 0 ? 
-      book.authors.join(', ') : 
-      typeof book.authors === 'string' ? 
-        book.authors : 
-        'Unknown Author';
+    // Ultra-safe author text handling with fallbacks at every level
+    let authorText = 'Unknown Author';
+    
+    try {
+      // First, ensure authors exists
+      if (book.authors !== undefined && book.authors !== null) {
+        // Handle string case
+        if (typeof book.authors === 'string') {
+          authorText = book.authors;
+        }
+        // Handle array case with additional safety
+        else if (Array.isArray(book.authors)) {
+          // Additional safety: check if every element is a string
+          const validAuthors = book.authors.filter(author => 
+            author !== undefined && author !== null && typeof author === 'string'
+          );
+          
+          if (validAuthors.length > 0) {
+            authorText = validAuthors.join(', ');
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error formatting author text in modal:', error);
+      // Fallback to unknown author on any error
+    }
     
     const coverImage = book.imageLinks?.thumbnail || 
                        book.imageLinks?.smallThumbnail || 
                        'https://placehold.co/200x300/e0e0e0/808080?text=No+Cover';
                        
-    const categories = book.categories && Array.isArray(book.categories) && book.categories.length > 0 ? 
-      book.categories.join(', ') : 
-      typeof book.categories === 'string' ? 
-        book.categories : 
-        '';
+    // Ultra-safe category text handling with fallbacks at every level
+    let categories = '';
+    
+    try {
+      // First, ensure categories exists
+      if (book.categories !== undefined && book.categories !== null) {
+        // Handle string case
+        if (typeof book.categories === 'string') {
+          categories = book.categories;
+        }
+        // Handle array case with additional safety
+        else if (Array.isArray(book.categories)) {
+          // Additional safety: filter out invalid categories
+          const validCategories = book.categories.filter(category => 
+            category !== undefined && category !== null && typeof category === 'string'
+          );
+          
+          if (validCategories.length > 0) {
+            categories = validCategories.join(', ');
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error formatting categories text:', error);
+      // Empty string fallback on any error
+    }
     
     return (
       <div 
@@ -302,9 +403,29 @@ export default function SimpleBookGrid({ initialBooks }: SimpleBookGridProps) {
   // Extra safety checks for filtering books
   const safeBooksArray = Array.isArray(books) ? books : [];
   
+  // Additional safety: thoroughly validate books before filtering
+  const validBooks = safeBooksArray.filter(book => {
+    // Must have a defined book object
+    if (!book) return false;
+    
+    // Must have an authors property that is an array (even if empty)
+    // This is critical since we call .join() on authors
+    if (book.authors === undefined || book.authors === null) return false;
+    
+    // Convert string authors to array if needed
+    if (typeof book.authors === 'string') {
+      book.authors = [book.authors];
+    }
+    
+    // Ensure it's an array at this point (strict check)
+    if (!Array.isArray(book.authors)) return false;
+    
+    return true;
+  });
+  
   const filteredBooks = filter === 'all' 
-    ? safeBooksArray.filter(book => book && Array.isArray(book.authors)) // Ensure book has valid authors array
-    : safeBooksArray.filter(book => book && Array.isArray(book.authors) && book.status === filter);
+    ? validBooks 
+    : validBooks.filter(book => book.status === filter);
   
   return (
     <div>
