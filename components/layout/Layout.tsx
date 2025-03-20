@@ -6,8 +6,8 @@ import Sidebar from './Sidebar';
 import AdminButton from '../ui/AdminButton';
 import { useTranslation, LanguageCode, LANGUAGES } from '@/lib/translations';
 
-// Page section types
-export type PageSection = 'welcome' | 'blog' | 'cv' | 'books' | 'contact' | 'admin';
+// Import page section types
+import { PageSection } from './types';
 
 type LayoutProps = {
   children: ReactNode;
