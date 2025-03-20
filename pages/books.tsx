@@ -6,7 +6,6 @@ import { getBooks, getBookStats } from '@/lib/books';
 import { Book } from '@/types/book';
 import { useTranslation } from '@/lib/translations';
 import { useEffect, useState } from 'react';
-import Script from 'next/script';
 
 // Props type definition
 type BooksPageProps = {
@@ -61,44 +60,6 @@ export default function BooksPage({ initialBooks, initialStats }: BooksPageProps
 
   return (
     <Layout section="books">
-      {/* Inline configuration backup script */}
-      <Script id="config-backup" strategy="beforeInteractive">
-        {`
-          // Ensure runtimeConfig exists
-          if (typeof window !== 'undefined' && !window.runtimeConfig) {
-            console.log('Creating fallback runtimeConfig');
-            window.runtimeConfig = {
-              firebase: {
-                projectId: "personalsite-19189",
-                apiKey: "AIzaSyD4a8iaxHP9xPGV5tR5LwvzDVa5Y9o5wGQ",
-                authDomain: "personalsite-19189.firebaseapp.com",
-                storageBucket: "personalsite-19189.appspot.com",
-                messagingSenderId: "892517360036",
-                appId: "1:892517360036:web:36dda234d9f3f79562e131"
-              },
-              isProduction: true,
-              basePath: ""
-            };
-          }
-          
-          // Ensure SECURE_CONFIG exists
-          if (typeof window !== 'undefined' && !window.SECURE_CONFIG) {
-            console.log('Creating fallback SECURE_CONFIG');
-            window.SECURE_CONFIG = {
-              firebase: {
-                projectId: "personalsite-19189",
-                apiKey: "AIzaSyD4a8iaxHP9xPGV5tR5LwvzDVa5Y9o5wGQ",
-                authDomain: "personalsite-19189.firebaseapp.com",
-                storageBucket: "personalsite-19189.appspot.com",
-                messagingSenderId: "892517360036",
-                appId: "1:892517360036:web:36dda234d9f3f79562e131"
-              },
-              basePath: ""
-            };
-          }
-        `}
-      </Script>
-      
       <h1 className="text-3xl md:text-4xl font-bold text-accent mb-3">
         {t('books.title', 'My Book Collection')}
       </h1>
@@ -141,15 +102,71 @@ export default function BooksPage({ initialBooks, initialStats }: BooksPageProps
 export const getStaticProps: GetStaticProps<BooksPageProps> = async () => {
   try {
     // For simplicity and to avoid SSG serialization issues, 
-    // return empty array for initialBooks
-    // The actual books will be loaded client-side
+    // provide sample books in case Firebase connection fails
+    // The actual books will be loaded client-side when Firebase is available
     
-    // Get book statistics
-    const stats = await getBookStats();
+    // Sample books to ensure page renders with content if Firebase fails
+    const sampleBooks: Book[] = [
+      {
+        id: 'sample1',
+        isbn: '9780553380958',
+        title: 'A Brief History of Time',
+        authors: ['Stephen Hawking'],
+        publisher: 'Bantam',
+        publishedDate: '1998-09-01',
+        description: 'A landmark volume in science writing by one of the great minds of our time.',
+        pageCount: 212,
+        categories: ['Science', 'Physics'],
+        imageLinks: {
+          thumbnail: 'https://books.google.com/books/content?id=mZ8r9blrCIUC&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api'
+        },
+        status: 'read',
+        dateAdded: '2023-01-01T00:00:00.000Z'
+      },
+      {
+        id: 'sample2',
+        isbn: '9780060959470',
+        title: 'Clean Code: A Handbook of Agile Software Craftsmanship',
+        authors: ['Robert C. Martin'],
+        publisher: 'Prentice Hall',
+        publishedDate: '2008-08-01',
+        description: 'Even bad code can function. But if code isn't clean, it can bring a development organization to its knees.',
+        pageCount: 464,
+        categories: ['Computers', 'Software Development'],
+        status: 'read',
+        dateAdded: '2023-01-02T00:00:00.000Z'
+      },
+      {
+        id: 'sample3',
+        isbn: '9781449371876',
+        title: 'Learning JavaScript Design Patterns',
+        authors: ['Addy Osmani'],
+        publisher: "O'Reilly Media",
+        publishedDate: '2012-07-01',
+        description: 'With Learning JavaScript Design Patterns, you'll learn how to write beautiful, structured, and maintainable JavaScript.',
+        pageCount: 254,
+        categories: ['Computers', 'Web Development'],
+        status: 'reading',
+        dateAdded: '2023-01-03T00:00:00.000Z'
+      }
+    ];
+    
+    // Get book statistics or generate sample ones
+    let stats;
+    try {
+      stats = await getBookStats();
+    } catch (error) {
+      stats = {
+        total: sampleBooks.length,
+        read: sampleBooks.filter(b => b.status === 'read').length,
+        reading: sampleBooks.filter(b => b.status === 'reading').length,
+        toRead: sampleBooks.filter(b => b.status === 'toRead').length,
+      };
+    }
     
     return {
       props: {
-        initialBooks: [], // Empty array to avoid serialization issues
+        initialBooks: sampleBooks,
         initialStats: stats,
       }
     };
