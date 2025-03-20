@@ -10,26 +10,46 @@ export default function DirectBookGrid({ initialBooks = [] }: DirectBookGridProp
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Get books using a safer approach that doesn't rely on global firebase
+  // Get books using the API route
   useEffect(() => {
     async function loadBooks() {
       try {
-        console.log('Loading books...');
+        console.log('Loading books from API...');
         
-        // Simply use the initial books for now - no direct Firebase access
-        // This avoids TypeScript errors and prevents exposing credentials
+        // Start with initial books
         setBooks(initialBooks || []);
-        setLoading(false);
         
-        // For future enhancement: use API routes instead of direct Firebase access
-        // Example: fetch('/api/books').then(response => response.json())
-        //   .then(data => setBooks(data))
-        //   .catch(error => console.error('Error fetching books:', error))
-        //   .finally(() => setLoading(false));
-        
+        // Then try to fetch from API
+        try {
+          const response = await fetch('/api/public-books');
+          
+          if (!response.ok) {
+            throw new Error(`API returned status: ${response.status}`);
+          }
+          
+          const data = await response.json();
+          
+          if (data.success && Array.isArray(data.data)) {
+            // Ensure every book has an authors array
+            const booksWithSafeAuthors = data.data.map((book: any) => ({
+              ...book,
+              authors: Array.isArray(book.authors) ? book.authors : ['Unknown Author']
+            }));
+            
+            console.log(`Loaded ${booksWithSafeAuthors.length} books from API`);
+            setBooks(booksWithSafeAuthors);
+          } else {
+            console.log('API did not return expected data format, using initial books');
+          }
+        } catch (apiError) {
+          console.error('Error fetching from API:', apiError);
+          // We already set initialBooks, so no need to do it again
+          console.log('Using initial books as fallback');
+        }
       } catch (error) {
-        console.error('Error loading books:', error);
+        console.error('Error in loadBooks:', error);
         setBooks(initialBooks || []);
+      } finally {
         setLoading(false);
       }
     }
