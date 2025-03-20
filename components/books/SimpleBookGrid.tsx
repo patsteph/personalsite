@@ -12,26 +12,24 @@ export default function SimpleBookGrid({ initialBooks }: SimpleBookGridProps) {
   const [loading, setLoading] = useState(!initialBooks.length);
   
   useEffect(() => {
-    // Load books from API
+    // Always load books from Firebase API
     async function loadBooks() {
       try {
-        console.log('Fetching books from API...');
+        setLoading(true);
+        console.log('Fetching books from Firebase via API...');
         const response = await fetch('/api/public-books');
         if (!response.ok) {
           throw new Error(`API returned status ${response.status}`);
         }
         
         const data = await response.json();
-        console.log('API response:', data);
+        console.log('Firebase API response received');
         
         if (data.success && Array.isArray(data.data)) {
           // Process books to ensure they have all required properties
           const safeBooks = data.data
             .filter((book: any) => book) // Filter out null/undefined books
             .map((book: any) => {
-              // Debug information
-              console.log(`Processing book ${book.id || 'unknown'}: authors=${JSON.stringify(book.authors)}`);
-              
               return {
                 ...book,
                 // Ensure these properties exist with safe defaults
@@ -45,36 +43,28 @@ export default function SimpleBookGrid({ initialBooks }: SimpleBookGridProps) {
               };
             });
           
-          // Add additional validation logging before setting books
-          console.log(`Validating ${safeBooks.length} books before setting state`);
+          console.log(`Validating ${safeBooks.length} books from Firebase`);
           
           // Extra safety validation on all books
           const fullyValidatedBooks = safeBooks.map(book => {
-            // Debug book info for troubleshooting
-            console.log(`Book ID: ${book.id}, Title: ${book.title}, Authors type: ${typeof book.authors}, Is array: ${Array.isArray(book.authors)}`);
-            
             // Return book with additional protection
             if (book.authors === undefined || book.authors === null) {
               // Create empty array if authors is missing
-              console.log(`Fixing missing authors for book: ${book.id}`);
               return { ...book, authors: ['Unknown Author'] };
             }
             
             // If authors is a string, convert to array
             if (typeof book.authors === 'string') {
-              console.log(`Converting string author to array for book: ${book.id}`);
               return { ...book, authors: [book.authors] };
             }
             
-            // If authors is not an array (which should never happen at this point), fix it
+            // If authors is not an array, fix it
             if (!Array.isArray(book.authors)) {
-              console.log(`Fixing invalid authors format for book: ${book.id}`);
               return { ...book, authors: ['Unknown Author'] };
             }
             
             // If the array contains non-string values, filter them out
             if (book.authors.some(author => typeof author !== 'string')) {
-              console.log(`Filtering non-string authors for book: ${book.id}`);
               const validAuthors = book.authors.filter(author => 
                 author !== undefined && author !== null && typeof author === 'string'
               );
@@ -85,23 +75,26 @@ export default function SimpleBookGrid({ initialBooks }: SimpleBookGridProps) {
             return book;
           });
           
-          setBooks(fullyValidatedBooks);
-          console.log(`Loaded ${fullyValidatedBooks.length} books from API`);
+          if (fullyValidatedBooks.length > 0) {
+            console.log(`Loaded ${fullyValidatedBooks.length} books from Firebase`);
+            setBooks(fullyValidatedBooks);
+          } else {
+            console.warn('No books received from Firebase API. Check Firestore collection.');
+            // Keep the initialBooks if we can't get any from Firebase
+          }
+        } else {
+          console.warn('Invalid or empty response from API');
         }
       } catch (error) {
-        console.error('Error loading books from API:', error);
-        // Keep using initial books if API fails
+        console.error('Error loading books from Firebase API:', error);
       } finally {
         setLoading(false);
       }
     }
     
-    if (initialBooks.length === 0) {
-      loadBooks();
-    } else {
-      setLoading(false);
-    }
-  }, [initialBooks]);
+    // Always attempt to load books from Firebase, ignore initial books
+    loadBooks();
+  }, []);
 
   // Simple book card component
   const BookCard = ({ book }: { book: Book }) => {

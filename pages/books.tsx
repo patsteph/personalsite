@@ -100,77 +100,25 @@ export default function BooksPage({ initialBooks, initialStats }: BooksPageProps
 // Fetch data at build time
 export const getStaticProps: GetStaticProps<BooksPageProps> = async () => {
   try {
-    // For simplicity and to avoid SSG serialization issues, 
-    // provide sample books in case Firebase connection fails
-    // The actual books will be loaded client-side when Firebase is available
+    // Start with empty arrays - books will be loaded client-side from Firebase
+    const emptyBooks: Book[] = [];
     
-    // Sample books to ensure page renders with content if Firebase fails
-    const sampleBooks: Book[] = [
-      {
-        id: 'sample1',
-        isbn: '9780553380958',
-        title: 'A Brief History of Time',
-        authors: ['Stephen Hawking'],
-        publisher: 'Bantam',
-        publishedDate: '1998-09-01',
-        description: 'A landmark volume in science writing by one of the great minds of our time.',
-        pageCount: 212,
-        categories: ['Science', 'Physics'],
-        imageLinks: {
-          thumbnail: 'https://books.google.com/books/content?id=mZ8r9blrCIUC&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api'
-        },
-        status: 'read',
-        dateAdded: '2023-01-01T00:00:00.000Z'
-      },
-      {
-        id: 'sample2',
-        isbn: '9780060959470',
-        title: 'Clean Code: A Handbook of Agile Software Craftsmanship',
-        authors: ['Robert C. Martin'],
-        publisher: 'Prentice Hall',
-        publishedDate: '2008-08-01',
-        description: "Even bad code can function. But if code isn't clean, it can bring a development organization to its knees.",
-        pageCount: 464,
-        categories: ['Computers', 'Software Development'],
-        status: 'read',
-        dateAdded: '2023-01-02T00:00:00.000Z'
-      },
-      {
-        id: 'sample3',
-        isbn: '9781449371876',
-        title: 'Learning JavaScript Design Patterns',
-        authors: ['Addy Osmani'],
-        publisher: "O'Reilly Media",
-        publishedDate: '2012-07-01',
-        description: "With Learning JavaScript Design Patterns, you'll learn how to write beautiful, structured, and maintainable JavaScript.",
-        pageCount: 254,
-        categories: ['Computers', 'Web Development'],
-        status: 'reading',
-        dateAdded: '2023-01-03T00:00:00.000Z'
-      }
-    ];
-    
-    // Get book statistics or generate sample ones
-    let stats;
-    try {
-      stats = await getBookStats();
-    } catch (error) {
-      stats = {
-        total: sampleBooks.length,
-        read: sampleBooks.filter(b => b.status === 'read').length,
-        reading: sampleBooks.filter(b => b.status === 'reading').length,
-        toRead: sampleBooks.filter(b => b.status === 'toRead').length,
-      };
-    }
+    // Default empty stats - will be updated client-side
+    const defaultStats = {
+      total: 0,
+      read: 0,
+      reading: 0,
+      toRead: 0,
+    };
     
     return {
       props: {
-        initialBooks: sampleBooks,
-        initialStats: stats,
+        initialBooks: emptyBooks,
+        initialStats: defaultStats,
       }
     };
   } catch (error) {
-    console.error('Error fetching book data:', error);
+    console.error('Error in getStaticProps:', error);
     
     // Return empty data on error
     return {

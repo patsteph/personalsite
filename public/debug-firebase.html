@@ -106,16 +106,9 @@
           firebaseConfig = window.runtimeConfig.firebase;
           initElement.textContent = 'Using Firebase config from runtimeConfig';
         } else {
-          // Hardcoded fallback for testing
-          firebaseConfig = {
-            apiKey: "AIzaSyD4a8iaxHP9xPGV5tR5LwvzDVa5Y9o5wGQ",
-            authDomain: "personalsite-19189.firebaseapp.com",
-            projectId: "personalsite-19189",
-            storageBucket: "personalsite-19189.appspot.com",
-            messagingSenderId: "892517360036",
-            appId: "1:892517360036:web:36dda234d9f3f79562e131"
-          };
-          initElement.textContent = 'Using hardcoded fallback Firebase config';
+          // No hardcoded fallback - security risk
+          firebaseConfig = null;
+          initElement.textContent = 'No Firebase configuration available. Please ensure runtime-config.js or secure-config.js are properly loaded.';
         }
         
         // Initialize Firebase

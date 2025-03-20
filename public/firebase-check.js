@@ -33,17 +33,10 @@ function checkFirebaseConfig() {
         console.log('Using firebase config from runtimeConfig');
         config = window.runtimeConfig.firebase;
       }
-      // Last resort hardcoded values (just for this specific app)
+      // No hardcoded values - security risk
       else {
-        console.log('Using hardcoded firebase config');
-        config = {
-          apiKey: "AIzaSyD4a8iaxHP9xPGV5tR5LwvzDVa5Y9o5wGQ",
-          authDomain: "personalsite-19189.firebaseapp.com",
-          projectId: "personalsite-19189",
-          storageBucket: "personalsite-19189.appspot.com",
-          messagingSenderId: "892517360036",
-          appId: "1:892517360036:web:36dda234d9f3f79562e131"
-        };
+        console.log('No Firebase config available');
+        config = null;
       }
       
       if (config && config.apiKey) {
