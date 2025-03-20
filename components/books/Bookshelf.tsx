@@ -26,23 +26,28 @@ export default function Bookshelf({ initialBooks, booksPerShelf = 16 }: Bookshel
   
   // Fetch books when component mounts or filter/sort changes
   useEffect(() => {
+    // Define a function to load books
     async function loadBooks() {
+      // Show loading state
       setLoading(true);
+      
       try {
-        // Get all books from Firebase
-        const bookData = await getBooks();
-        console.log('Loaded books:', bookData);
-        setAllBooks(bookData);
+        // Call getBooks without any parameters
+        const books = await getBooks();
+        // Update state with fetched books
+        setAllBooks(books);
       } catch (error) {
+        // Log any errors
         console.error('Error loading books:', error);
       } finally {
+        // Hide loading state
         setLoading(false);
       }
     }
     
-    // Always reload books even if initialBooks is provided
+    // Call the function when component mounts
     loadBooks();
-  }, []); // Remove filter and sortBy dependencies to prevent constant reloading
+  }, []); // Only run on mount
 
   // Apply filters and sorting
   const filteredAndSortedBooks = useMemo(() => {
