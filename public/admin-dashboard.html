@@ -814,9 +814,9 @@
       }
       // If no config available and we have session auth, use projectId only for analytics
       else if (sessionAuth === 'true' && sessionTimestamp) {
-        console.log('Using minimal Firebase config from project ID and token from login');
+        console.log('Using minimal Firebase config from project ID and stored auth session');
         firebaseConfig = {
-          apiKey: sessionToken || "dummy-key-for-analytics", // Use token if available  
+          apiKey: sessionToken || "", // Use token if available, otherwise empty
           projectId: "personalsite-19189",
           authDomain: "personalsite-19189.firebaseapp.com"
         };

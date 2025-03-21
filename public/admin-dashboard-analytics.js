@@ -17,12 +17,22 @@ function initAnalyticsDashboard() {
     console.log('Analytics: Firebase configuration is missing - using mock data instead');
   }
   
-  // Set up event listeners
-  document.addEventListener('DOMContentLoaded', () => {
+  // Set up event listeners for DOMContentLoaded
+  if (document.readyState === "loading") {
+    // Wait for the document to finish loading
+    document.addEventListener('DOMContentLoaded', () => {
+      console.log('Analytics: DOM Content Loaded event fired');
+      setupAnalyticsTabContent();
+      setupDateRangePickers();
+      loadAnalyticsData(isDevMode);
+    });
+  } else {
+    // Document already loaded, run immediately
+    console.log('Analytics: Document already loaded, running setup immediately');
     setupAnalyticsTabContent();
     setupDateRangePickers();
     loadAnalyticsData(isDevMode);
-  });
+  }
 }
 
 // Set up analytics tab content
@@ -365,6 +375,13 @@ function loadAnalyticsData(isDevMode = false) {
     // This would normally fetch data from an API
     // For now, we'll use mock data
     
+    // Ensure the site analytics tab is populated
+    const siteAdminTab = document.getElementById('siteAdminTab');
+    if (!siteAdminTab || !siteAdminTab.innerHTML || siteAdminTab.innerHTML.trim() === '') {
+      console.log('Analytics: Site Admin tab appears to be empty, setting up content');
+      setupAnalyticsTabContent();
+    }
+    
     // Update overview stats with mock data
     const totalPageviews = document.getElementById('totalPageviews');
     const pageviewsDelta = document.getElementById('pageviewsDelta');
@@ -379,24 +396,32 @@ function loadAnalyticsData(isDevMode = false) {
     if (pageviewsDelta) {
       pageviewsDelta.textContent = '+12.5%';
       pageviewsDelta.classList.add('positive');
+    } else {
+      console.log('Analytics: pageviewsDelta element not found');
     }
     
     if (uniqueVisitors) uniqueVisitors.textContent = '487';
     if (visitorsDelta) {
       visitorsDelta.textContent = '+8.2%';
       visitorsDelta.classList.add('positive');
+    } else {
+      console.log('Analytics: visitorsDelta element not found');
     }
     
     if (avgSessionDuration) avgSessionDuration.textContent = '3:42';
     if (durationDelta) {
       durationDelta.textContent = '+5.8%';
       durationDelta.classList.add('positive');
+    } else {
+      console.log('Analytics: durationDelta element not found');
     }
     
     if (bounceRate) bounceRate.textContent = '38.4%';
     if (bounceDelta) {
       bounceDelta.textContent = '-2.1%';
       bounceDelta.classList.add('positive');
+    } else {
+      console.log('Analytics: bounceDelta element not found');
     }
     
     // Load top pages data
@@ -428,6 +453,8 @@ function loadAnalyticsData(isDevMode = false) {
           <td>35.7%</td>
         </tr>
       `;
+    } else {
+      console.log('Analytics: topPagesTable element not found');
     }
     
     // Load book activity data
@@ -442,20 +469,22 @@ function loadAnalyticsData(isDevMode = false) {
     if (filterUseCount) filterUseCount.textContent = '124';
     
     console.log('Analytics data loaded successfully');
+    
+    // Set up the analytics tabs (in case they weren't set up already)
+    setupAnalyticsTabs();
   } catch (error) {
     console.error('Error loading analytics data:', error);
     
-    // Add a visible error message in development mode
-    if (isDevMode) {
-      const siteAdminTab = document.getElementById('siteAdminTab');
-      if (siteAdminTab) {
+    // Always show mock data with a warning
+    const siteAdminTab = document.getElementById('siteAdminTab');
+    if (siteAdminTab) {
         const errorDiv = document.createElement('div');
         errorDiv.className = 'card';
         errorDiv.innerHTML = `
-          <div style="padding: 20px; text-align: center; color: #ef4444;">
-            <h3>Analytics Error</h3>
-            <p>Unable to load analytics data. This is likely because you're in development mode without Firebase credentials.</p>
-            <p style="margin-top: 10px; font-size: 14px;">For testing, mock data is being displayed.</p>
+          <div style="padding: 20px; text-align: center; color: #f59e0b;">
+            <h3>Analytics Information</h3>
+            <p>Sample analytics data is being displayed. In production, this would be connected to Firebase Analytics.</p>
+            <p style="margin-top: 10px; font-size: 14px;">The data shown is for demonstration purposes only.</p>
           </div>
         `;
         
@@ -507,4 +536,7 @@ function setupAnalytics() {
 }
 
 // Initialize on load
-document.addEventListener('DOMContentLoaded', setupAnalytics);
+document.addEventListener('DOMContentLoaded', () => {
+  console.log('Analytics: Document ready, setting up analytics module');
+  setupAnalytics();
+});
