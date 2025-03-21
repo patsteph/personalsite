@@ -7,7 +7,7 @@ window.runtimeConfig = {
     // We only include the projectId in the public files for reference
     projectId: "personalsite-19189"
   },
-  isProduction: false,
+  isProduction: true,
   basePath: ""
 };
 

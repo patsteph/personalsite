@@ -4,10 +4,17 @@
 function initAnalyticsDashboard() {
   console.log('Initializing analytics dashboard...');
   
-  // Check if we're in development mode (no Firebase config)
+  // Check for Firebase config
+  console.log('Analytics: Checking for Firebase configuration...');
+  console.log('Analytics: SECURE_CONFIG exists:', !!window.SECURE_CONFIG);
+  console.log('Analytics: runtimeConfig exists:', !!window.runtimeConfig);
+  
   const isDevMode = !window.SECURE_CONFIG?.firebase?.apiKey && !window.runtimeConfig?.firebase?.apiKey;
+  console.log('Analytics: Firebase config available:', !isDevMode);
+  
+  // Use proper configuration based on availability
   if (isDevMode) {
-    console.log('Running in development mode with mock data');
+    console.log('Analytics: Firebase configuration is missing - using mock data instead');
   }
   
   // Set up event listeners

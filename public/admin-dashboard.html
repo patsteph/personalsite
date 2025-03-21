@@ -786,42 +786,46 @@
       // Check if we have Firebase config
       let firebaseConfig = null;
       
-      // Try to use SECURE_CONFIG first
+      console.log('Checking Firebase configuration availability...');
+      console.log('SECURE_CONFIG exists:', !!window.SECURE_CONFIG);
+      console.log('runtimeConfig exists:', !!window.runtimeConfig);
+      
+      // Try to use auth state from session storage 
+      const sessionAuth = sessionStorage.getItem('auth_success');
+      const sessionTimestamp = sessionStorage.getItem('auth_timestamp');
+      
+      console.log('Session auth available:', !!sessionAuth);
+      
+      // Get config - first check SECURE_CONFIG
       if (window.SECURE_CONFIG?.firebase?.apiKey) {
         console.log('Using Firebase config from SECURE_CONFIG');
         firebaseConfig = window.SECURE_CONFIG.firebase;
       } 
-      // Fall back to runtimeConfig
+      // Then check runtimeConfig
       else if (window.runtimeConfig?.firebase?.apiKey) {
         console.log('Using Firebase config from runtimeConfig');
         firebaseConfig = window.runtimeConfig.firebase;
       }
+      // If no config available and we have session auth, use projectId only for analytics
+      else if (sessionAuth === 'true' && sessionTimestamp) {
+        console.log('Using minimal Firebase config from project ID');
+        firebaseConfig = {
+          apiKey: "dummy-key-for-analytics", // This will be replaced before auth
+          projectId: "personalsite-19189",
+          authDomain: "personalsite-19189.firebaseapp.com"
+        };
+      }
+      else {
+        console.log('No Firebase configuration found in any source');
+      }
       
       if (!firebaseConfig?.apiKey) {
-        console.warn('Firebase config not available - this is expected in development environments');
-        
-        // Development mode - allow bypass with mock data
         authMessage.innerHTML = `
           <div style="color: #ef4444; margin-top: 10px;">
-            <p><strong>Firebase credentials missing</strong></p>
-            <p style="margin-top: 8px; font-size: 14px;">This is expected in development. In production, these values would be populated during deployment.</p>
-            <p style="margin-top: 8px; font-size: 14px;">For local testing, you can manually configure the Firebase keys in public/secure-config.js</p>
-            <button id="devModeButton" style="margin-top: 15px; background-color: #4b5563; padding: 8px 12px; border-radius: 4px; color: white; font-size: 14px;">Continue in Development Mode</button>
+            <p><strong>Firebase authentication error</strong></p>
+            <p style="margin-top: 8px; font-size: 14px;">Firebase credentials are missing or invalid. Please check your secure configuration.</p>
           </div>`;
-        
-        // Add event listener for dev mode button
-        document.getElementById('devModeButton').addEventListener('click', function() {
-          // Hide auth check, show dashboard
-          authCheck.style.display = 'none';
-          adminDashboard.style.display = 'block';
-          
-          // Set user info for dev mode
-          document.getElementById('userEmail').textContent = 'dev@example.com (Development Mode)';
-          
-          // Mock setup functions without Firebase
-          setupDashboardDevMode();
-        });
-        
+        console.error('Firebase config not available - check secure-config.js');
         return;
       }
       
@@ -874,9 +878,6 @@
           console.error('Error signing out:', error);
           showMessage('Error signing out. Please try again.', 'error');
         });
-      } else {
-        // Dev mode logout - just reload the page
-        window.location.reload();
       }
     });
     
