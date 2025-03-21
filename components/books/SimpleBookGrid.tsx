@@ -544,7 +544,7 @@ export default function SimpleBookGrid({ initialBooks }: SimpleBookGridProps) {
       const query = searchQuery.toLowerCase();
       
       // Search in title
-      const titleMatch = book.title?.toLowerCase().includes(query);
+      const titleMatch = book.title ? book.title.toLowerCase().includes(query) : false;
       
       // Search in authors
       const authorMatch = Array.isArray(book.authors) && book.authors.some(
@@ -557,10 +557,10 @@ export default function SimpleBookGrid({ initialBooks }: SimpleBookGridProps) {
       );
       
       // Search in description
-      const descriptionMatch = book.description?.toLowerCase().includes(query);
+      const descriptionMatch = book.description ? book.description.toLowerCase().includes(query) : false;
       
       // Book matches if any field contains the search query
-      searchMatch = titleMatch || authorMatch || categoryMatch || descriptionMatch;
+      searchMatch = !!(titleMatch || authorMatch || categoryMatch || descriptionMatch);
     }
     
     // Book must match all filters
