@@ -44,19 +44,21 @@ export default function CVPage({ cvData }: CVPageProps) {
         {t('cv.title', 'Curriculum Vitae')}
       </h1>
       
-      {/* Visual Career Journey Link */}
-      <div className="mb-8 bg-white rounded-lg shadow p-6 text-center">
-        <h2 className="text-2xl font-bold text-accent mb-4">Visual Career Journey</h2>
-        <p className="text-steel-blue mb-4">Explore my professional journey in a visual timeline format</p>
-        <button 
-          onClick={handleCareerJourneyView}
-          className="inline-block bg-steel-blue hover:bg-accent text-white font-medium py-3 px-6 rounded-lg transition-colors"
-        >
-          View Career Timeline
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-          </svg>
-        </button>
+      {/* Visual Career Journey Link - Compact Version */}
+      <div className="mb-4 bg-white rounded-lg shadow p-3 text-center">
+        <h2 className="text-lg font-bold text-accent mb-1">Visual Career Journey</h2>
+        <div className="flex items-center justify-between">
+          <p className="text-steel-blue text-sm ml-2">Timeline visualization of my professional path</p>
+          <button 
+            onClick={handleCareerJourneyView}
+            className="inline-block bg-steel-blue hover:bg-accent text-white font-medium py-1 px-3 text-sm rounded-lg transition-colors"
+          >
+            View
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+            </svg>
+          </button>
+        </div>
       </div>
       
       <AboutSection about={cvData.about} />
@@ -77,7 +79,7 @@ export default function CVPage({ cvData }: CVPageProps) {
           style={{ backdropFilter: 'blur(5px)' }}
         >
           <div 
-            className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto transform animate-scaleIn"
+            className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto transform animate-scaleIn"
             onClick={e => e.stopPropagation()}
           >
             {/* Close button */}
@@ -91,21 +93,19 @@ export default function CVPage({ cvData }: CVPageProps) {
               </svg>
             </button>
             
-            <div className="p-6 pt-10">
-              <h2 className="text-2xl font-bold text-accent mb-4">My Professional Journey</h2>
+            <div className="p-4 pt-8">
+              <h2 className="text-xl font-bold text-accent mb-2">My Professional Journey</h2>
               
-              <div className="relative py-8">
+              <div className="relative py-4">
                 {/* Timeline imagery will be loaded here */}
-                <div className="w-full h-[500px] bg-gray-100 rounded-lg flex items-center justify-center mb-4">
-                  <p className="text-gray-500">Career timeline image will be displayed here</p>
-                  <p className="text-sm text-gray-400 mt-2">Upload an image to public/images/career-timeline.jpg</p>
+                <div className="w-full h-[350px] bg-gray-100 rounded-lg flex flex-col items-center justify-center mb-2">
+                  <p className="text-gray-500 text-sm">Career timeline image will be displayed here</p>
+                  <p className="text-xs text-gray-400 mt-1">Upload an image to public/images/career-timeline.jpg</p>
                 </div>
                 
-                <div className="text-center mt-4">
-                  <p className="text-steel-blue">
-                    This visual representation shows my career progression, highlighting key milestones, 
-                    projects, and skills acquired along the way. The journey illustrates my growth from 
-                    entry-level positions to more advanced roles and responsibilities.
+                <div className="text-center mt-2">
+                  <p className="text-steel-blue text-sm">
+                    A visual representation of my career progression, highlighting key milestones and skills acquired along the way.
                   </p>
                 </div>
               </div>
