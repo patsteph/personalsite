@@ -798,13 +798,30 @@
       }
       
       if (!firebaseConfig?.apiKey) {
+        console.warn('Firebase config not available - this is expected in development environments');
+        
+        // Development mode - allow bypass with mock data
         authMessage.innerHTML = `
           <div style="color: #ef4444; margin-top: 10px;">
             <p><strong>Firebase credentials missing</strong></p>
             <p style="margin-top: 8px; font-size: 14px;">This is expected in development. In production, these values would be populated during deployment.</p>
             <p style="margin-top: 8px; font-size: 14px;">For local testing, you can manually configure the Firebase keys in public/secure-config.js</p>
+            <button id="devModeButton" style="margin-top: 15px; background-color: #4b5563; padding: 8px 12px; border-radius: 4px; color: white; font-size: 14px;">Continue in Development Mode</button>
           </div>`;
-        console.warn('Firebase config not available - this is expected in development environments');
+        
+        // Add event listener for dev mode button
+        document.getElementById('devModeButton').addEventListener('click', function() {
+          // Hide auth check, show dashboard
+          authCheck.style.display = 'none';
+          adminDashboard.style.display = 'block';
+          
+          // Set user info for dev mode
+          document.getElementById('userEmail').textContent = 'dev@example.com (Development Mode)';
+          
+          // Mock setup functions without Firebase
+          setupDashboardDevMode();
+        });
+        
         return;
       }
       
@@ -857,6 +874,9 @@
           console.error('Error signing out:', error);
           showMessage('Error signing out. Please try again.', 'error');
         });
+      } else {
+        // Dev mode logout - just reload the page
+        window.location.reload();
       }
     });
     
@@ -1723,6 +1743,48 @@
         });
       }
     });
+  
+    // Setup dashboard for development mode (no Firebase)
+    function setupDashboardDevMode() {
+      console.log('Setting up dashboard in development mode');
+      
+      // Tab navigation (same as real one)
+      const tabs = document.querySelectorAll('[data-tab]');
+      
+      tabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+          // Remove active class from all tabs
+          tabs.forEach(t => t.classList.remove('active'));
+          this.classList.add('active');
+          
+          // Hide all tab content
+          document.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.remove('active');
+          });
+          
+          // Show selected tab content
+          const tabId = this.getAttribute('data-tab') + 'Tab';
+          document.getElementById(tabId).classList.add('active');
+        });
+      });
+      
+      // Mock data for development
+      document.getElementById('totalBooks').textContent = '23';
+      document.getElementById('totalCategories').textContent = '8';
+      document.getElementById('fictionBooks').textContent = '14';
+      document.getElementById('nonFictionBooks').textContent = '9';
+      
+      // Show message for development mode
+      const statusMessage = document.getElementById('statusMessage');
+      statusMessage.textContent = 'Running in development mode with mock data';
+      statusMessage.classList.add('alert', 'alert-success');
+      statusMessage.style.display = 'block';
+      
+      // Hide after 3 seconds
+      setTimeout(function() {
+        statusMessage.style.display = 'none';
+      }, 3000);
+    }
   </script>
   
   <!-- Analytics scripts -->

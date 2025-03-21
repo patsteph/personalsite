@@ -4,11 +4,17 @@
 function initAnalyticsDashboard() {
   console.log('Initializing analytics dashboard...');
   
+  // Check if we're in development mode (no Firebase config)
+  const isDevMode = !window.SECURE_CONFIG?.firebase?.apiKey && !window.runtimeConfig?.firebase?.apiKey;
+  if (isDevMode) {
+    console.log('Running in development mode with mock data');
+  }
+  
   // Set up event listeners
   document.addEventListener('DOMContentLoaded', () => {
     setupAnalyticsTabContent();
     setupDateRangePickers();
-    loadAnalyticsData();
+    loadAnalyticsData(isDevMode);
   });
 }
 
@@ -345,60 +351,116 @@ function setupDateRangePickers() {
 }
 
 // Load analytics data
-function loadAnalyticsData() {
-  // This would normally fetch data from an API
-  // For now, we'll use mock data
-  
-  // Update overview stats with mock data
-  document.getElementById('totalPageviews').textContent = '1,258';
-  document.getElementById('pageviewsDelta').textContent = '+12.5%';
-  document.getElementById('pageviewsDelta').classList.add('positive');
-  
-  document.getElementById('uniqueVisitors').textContent = '487';
-  document.getElementById('visitorsDelta').textContent = '+8.2%';
-  document.getElementById('visitorsDelta').classList.add('positive');
-  
-  document.getElementById('avgSessionDuration').textContent = '3:42';
-  document.getElementById('durationDelta').textContent = '+5.8%';
-  document.getElementById('durationDelta').classList.add('positive');
-  
-  document.getElementById('bounceRate').textContent = '38.4%';
-  document.getElementById('bounceDelta').textContent = '-2.1%';
-  document.getElementById('bounceDelta').classList.add('positive');
-  
-  // Load top pages data
-  const topPagesTable = document.getElementById('topPagesTable');
-  if (topPagesTable) {
-    topPagesTable.innerHTML = `
-      <tr>
-        <td>/books</td>
-        <td>428</td>
-        <td>5:12</td>
-        <td>31.2%</td>
-      </tr>
-      <tr>
-        <td>/</td>
-        <td>389</td>
-        <td>2:45</td>
-        <td>42.8%</td>
-      </tr>
-      <tr>
-        <td>/blog</td>
-        <td>298</td>
-        <td>6:18</td>
-        <td>28.5%</td>
-      </tr>
-      <tr>
-        <td>/cv</td>
-        <td>143</td>
-        <td>4:05</td>
-        <td>35.7%</td>
-      </tr>
-    `;
+function loadAnalyticsData(isDevMode = false) {
+  try {
+    console.log('Loading analytics data...');
+    
+    // This would normally fetch data from an API
+    // For now, we'll use mock data
+    
+    // Update overview stats with mock data
+    const totalPageviews = document.getElementById('totalPageviews');
+    const pageviewsDelta = document.getElementById('pageviewsDelta');
+    const uniqueVisitors = document.getElementById('uniqueVisitors');
+    const visitorsDelta = document.getElementById('visitorsDelta');
+    const avgSessionDuration = document.getElementById('avgSessionDuration');
+    const durationDelta = document.getElementById('durationDelta');
+    const bounceRate = document.getElementById('bounceRate');
+    const bounceDelta = document.getElementById('bounceDelta');
+    
+    if (totalPageviews) totalPageviews.textContent = '1,258';
+    if (pageviewsDelta) {
+      pageviewsDelta.textContent = '+12.5%';
+      pageviewsDelta.classList.add('positive');
+    }
+    
+    if (uniqueVisitors) uniqueVisitors.textContent = '487';
+    if (visitorsDelta) {
+      visitorsDelta.textContent = '+8.2%';
+      visitorsDelta.classList.add('positive');
+    }
+    
+    if (avgSessionDuration) avgSessionDuration.textContent = '3:42';
+    if (durationDelta) {
+      durationDelta.textContent = '+5.8%';
+      durationDelta.classList.add('positive');
+    }
+    
+    if (bounceRate) bounceRate.textContent = '38.4%';
+    if (bounceDelta) {
+      bounceDelta.textContent = '-2.1%';
+      bounceDelta.classList.add('positive');
+    }
+    
+    // Load top pages data
+    const topPagesTable = document.getElementById('topPagesTable');
+    if (topPagesTable) {
+      topPagesTable.innerHTML = `
+        <tr>
+          <td>/books</td>
+          <td>428</td>
+          <td>5:12</td>
+          <td>31.2%</td>
+        </tr>
+        <tr>
+          <td>/</td>
+          <td>389</td>
+          <td>2:45</td>
+          <td>42.8%</td>
+        </tr>
+        <tr>
+          <td>/blog</td>
+          <td>298</td>
+          <td>6:18</td>
+          <td>28.5%</td>
+        </tr>
+        <tr>
+          <td>/cv</td>
+          <td>143</td>
+          <td>4:05</td>
+          <td>35.7%</td>
+        </tr>
+      `;
+    }
+    
+    // Load book activity data
+    const totalBookViews = document.getElementById('totalBookViews');
+    const totalDetailViews = document.getElementById('totalDetailViews');
+    const searchCount = document.getElementById('searchCount');
+    const filterUseCount = document.getElementById('filterUseCount');
+    
+    if (totalBookViews) totalBookViews.textContent = '435';
+    if (totalDetailViews) totalDetailViews.textContent = '187';
+    if (searchCount) searchCount.textContent = '52';
+    if (filterUseCount) filterUseCount.textContent = '124';
+    
+    console.log('Analytics data loaded successfully');
+  } catch (error) {
+    console.error('Error loading analytics data:', error);
+    
+    // Add a visible error message in development mode
+    if (isDevMode) {
+      const siteAdminTab = document.getElementById('siteAdminTab');
+      if (siteAdminTab) {
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'card';
+        errorDiv.innerHTML = `
+          <div style="padding: 20px; text-align: center; color: #ef4444;">
+            <h3>Analytics Error</h3>
+            <p>Unable to load analytics data. This is likely because you're in development mode without Firebase credentials.</p>
+            <p style="margin-top: 10px; font-size: 14px;">For testing, mock data is being displayed.</p>
+          </div>
+        `;
+        
+        // Insert at the top
+        if (siteAdminTab.firstChild) {
+          siteAdminTab.insertBefore(errorDiv, siteAdminTab.firstChild);
+        } else {
+          siteAdminTab.appendChild(errorDiv);
+        }
+      }
+    }
   }
-  
-  // For a real implementation, you'd load all the other data tables
-  // and initialize the charts using a library like Chart.js
 }
 
 // Set up additional styles
