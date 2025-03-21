@@ -4,6 +4,7 @@ import Image from 'next/image';
 // Import Firebase modules directly at the top level
 import { initializeApp, getApps } from 'firebase/app';
 import { getFirestore, collection, getDocs } from 'firebase/firestore';
+import { logAnalyticsEvent } from '@/lib/analytics';
 
 // No need to re-declare Window types - they're already defined in /types/window.d.ts
 
@@ -166,6 +167,18 @@ export default function SimpleBookGrid({ initialBooks }: SimpleBookGridProps) {
       return null;
     }
     
+    // Log book view for analytics
+    useEffect(() => {
+      try {
+        logAnalyticsEvent('book_view', {
+          book_id: book.id,
+          book_title: book.title
+        });
+      } catch (error) {
+        console.error('Error logging book view:', error);
+      }
+    }, [book.id]);
+    
     // Ultra-safe author text handling with fallbacks at every level
     let authorText = 'Unknown Author';
     
@@ -275,6 +288,18 @@ export default function SimpleBookGrid({ initialBooks }: SimpleBookGridProps) {
       console.error('Received undefined book in BookDetailsModal');
       return null;
     }
+    
+    // Log book detail view for analytics
+    useEffect(() => {
+      try {
+        logAnalyticsEvent('book_detail_view', {
+          book_id: book.id,
+          book_title: book.title
+        });
+      } catch (error) {
+        console.error('Error logging book detail view:', error);
+      }
+    }, [book.id]);
     
     // Ultra-safe author text handling with fallbacks at every level
     let authorText = 'Unknown Author';
@@ -456,9 +481,10 @@ export default function SimpleBookGrid({ initialBooks }: SimpleBookGridProps) {
     );
   };
   
-  // Filter controls
+  // Filter and search controls
   const [statusFilter, setStatusFilter] = useState('all');
   const [genreFilter, setGenreFilter] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
   
   // Extra safety checks for filtering books
   const safeBooksArray = Array.isArray(books) ? books : [];
@@ -501,7 +527,7 @@ export default function SimpleBookGrid({ initialBooks }: SimpleBookGridProps) {
     return Array.from(genreSet).sort();
   }, [validBooks]);
   
-  // Apply filters (both status and genre)
+  // Apply filters (status, genre, and search query)
   const filteredBooks = validBooks.filter(book => {
     // Apply status filter
     const statusMatch = statusFilter === 'all' || book.status === statusFilter;
@@ -512,12 +538,65 @@ export default function SimpleBookGrid({ initialBooks }: SimpleBookGridProps) {
         category => category === genreFilter
       ));
     
-    // Book must match both filters
-    return statusMatch && genreMatch;
+    // Apply search filter if query exists
+    let searchMatch = true;
+    if (searchQuery.trim() !== '') {
+      const query = searchQuery.toLowerCase();
+      
+      // Search in title
+      const titleMatch = book.title?.toLowerCase().includes(query);
+      
+      // Search in authors
+      const authorMatch = Array.isArray(book.authors) && book.authors.some(
+        author => typeof author === 'string' && author.toLowerCase().includes(query)
+      );
+      
+      // Search in categories
+      const categoryMatch = Array.isArray(book.categories) && book.categories.some(
+        category => typeof category === 'string' && category.toLowerCase().includes(query)
+      );
+      
+      // Search in description
+      const descriptionMatch = book.description?.toLowerCase().includes(query);
+      
+      // Book matches if any field contains the search query
+      searchMatch = titleMatch || authorMatch || categoryMatch || descriptionMatch;
+    }
+    
+    // Book must match all filters
+    return statusMatch && genreMatch && searchMatch;
   });
   
   return (
     <div>
+      {/* Search bar */}
+      <div className="mb-6">
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="Search by title, author, or genre..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full p-3 pl-10 pr-4 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+          />
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+          {searchQuery && (
+            <button 
+              onClick={() => setSearchQuery('')}
+              className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
+        </div>
+      </div>
+      
       {/* Filter controls - now with two rows: Status and Genre */}
       <div className="mb-8 space-y-4">
         {/* Status filter */}
