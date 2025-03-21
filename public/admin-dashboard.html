@@ -798,8 +798,13 @@
       }
       
       if (!firebaseConfig?.apiKey) {
-        authMessage.innerHTML = '<div style="color: #ef4444; margin-top: 10px;">Error: Firebase config not found. Please check your configuration.</div>';
-        console.error('Firebase config not available');
+        authMessage.innerHTML = `
+          <div style="color: #ef4444; margin-top: 10px;">
+            <p><strong>Firebase credentials missing</strong></p>
+            <p style="margin-top: 8px; font-size: 14px;">This is expected in development. In production, these values would be populated during deployment.</p>
+            <p style="margin-top: 8px; font-size: 14px;">For local testing, you can manually configure the Firebase keys in public/secure-config.js</p>
+          </div>`;
+        console.warn('Firebase config not available - this is expected in development environments');
         return;
       }
       
@@ -1676,7 +1681,7 @@
       }
       
       // Add word counter functionality
-      const postContent = document.getElementById('postContent');
+      // Note: postContent is already defined above, so we don't redefine it
       const wordCount = document.getElementById('wordCount');
       const charCount = document.getElementById('charCount');
       
