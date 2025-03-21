@@ -761,6 +761,10 @@
     </div>
   </div>
   
+  <!-- Load configurations -->
+  <script src="secure-config.js"></script>
+  <script src="runtime-config.js"></script>
+  
   <!-- Firebase script -->
   <script type="module">
     // Import the functions you need from the SDKs
@@ -793,8 +797,10 @@
       // Try to use auth state from session storage 
       const sessionAuth = sessionStorage.getItem('auth_success');
       const sessionTimestamp = sessionStorage.getItem('auth_timestamp');
+      const sessionToken = sessionStorage.getItem('firebase_id_token');
       
       console.log('Session auth available:', !!sessionAuth);
+      console.log('Firebase ID token available:', !!sessionToken);
       
       // Get config - first check SECURE_CONFIG
       if (window.SECURE_CONFIG?.firebase?.apiKey) {
@@ -808,9 +814,9 @@
       }
       // If no config available and we have session auth, use projectId only for analytics
       else if (sessionAuth === 'true' && sessionTimestamp) {
-        console.log('Using minimal Firebase config from project ID');
+        console.log('Using minimal Firebase config from project ID and token from login');
         firebaseConfig = {
-          apiKey: "dummy-key-for-analytics", // This will be replaced before auth
+          apiKey: sessionToken || "dummy-key-for-analytics", // Use token if available  
           projectId: "personalsite-19189",
           authDomain: "personalsite-19189.firebaseapp.com"
         };
@@ -834,6 +840,11 @@
         app = initializeApp(firebaseConfig);
         auth = getAuth(app);
         db = getFirestore(app);
+        
+        // If we have a session token, try to use it (won't work with custom token but might with ID token)
+        if (sessionToken) {
+          console.log('Firebase ID token from session available, checking if it can be used');
+        }
         
         // Check current auth state
         onAuthStateChanged(auth, (user) => {

@@ -178,8 +178,9 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   
-  <!-- Load secure configuration -->
+  <!-- Load configurations -->
   <script src="secure-config.js"></script>
+  <script src="runtime-config.js"></script>
   
   <script>
     // Get base path from URL or secure config
@@ -230,18 +231,34 @@
     // Initialize Firebase with configuration
     function initializeApp() {
       // Get Firebase config from secure-config.js or use fallback
-      const firebaseConfig = window.SECURE_CONFIG && window.SECURE_CONFIG.firebase 
-        ? window.SECURE_CONFIG.firebase 
-        : {
-            // Fallback config - this will be removed in production
-            // and replaced by GitHub Actions during build
-            apiKey: "AIzaSyD4a8iaxHP9xPGV5tR5LwvzDVa5Y9o5wGQ",
-            authDomain: "personalsite-19189.firebaseapp.com",
-            projectId: "personalsite-19189",
-            storageBucket: "personalsite-19189.appspot.com",
-            messagingSenderId: "892517360036",
-            appId: "1:892517360036:web:36dda234d9f3f79562e131"
-          };
+      let firebaseConfig = null;
+      
+      console.log('Login: Checking Firebase configuration availability...');
+      console.log('Login: SECURE_CONFIG exists:', !!window.SECURE_CONFIG);
+      console.log('Login: runtimeConfig exists:', !!window.runtimeConfig);
+      
+      // Try to use SECURE_CONFIG first
+      if (window.SECURE_CONFIG?.firebase?.apiKey) {
+        console.log('Login: Using Firebase config from SECURE_CONFIG');
+        firebaseConfig = window.SECURE_CONFIG.firebase;
+      } 
+      // Then check runtimeConfig
+      else if (window.runtimeConfig?.firebase?.apiKey) {
+        console.log('Login: Using Firebase config from runtimeConfig');
+        firebaseConfig = window.runtimeConfig.firebase;
+      }
+      else {
+        // Fallback for testing only - these would be from secure environment vars in production
+        console.log('Login: Using fallback Firebase config');
+        firebaseConfig = {
+          apiKey: "AIzaSyD4a8iaxHP9xPGV5tR5LwvzDVa5Y9o5wGQ",
+          authDomain: "personalsite-19189.firebaseapp.com",
+          projectId: "personalsite-19189",
+          storageBucket: "personalsite-19189.appspot.com",
+          messagingSenderId: "892517360036",
+          appId: "1:892517360036:web:36dda234d9f3f79562e131"
+        };
+      }
       
       // Initialize Firebase if not already initialized
       if (!firebase.apps.length) {
@@ -260,9 +277,24 @@
           sessionStorage.setItem('auth_success', 'true');
           sessionStorage.setItem('auth_timestamp', new Date().toISOString());
           
-          // Redirect to admin dashboard
+          // Set auth credentials in local storage for dashboard use
           setTimeout(() => {
-            window.location.href = `${getBasePath()}/admin-dashboard.html`;
+            try {
+              // First get the user's ID token
+              user.getIdToken(true).then(function(idToken) {
+                // Store it for admin dashboard use
+                sessionStorage.setItem('firebase_id_token', idToken);
+                // Redirect to admin dashboard
+                window.location.href = `${getBasePath()}/admin-dashboard.html`;
+              }).catch(function(error) {
+                console.error('Error getting ID token:', error);
+                // Still redirect even if token retrieval fails
+                window.location.href = `${getBasePath()}/admin-dashboard.html`;
+              });
+            } catch (error) {
+              console.error('Error during token retrieval:', error);
+              window.location.href = `${getBasePath()}/admin-dashboard.html`;
+            }
           }, 1000);
         }
       });
@@ -297,9 +329,24 @@
             sessionStorage.setItem('auth_success', 'true');
             sessionStorage.setItem('auth_timestamp', new Date().toISOString());
             
-            // Redirect to admin dashboard
+            // Set auth credentials and redirect
             setTimeout(() => {
-              window.location.href = `${getBasePath()}/admin-dashboard.html`;
+              try {
+                // First get the user's ID token
+                userCredential.user.getIdToken(true).then(function(idToken) {
+                  // Store it for admin dashboard use
+                  sessionStorage.setItem('firebase_id_token', idToken);
+                  // Redirect to admin dashboard
+                  window.location.href = `${getBasePath()}/admin-dashboard.html`;
+                }).catch(function(error) {
+                  console.error('Error getting ID token:', error);
+                  // Still redirect even if token retrieval fails
+                  window.location.href = `${getBasePath()}/admin-dashboard.html`;
+                });
+              } catch (error) {
+                console.error('Error during token retrieval:', error);
+                window.location.href = `${getBasePath()}/admin-dashboard.html`;
+              }
             }, 1000);
           })
           .catch(function(error) {
