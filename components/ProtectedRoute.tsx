@@ -40,12 +40,10 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
       console.log('No authenticated user found, redirecting to login');
       setRedirectInProgress(true);
       
-      // Add a small delay to ensure state consistency
-      setTimeout(() => {
-        router.replace('/admin/login');
-      }, 100);
+      // Use hard navigation to avoid client-side routing issues
+      window.location.href = '/admin/login';
     }
-  }, [user, loading, isAuthenticated, router, redirectInProgress]);
+  }, [user, loading, isAuthenticated, redirectInProgress]);
   
   // Show loading indicator while checking auth status
   if (loading || redirectInProgress) {

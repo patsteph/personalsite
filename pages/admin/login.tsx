@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import dynamic from 'next/dynamic';
 import Layout from '@/components/layout/Layout';
@@ -16,21 +16,25 @@ function AdminLoginPage() {
   const router = useRouter();
   const { user, isAuthenticated, loading } = useAuth();
   const { t } = useTranslation();
+  const [redirecting, setRedirecting] = useState(false);
 
   console.log('AdminLoginPage - Auth state:', { isAuthenticated, loading, user: !!user });
 
   // Redirect if already authenticated
   useEffect(() => {
-    if (isAuthenticated && !loading) {
+    if (isAuthenticated && !loading && !redirecting) {
       console.log('User is authenticated, redirecting to admin dashboard');
-      router.push('/admin');
+      setRedirecting(true);
+      // Force hard navigation to avoid Next.js client-side routing issues
+      window.location.href = '/admin';
     }
-  }, [isAuthenticated, loading, router]);
+  }, [isAuthenticated, loading, redirecting]);
 
   const handleLoginSuccess = () => {
     console.log('Login success callback triggered');
-    // Use replace instead of push to avoid back button issues
-    router.replace('/admin');
+    setRedirecting(true);
+    // Force hard navigation to avoid Next.js client-side routing issues
+    window.location.href = '/admin';
   };
 
   return (
@@ -40,8 +44,10 @@ function AdminLoginPage() {
           {t('admin.login', 'Admin Login')}
         </h1>
         
-        {loading ? (
-          <div className="text-center p-4">Checking authentication status...</div>
+        {loading || redirecting ? (
+          <div className="text-center p-4">
+            {loading ? "Checking authentication status..." : "Redirecting to admin dashboard..."}
+          </div>
         ) : (
           <LoginForm onSuccess={handleLoginSuccess} />
         )}

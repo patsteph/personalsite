@@ -50,6 +50,10 @@ yarn-error.log*
 /public/secure-config.js
 /out/secure-config.js
 
+# Do not ignore runtime config
+!/public/runtime-config.js
+!/out/runtime-config.js
+
 # vercel
 .vercel
 

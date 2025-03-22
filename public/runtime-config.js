@@ -7,12 +7,27 @@ window.runtimeConfig = {
     // We only include the projectId in the public files for reference
     projectId: "personalsite-19189"
   },
-  isProduction: true,
+  isProduction: false,
   basePath: ""
 };
 
 // Base path detection (always empty for standard hosting)
 (function detectBasePath() {
   // Log for debugging purposes
-  console.log('Using basePath:', window.runtimeConfig.basePath);
+  console.log('Using runtimeConfig basePath:', window.runtimeConfig.basePath);
+})();
+
+// Add error handler for window.SECURE_CONFIG
+(function ensureSecureConfig() {
+  // Create fallback if SECURE_CONFIG is missing
+  if (typeof window.SECURE_CONFIG === 'undefined') {
+    console.warn('SECURE_CONFIG not found, using minimal fallback for Firebase projectId');
+    window.SECURE_CONFIG = {
+      firebase: {
+        projectId: "personalsite-19189"
+      },
+      basePath: "",
+      isProduction: false
+    };
+  }
 })();
