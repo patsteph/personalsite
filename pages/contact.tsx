@@ -24,7 +24,7 @@ export default function ContactPage() {
         {t('contact.title', 'Contact')}
       </h1>
       
-      <div className="bg-white rounded-lg shadow p-6 mb-8">
+      <div className="bg-white rounded-lg shadow p-3 mb-8">
         <p className="text-steel-blue leading-relaxed">
           I'm always interested in connecting with fellow technology leaders, engineers, and anyone passionate 
           about building great teams or products. Whether you'd like to discuss a collaboration, 

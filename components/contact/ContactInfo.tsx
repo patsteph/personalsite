@@ -23,8 +23,8 @@ export default function ContactInfo(props: ContactInfoProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
       {/* Email section */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-xl font-bold text-accent mb-4">
+      <div className="bg-white rounded-lg shadow p-3">
+        <h2 className="text-xl font-bold text-accent mb-2">
           {t('contact.email', 'Email')}
         </h2>
         <div className="space-y-3">
@@ -54,8 +54,8 @@ export default function ContactInfo(props: ContactInfoProps) {
       </div>
       
       {/* Location section */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-xl font-bold text-accent mb-4">
+      <div className="bg-white rounded-lg shadow p-3">
+        <h2 className="text-xl font-bold text-accent mb-2">
           {t('contact.location', 'Location')}
         </h2>
         <div className="h-64 rounded-lg overflow-hidden">
@@ -81,8 +81,8 @@ export default function ContactInfo(props: ContactInfoProps) {
       </div>
       
       {/* Social media section */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-xl font-bold text-accent mb-4">
+      <div className="bg-white rounded-lg shadow p-3">
+        <h2 className="text-xl font-bold text-accent mb-2">
           {t('contact.connect', 'Connect')}
         </h2>
         <div className="space-y-4">

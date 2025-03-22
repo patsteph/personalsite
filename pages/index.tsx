@@ -21,8 +21,8 @@ export default function HomePage({ recentPosts }: HomePageProps) {
           {t('welcome.title', 'Welcome')}
         </h1>
         
-        <div className="bg-white rounded-lg shadow p-6 mb-8">
-          <p className="text-xl text-steel-blue leading-relaxed mb-4">
+        <div className="bg-white rounded-lg shadow p-3 mb-8">
+          <p className="text-xl text-steel-blue leading-relaxed mb-2">
             {t('welcome.intro', 'Hello! I\'m a Senior Engineering Manager with a passion for building high-performing teams.')}
           </p>
           
@@ -39,11 +39,11 @@ export default function HomePage({ recentPosts }: HomePageProps) {
         </h2>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow">
-            <h3 className="text-xl font-semibold text-steel-blue mb-3">
+          <div className="bg-white rounded-lg shadow p-3 hover:shadow-md transition-shadow">
+            <h3 className="text-xl font-semibold text-steel-blue mb-2">
               {t('nav.blog', 'Blog')}
             </h3>
-            <p className="text-gray-700 mb-4">
+            <p className="text-gray-700 mb-2">
               Thoughts on engineering leadership, technology, and team building. 
             </p>
             <Link 
@@ -57,11 +57,11 @@ export default function HomePage({ recentPosts }: HomePageProps) {
             </Link>
           </div>
           
-          <div className="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow">
-            <h3 className="text-xl font-semibold text-steel-blue mb-3">
+          <div className="bg-white rounded-lg shadow p-3 hover:shadow-md transition-shadow">
+            <h3 className="text-xl font-semibold text-steel-blue mb-2">
               {t('nav.cv', 'CV')}
             </h3>
-            <p className="text-gray-700 mb-4"> 
+            <p className="text-gray-700 mb-2"> 
               See the path that led me to where I am today.
             </p>
             <Link 
@@ -75,11 +75,11 @@ export default function HomePage({ recentPosts }: HomePageProps) {
             </Link>
           </div>
           
-          <div className="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow">
-            <h3 className="text-xl font-semibold text-steel-blue mb-3">
+          <div className="bg-white rounded-lg shadow p-3 hover:shadow-md transition-shadow">
+            <h3 className="text-xl font-semibold text-steel-blue mb-2">
               {t('nav.books', 'Books')}
             </h3>
-            <p className="text-gray-700 mb-4"> 
+            <p className="text-gray-700 mb-2"> 
               I'm an avid reader and believe that continuous learning is essential for growth.
             </p>
             <Link 
@@ -93,11 +93,11 @@ export default function HomePage({ recentPosts }: HomePageProps) {
             </Link>
           </div>
           
-          <div className="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow">
-            <h3 className="text-xl font-semibold text-steel-blue mb-3">
+          <div className="bg-white rounded-lg shadow p-3 hover:shadow-md transition-shadow">
+            <h3 className="text-xl font-semibold text-steel-blue mb-2">
               {t('nav.contact', 'Contact')}
             </h3>
-            <p className="text-gray-700 mb-4">
+            <p className="text-gray-700 mb-2">
               Get in touch for collaborations, speaking opportunities, or just to connect. 
             </p>
             <Link 
@@ -121,7 +121,7 @@ export default function HomePage({ recentPosts }: HomePageProps) {
           
           <div className="space-y-4">
             {recentPosts.map(post => (
-              <div key={post.slug} className="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow">
+              <div key={post.slug} className="bg-white rounded-lg shadow p-3 hover:shadow-md transition-shadow">
                 <h3 className="text-xl font-semibold text-steel-blue mb-2">
                   <Link
                     href={`/blog/${post.slug}`}

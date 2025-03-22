@@ -65,26 +65,26 @@ export default function BooksPage({ initialBooks, initialStats }: BooksPageProps
       
       {/* Book stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
-        <div className="bg-white rounded-lg shadow p-4 text-center">
+        <div className="bg-white rounded-lg shadow p-2 text-center">
           <div className="text-3xl font-bold text-steel-blue">{stats.total}</div>
           <div className="text-sm text-gray-600">{t('books.totalBooks', 'Total Books')}</div>
         </div>
-        <div className="bg-white rounded-lg shadow p-4 text-center">
+        <div className="bg-white rounded-lg shadow p-2 text-center">
           <div className="text-3xl font-bold text-green-600">{stats.read}</div>
           <div className="text-sm text-gray-600">{t('books.read', 'Read')}</div>
         </div>
-        <div className="bg-white rounded-lg shadow p-4 text-center">
+        <div className="bg-white rounded-lg shadow p-2 text-center">
           <div className="text-3xl font-bold text-blue-600">{stats.reading}</div>
           <div className="text-sm text-gray-600">{t('books.reading', 'Currently Reading')}</div>
         </div>
-        <div className="bg-white rounded-lg shadow p-4 text-center">
+        <div className="bg-white rounded-lg shadow p-2 text-center">
           <div className="text-3xl font-bold text-yellow-600">{stats.toRead}</div>
           <div className="text-sm text-gray-600">{t('books.toRead', 'Want to Read')}</div>
         </div>
       </div>
       
       {/* Introduction */}
-      <div className="bg-white rounded-lg shadow p-6 mb-8">
+      <div className="bg-white rounded-lg shadow p-3 mb-8">
         <p className="text-steel-blue leading-relaxed">
           Browse my book collection to see what I've been reading. I believe in continuous learning 
           and often find inspiration in books related to technology, leadership, and business strategy. 
