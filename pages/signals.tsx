@@ -21,7 +21,7 @@ export default function SignalsPage({ newsletters, articles, error }: SignalsPag
   
   // Combine all signals to extract unique tags
   const allSignals = [...newsletters, ...articles];
-  const allTags = [...new Set(allSignals.flatMap(signal => signal.tags || []))];
+  const allTags = Array.from(new Set(allSignals.flatMap(signal => signal.tags || [])));
   
   // Filter signals based on search and tags
   const filteredNewsletters = newsletters.filter(newsletter => {
@@ -63,7 +63,7 @@ export default function SignalsPage({ newsletters, articles, error }: SignalsPag
   };
   
   return (
-    <Layout currentSection="signals">
+    <Layout section="signals">
       <Head>
         <title>Signals | Patrick Stephens</title>
         <meta name="description" content="Recommended newsletters and articles that I find interesting and valuable." />

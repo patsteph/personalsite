@@ -172,7 +172,7 @@ export default function SignalsAdminPage({ signals: initialSignals, error: serve
   
   return (
     <ProtectedRoute>
-      <Layout currentSection="admin">
+      <Layout section="admin">
         <Head>
           <title>Manage Signals | Admin</title>
         </Head>
