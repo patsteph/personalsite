@@ -13,6 +13,9 @@ export * from './book';
 // Re-export CV types
 export * from './cv';
 
+// Re-export Signals types
+export * from './signals';
+
 // Re-export window types if they exist
 try {
   // @ts-ignore - This may not exist

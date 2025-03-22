@@ -25,6 +25,7 @@ export default function Sidebar({ currentSection }: SidebarProps) {
     { section: 'blog', label: t('nav.blog', 'Blog'), href: '/blog' },
     { section: 'cv', label: t('nav.cv', 'CV'), href: '/cv' },
     { section: 'books', label: t('nav.books', 'Books'), href: '/books' },
+    { section: 'signals', label: t('nav.signals', 'Signals'), href: '/signals' },
     { section: 'contact', label: t('nav.contact', 'Contact'), href: '/contact' },
   ];
   
