@@ -33,8 +33,14 @@ function AdminLoginPage() {
   const handleLoginSuccess = () => {
     console.log('Login success callback triggered');
     setRedirecting(true);
-    // Force hard navigation to avoid Next.js client-side routing issues
-    window.location.href = '/admin';
+    
+    // Add a clear message for the user
+    document.body.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 100vh; flex-direction: column;"><div style="border-radius: 50%; width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #3b82f6; animation: spin 1s linear infinite; margin-bottom: 20px;"></div><h2>Login successful! Redirecting to admin dashboard...</h2><style>@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style></div>';
+    
+    // Delay and then force full page reload to admin page
+    setTimeout(() => {
+      window.location.replace('/admin');
+    }, 1000);
   };
 
   return (

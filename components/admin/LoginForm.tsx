@@ -44,11 +44,16 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
       // Mark as redirecting to prevent double submissions
       setIsRedirecting(true);
       
-      // Call onSuccess immediately without delay
+      // Disable the form to prevent further input
+      document.getElementById('admin-login-form')?.setAttribute('disabled', 'true');
+      
+      // Call onSuccess with a small delay to ensure state updates have completed
       console.log('Calling onSuccess redirect callback');
-      if (onSuccess) {
-        onSuccess();
-      }
+      setTimeout(() => {
+        if (onSuccess) {
+          onSuccess();
+        }
+      }, 200);
     } catch (error) {
       console.error('Login error:', error);
       setError('Invalid email or password');

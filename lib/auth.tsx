@@ -179,10 +179,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Reset activity timestamp
       updateLastActivity();
       
-      // Store auth success in sessionStorage for alternative pages
+      // Store auth success in both sessionStorage and a cookie for better persistence
       if (typeof window !== 'undefined') {
+        // Session storage for current tab
         sessionStorage.setItem('auth_success', 'true');
         sessionStorage.setItem('auth_timestamp', new Date().toISOString());
+        
+        // Set a cookie as backup
+        document.cookie = `auth_success=true; path=/; max-age=3600; SameSite=Strict`;
+        
+        console.log('Auth state saved to session and cookies');
       }
     } catch (error) {
       console.error('Authentication error:', error);
@@ -214,10 +220,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setUser(null);
       setIsAuthenticated(false);
       
-      // Clear auth data from sessionStorage
+      // Clear auth data from sessionStorage and cookies
       if (typeof window !== 'undefined') {
+        // Clear session storage
         sessionStorage.removeItem('auth_success');
         sessionStorage.removeItem('auth_timestamp');
+        
+        // Clear cookies by setting expiration to past date
+        document.cookie = 'auth_success=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Strict';
+        
+        console.log('Auth state cleared from session and cookies');
       }
     } catch (error) {
       console.error('Sign out error:', error);
