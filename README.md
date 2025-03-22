@@ -342,6 +342,65 @@ Books are managed through the admin interface. To add a book:
    - Check that the admin user exists in Firebase Authentication
    - Make sure cookies and localStorage are enabled
 
+### Admin Dashboard Issues
+
+1. **Missing admin dashboard features**:
+   - There are two parallel admin implementations:
+     - React-based admin (in `/pages/admin/`) - The modern implementation
+     - HTML-based admin (in `/public/admin-dashboard.html`) - Legacy implementation
+   - Problem: The admin link might be loading the legacy HTML version instead of the React version
+
+2. **Fix for "Signals Management not displaying"**:
+   - Navigate directly to React-based admin: `/admin` (not `/admin-dashboard.html`)
+   - Clear browser cache and cookies or try a different browser
+   - Make sure you're not using the standalone HTML page which doesn't have Signals management
+
+3. **Admin URL configuration**:
+   - The AdminButton component in the site footer should link to `/admin` not `/admin-dashboard.html`
+   - Check navigation links in `/components/ui/AdminButton.tsx`
+
+## 📋 Signals Feature Overview
+
+The Signals feature allows you to curate and share recommended newsletters and articles.
+
+### Features
+
+- Two content types: Newsletters and Articles
+- Filter by type, featured status, and tags
+- Full-text search across title, description, and metadata
+- Social media sharing (LinkedIn, Twitter, Bluesky)
+- Featured signal highlighting
+
+### Admin Management
+
+- List view with filtering and search
+- Add/edit newsletters with publisher, frequency, and subscription URL
+- Add/edit articles with author, source, and reading time
+- Tag management for categorization
+- Featured status toggle
+- Social media sharing options
+
+### Components Structure
+
+```
+/components/signals/
+├── ArticleList.tsx    # List view of articles
+├── NewsletterList.tsx # List view of newsletters  
+├── SignalCard.tsx     # Card component for signals
+├── SignalDetail.tsx   # Detail modal view
+└── index.tsx          # Exports all components
+
+/components/admin/
+└── SignalForm.tsx     # Admin form for signal management
+
+/pages/
+├── signals.tsx        # Public signals page
+└── admin/signals.tsx  # Admin management page
+
+/lib/api/signals.ts    # API client for signals
+/pages/api/signals.ts  # Server API endpoint
+```
+
 ## 🔧 GitHub to Standard Hosting Migration
 
 If you previously deployed on GitHub Pages:

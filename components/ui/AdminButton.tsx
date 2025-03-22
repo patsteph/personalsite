@@ -1,26 +1,19 @@
-import { useEffect, useState } from 'react';
+import { useRouter } from 'next/router';
 
 export default function AdminButton() {
-  // State to hold URL, initialized empty for SSR
-  const [adminUrl, setAdminUrl] = useState('/admin-login.html');
+  const router = useRouter();
 
-  // Only use window in useEffect (client-side only)
-  useEffect(() => {
-    // Now safe to use window
-    if (typeof window !== 'undefined') {
-      // No longer using GitHub Pages, use relative path
-      setAdminUrl('/admin-login.html');
-    }
-  }, []);
+  const handleAdminClick = () => {
+    // Use Next.js router to navigate to the React-based admin page
+    router.push('/admin');
+  };
   
   return (
-    <a 
-      href={adminUrl}
-      target="_blank" 
-      rel="noopener noreferrer"
+    <button 
+      onClick={handleAdminClick}
       className="bg-steel-blue hover:bg-accent text-white font-medium py-2 px-4 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-steel-blue inline-block"
     >
       Admin
-    </a>
+    </button>
   );
 }
