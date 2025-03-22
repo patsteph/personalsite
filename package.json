@@ -15,6 +15,7 @@
     "generate-standard-config": "node scripts/generate-standard-config.js",
     "generate-secure-config": "node scripts/generate-secure-config.js",
     "fix-blog-admin": "node scripts/blog-fixes/update-blog-admin.js",
+    "fix-blog-admin-direct": "node scripts/blog-fixes/direct-edit.js",
     "deploy:vercel": "vercel",
     "deploy:vercel:prod": "vercel --prod",
     "deploy:netlify": "netlify deploy"

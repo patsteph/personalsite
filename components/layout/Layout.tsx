@@ -36,6 +36,7 @@ export default function Layout({
     blog: t('blog.title', 'Blog'),
     cv: t('cv.title', 'Curriculum Vitae'),
     books: t('books.title', 'My Book Collection'),
+    signals: t('signals.title', 'Signals'),
     contact: t('contact.title', 'Contact'),
     admin: t('admin.login', 'Admin')
   };
