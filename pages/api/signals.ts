@@ -2,7 +2,7 @@
  * Signals API endpoint
  */
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { validateFirebaseIdToken } from '@/lib/api/auth';
+import { validateFirebaseIdToken } from '@/lib/api/server-auth';
 import * as signalsApi from '@/lib/api/signals';
 import { Signal } from '@/types';
 

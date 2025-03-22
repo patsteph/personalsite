@@ -1,3 +1,11 @@
+// This module should only be imported in server-side code
+// Never import this in client-side components or pages
+
+// Make sure this code only runs on the server
+if (typeof window !== 'undefined') {
+  throw new Error('firebase-admin should only be imported on the server side');
+}
+
 import * as admin from 'firebase-admin';
 
 // Initialize Firebase Admin SDK
