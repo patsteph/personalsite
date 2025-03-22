@@ -1,5 +1,5 @@
 // components/ProtectedRoute.tsx
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '@/lib/auth';
 import { getBasePath } from '@/lib/firebase';
@@ -28,17 +28,28 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
   const isAuthenticated = !!user;
   const router = useRouter();
   
+  // State to track if we've started the redirect
+  const [redirectInProgress, setRedirectInProgress] = useState(false);
+  
   useEffect(() => {
+    // Add debug logging
+    console.log('ProtectedRoute - Auth state:', { isAuthenticated, loading, redirectInProgress });
+    
     // If auth is finished loading and user is not authenticated, redirect to login
-    if (!loading && !isAuthenticated) {
+    if (!loading && !isAuthenticated && !redirectInProgress) {
       console.log('No authenticated user found, redirecting to login');
-      router.replace('/admin/login');
+      setRedirectInProgress(true);
+      
+      // Add a small delay to ensure state consistency
+      setTimeout(() => {
+        router.replace('/admin/login');
+      }, 100);
     }
-  }, [user, loading, isAuthenticated, router]);
+  }, [user, loading, isAuthenticated, router, redirectInProgress]);
   
   // Show loading indicator while checking auth status
-  if (loading) {
-    return <SimpleLoading message="Checking authentication..." />;
+  if (loading || redirectInProgress) {
+    return <SimpleLoading message={loading ? "Checking authentication..." : "Redirecting to login..."} />;
   }
   
   // Only render children if user is authenticated

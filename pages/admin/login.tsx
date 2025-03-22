@@ -14,15 +14,24 @@ const LoginForm = dynamic(() => import('@/components/admin/LoginForm'), {
 
 function AdminLoginPage() {
   const router = useRouter();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, loading } = useAuth();
   const { t } = useTranslation();
+
+  console.log('AdminLoginPage - Auth state:', { isAuthenticated, loading, user: !!user });
 
   // Redirect if already authenticated
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && !loading) {
+      console.log('User is authenticated, redirecting to admin dashboard');
       router.push('/admin');
     }
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated, loading, router]);
+
+  const handleLoginSuccess = () => {
+    console.log('Login success callback triggered');
+    // Use replace instead of push to avoid back button issues
+    router.replace('/admin');
+  };
 
   return (
     <Layout section="admin">
@@ -31,7 +40,11 @@ function AdminLoginPage() {
           {t('admin.login', 'Admin Login')}
         </h1>
         
-        <LoginForm onSuccess={() => router.push('/admin')} />
+        {loading ? (
+          <div className="text-center p-4">Checking authentication status...</div>
+        ) : (
+          <LoginForm onSuccess={handleLoginSuccess} />
+        )}
       </div>
     </Layout>
   );

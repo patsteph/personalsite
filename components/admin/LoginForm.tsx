@@ -14,6 +14,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('Login form submit triggered');
     
     if (!email || !password) {
       setError('Please enter both email and password');
@@ -24,14 +25,21 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
     setError('');
     
     try {
+      // Log before authentication attempt
+      console.log('Attempting authentication...');
+      
       // Perform authentication
       await signIn(email, password);
       console.log('LoginForm: Sign in successful');
       
-      // Call onSuccess which will handle the redirect in the parent component
-      if (onSuccess) {
-        onSuccess();
-      }
+      // Add delay before redirect to ensure state updates
+      setTimeout(() => {
+        console.log('Calling onSuccess redirect callback');
+        // Call onSuccess which will handle the redirect in the parent component
+        if (onSuccess) {
+          onSuccess();
+        }
+      }, 500);
     } catch (error) {
       console.error('Login error:', error);
       setError('Invalid email or password');
