@@ -1,11 +1,11 @@
 // components/signals/NewsletterList.tsx
 import React from 'react';
-import { Newsletter } from '@/types';
+import { Newsletter, Signal } from '@/types';
 import SignalCard from './SignalCard';
 
 interface NewsletterListProps {
   newsletters: Newsletter[];
-  onViewDetails?: (newsletter: Newsletter) => void;
+  onViewDetails?: (signal: Signal) => void;
 }
 
 export default function NewsletterList({ newsletters, onViewDetails }: NewsletterListProps) {

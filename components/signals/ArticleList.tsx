@@ -1,11 +1,11 @@
 // components/signals/ArticleList.tsx
 import React from 'react';
-import { Article } from '@/types';
+import { Article, Signal } from '@/types';
 import SignalCard from './SignalCard';
 
 interface ArticleListProps {
   articles: Article[];
-  onViewDetails?: (article: Article) => void;
+  onViewDetails?: (signal: Signal) => void;
 }
 
 export default function ArticleList({ articles, onViewDetails }: ArticleListProps) {
