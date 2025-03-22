@@ -1,0 +1,381 @@
+import { useState, useEffect } from 'react';
+import { BlogPost } from '@/types/blog';
+import dynamic from 'next/dynamic';
+
+// Dynamically import the rich text editor to avoid SSR issues
+const TextEditor = dynamic(() => import('./TextEditor'), {
+  ssr: false,
+  loading: () => <div className="h-64 w-full bg-gray-100 animate-pulse rounded"></div>
+});
+
+type BlogEditorProps = {
+  initialPost?: BlogPost;
+  onSave: (post: BlogPost | Omit<BlogPost, 'id'>) => Promise<void>;
+};
+
+// Create a new empty blog post template
+const createEmptyPost = (): Omit<BlogPost, 'id'> => ({
+  title: '',
+  slug: '',
+  summary: '',
+  content: '',
+  author: '',
+  coverImage: '',
+  tags: [],
+  published: false,
+  publishedAt: null,
+  readingTime: 0,
+});
+
+export default function BlogEditor({ initialPost, onSave }: BlogEditorProps) {
+  // If initialPost is provided, use it as the starting state, otherwise create an empty post
+  const [post, setPost] = useState<BlogPost | Omit<BlogPost, 'id'>>(
+    initialPost || createEmptyPost()
+  );
+  
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [tagsInput, setTagsInput] = useState('');
+  
+  // Set tags input when initial post is loaded
+  useEffect(() => {
+    if (initialPost?.tags) {
+      setTagsInput(initialPost.tags.join(', '));
+    }
+  }, [initialPost]);
+  
+  // Handle text field changes
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setPost(prev => ({ ...prev, [name]: value }));
+    
+    // Clear error for this field if it exists
+    if (errors[name]) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
+  };
+  
+  // Handle slug generation from title
+  const generateSlug = () => {
+    if (!post.title) return;
+    
+    const slug = post.title
+      .toLowerCase()
+      .replace(/[^\w\s-]/g, '') // Remove special characters
+      .replace(/\s+/g, '-') // Replace spaces with hyphens
+      .replace(/-+/g, '-') // Replace multiple hyphens with single hyphen
+      .trim();
+    
+    setPost(prev => ({ ...prev, slug }));
+  };
+  
+  // Handle rich text editor content changes
+  const handleContentChange = (content: string) => {
+    setPost(prev => ({ ...prev, content }));
+    
+    // Calculate reading time (rough estimate: 200 words per minute)
+    const wordCount = content.trim().split(/\s+/).length;
+    const readingTime = Math.max(1, Math.ceil(wordCount / 200));
+    
+    setPost(prev => ({ ...prev, content, readingTime }));
+    
+    // Clear content error if it exists
+    if (errors.content) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors.content;
+        return newErrors;
+      });
+    }
+  };
+  
+  // Handle checkbox changes
+  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, checked } = e.target;
+    setPost(prev => ({ ...prev, [name]: checked }));
+  };
+  
+  // Handle tags input changes
+  const handleTagsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setTagsInput(e.target.value);
+    
+    // Parse tags from comma-separated input
+    const tags = e.target.value
+      .split(',')
+      .map(tag => tag.trim())
+      .filter(tag => tag.length > 0);
+    
+    setPost(prev => ({ ...prev, tags }));
+  };
+  
+  // Validate form before submission
+  const validateForm = (): boolean => {
+    const newErrors: Record<string, string> = {};
+    
+    if (!post.title) newErrors.title = 'Title is required';
+    if (!post.slug) newErrors.slug = 'Slug is required';
+    if (!post.summary) newErrors.summary = 'Summary is required';
+    if (!post.content) newErrors.content = 'Content is required';
+    
+    // Check for unique slug if we're creating a new post
+    // In a real app, you'd check this against the database
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+  
+  // Handle form submission
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+    
+    setIsSubmitting(true);
+    
+    try {
+      // If post is being published for the first time, set publishedAt
+      const postToSave = {
+        ...post,
+        publishedAt: post.published && !post.publishedAt ? new Date() : post.publishedAt
+      };
+      
+      await onSave(postToSave);
+    } catch (error) {
+      console.error('Error saving blog post:', error);
+      setErrors({ form: 'An error occurred while saving the blog post' });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  
+  // Handle cover image upload
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    // Here you would typically upload the image to your storage
+    // and get back a URL to store in the post object
+    
+    // For now, we'll just simulate this with a fake URL
+    // In a real implementation, you'd integrate with Firebase Storage
+    // or another file storage service
+    
+    alert('In a production app, this would upload the image to storage. For now, please enter an image URL directly.');
+  };
+  
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      {/* General error message */}
+      {errors.form && (
+        <div className="p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+          {errors.form}
+        </div>
+      )}
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Title */}
+        <div className="col-span-2">
+          <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
+            Title <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            id="title"
+            name="title"
+            value={post.title}
+            onChange={handleChange}
+            onBlur={() => !post.slug && generateSlug()}
+            className={`w-full px-4 py-2 border ${
+              errors.title ? 'border-red-500' : 'border-gray-300'
+            } rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500`}
+          />
+          {errors.title && (
+            <p className="mt-1 text-sm text-red-500">{errors.title}</p>
+          )}
+        </div>
+        
+        {/* Slug */}
+        <div className="col-span-2 md:col-span-1">
+          <label htmlFor="slug" className="block text-sm font-medium text-gray-700 mb-1">
+            Slug <span className="text-red-500">*</span>
+          </label>
+          <div className="flex">
+            <input
+              type="text"
+              id="slug"
+              name="slug"
+              value={post.slug}
+              onChange={handleChange}
+              className={`flex-grow px-4 py-2 border ${
+                errors.slug ? 'border-red-500' : 'border-gray-300'
+              } rounded-l-md focus:outline-none focus:ring-2 focus:ring-indigo-500`}
+            />
+            <button
+              type="button"
+              onClick={generateSlug}
+              className="px-4 py-2 bg-gray-200 text-gray-700 rounded-r-md hover:bg-gray-300"
+            >
+              Generate
+            </button>
+          </div>
+          {errors.slug ? (
+            <p className="mt-1 text-sm text-red-500">{errors.slug}</p>
+          ) : (
+            <p className="mt-1 text-xs text-gray-500">
+              This will be the URL of your blog post: /blog/{post.slug}
+            </p>
+          )}
+        </div>
+        
+        {/* Author */}
+        <div>
+          <label htmlFor="author" className="block text-sm font-medium text-gray-700 mb-1">
+            Author
+          </label>
+          <input
+            type="text"
+            id="author"
+            name="author"
+            value={post.author || ''}
+            onChange={handleChange}
+            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+        </div>
+        
+        {/* Summary */}
+        <div className="col-span-2">
+          <label htmlFor="summary" className="block text-sm font-medium text-gray-700 mb-1">
+            Summary <span className="text-red-500">*</span>
+          </label>
+          <textarea
+            id="summary"
+            name="summary"
+            value={post.summary}
+            onChange={handleChange}
+            rows={3}
+            className={`w-full px-4 py-2 border ${
+              errors.summary ? 'border-red-500' : 'border-gray-300'
+            } rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500`}
+          />
+          {errors.summary ? (
+            <p className="mt-1 text-sm text-red-500">{errors.summary}</p>
+          ) : (
+            <p className="mt-1 text-xs text-gray-500">
+              A brief description of the blog post (shown in previews)
+            </p>
+          )}
+        </div>
+        
+        {/* Cover Image */}
+        <div className="col-span-2">
+          <label htmlFor="coverImage" className="block text-sm font-medium text-gray-700 mb-1">
+            Cover Image URL
+          </label>
+          <input
+            type="text"
+            id="coverImage"
+            name="coverImage"
+            value={post.coverImage || ''}
+            onChange={handleChange}
+            placeholder="https://example.com/image.jpg"
+            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+          <p className="mt-1 text-xs text-gray-500">
+            Enter a direct URL to an image, or upload one:
+          </p>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleImageUpload}
+            className="mt-2"
+          />
+        </div>
+        
+        {/* Tags */}
+        <div className="col-span-2">
+          <label htmlFor="tags" className="block text-sm font-medium text-gray-700 mb-1">
+            Tags
+          </label>
+          <input
+            type="text"
+            id="tags"
+            value={tagsInput}
+            onChange={handleTagsChange}
+            placeholder="technology, programming, web development"
+            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+          <p className="mt-1 text-xs text-gray-500">
+            Separate tags with commas
+          </p>
+          {post.tags && post.tags.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-2">
+              {post.tags.map((tag, index) => (
+                <span
+                  key={index}
+                  className="px-2 py-1 bg-indigo-100 text-indigo-800 text-xs rounded-full"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+        
+        {/* Content Editor */}
+        <div className="col-span-2">
+          <label htmlFor="content" className="block text-sm font-medium text-gray-700 mb-1">
+            Content <span className="text-red-500">*</span>
+          </label>
+          <TextEditor 
+            initialContent={post.content} 
+            onChange={handleContentChange}
+          />
+          {errors.content && (
+            <p className="mt-1 text-sm text-red-500">{errors.content}</p>
+          )}
+        </div>
+        
+        {/* Published Status */}
+        <div className="col-span-2">
+          <div className="flex items-center">
+            <input
+              type="checkbox"
+              id="published"
+              name="published"
+              checked={post.published || false}
+              onChange={handleCheckboxChange}
+              className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+            />
+            <label htmlFor="published" className="ml-2 block text-sm text-gray-700">
+              Publish this post
+            </label>
+          </div>
+          <p className="mt-1 text-xs text-gray-500">
+            {post.published 
+              ? 'This post will be visible to all visitors'
+              : 'This post will be saved as a draft and only visible to you'}
+          </p>
+        </div>
+      </div>
+      
+      {/* Form actions */}
+      <div className="flex justify-end space-x-4 pt-4 border-t">
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className={`px-6 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
+            isSubmitting ? 'opacity-70 cursor-not-allowed' : ''
+          }`}
+        >
+          {isSubmitting ? 'Saving...' : (initialPost ? 'Update Post' : 'Create Post')}
+        </button>
+      </div>
+    </form>
+  );
+}

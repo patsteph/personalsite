@@ -107,10 +107,10 @@ export default function AdminPage() {
                 <h2 className="text-xl font-bold text-indigo-600 mb-2">Blog Management</h2>
                 <p className="text-gray-600 mb-4">Write, edit, and publish blog posts.</p>
                 <button 
-                  className="w-full py-2 bg-indigo-600 text-white rounded hover:bg-opacity-90 transition-colors opacity-50 cursor-not-allowed"
-                  disabled
+                  onClick={() => navigateTo('/admin/blog')}
+                  className="w-full py-2 bg-indigo-600 text-white rounded hover:bg-opacity-90 transition-colors"
                 >
-                  Coming Soon
+                  Manage Blog
                 </button>
               </div>
             </div>
@@ -131,6 +131,12 @@ export default function AdminPage() {
                 className="px-4 py-2 bg-amber-600 text-white rounded hover:bg-opacity-90 transition-colors"
               >
                 Add New Signal
+              </button>
+              <button 
+                onClick={() => navigateTo('/admin/blog')}
+                className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-opacity-90 transition-colors"
+              >
+                Add New Blog Post
               </button>
               {/* Analytics button - temporarily disabled until analytics dashboard is migrated to React */}
               <button 
