@@ -1,10 +1,21 @@
 import { NextResponse } from 'next/server';
 
-// Middleware function to protect routes
+// Middleware function to protect routes and handle admin redirects
 export async function middleware(req) {
+  const { pathname } = req.nextUrl;
+  
+  // Redirect legacy admin HTML pages to the React-based admin
+  if (pathname === '/admin-login.html') {
+    return NextResponse.redirect(new URL('/admin/login', req.url));
+  }
+  
+  if (pathname === '/admin-dashboard.html') {
+    return NextResponse.redirect(new URL('/admin', req.url));
+  }
+  
   // Protect admin routes that are not the login page
-  if (req.nextUrl.pathname.startsWith('/admin') && 
-      !req.nextUrl.pathname.includes('/admin/login')) {
+  if (pathname.startsWith('/admin') && 
+      !pathname.includes('/admin/login')) {
     
     // Check for the auth session cookie
     const authCookie = req.cookies.get('auth_session');
@@ -21,5 +32,5 @@ export async function middleware(req) {
 
 // Configure which routes use this middleware
 export const config = {
-  matcher: ['/admin/:path*'],
+  matcher: ['/admin/:path*', '/admin-login.html', '/admin-dashboard.html'],
 };
