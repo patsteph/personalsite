@@ -4,6 +4,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { validateFirebaseIdToken } from '@/lib/api/server-auth';
 import * as signalsApi from '@/lib/api/signals';
+import { shareToSocialMedia } from '@/lib/socialShare';
 import { Signal } from '@/types';
 
 export default async function handler(
@@ -53,7 +54,7 @@ export default async function handler(
     
     // Handle POST request (create a new signal)
     if (req.method === 'POST') {
-      const signalData = req.body;
+      const { shareToSocial, ...signalData } = req.body;
       
       // Validate the required fields
       if (!signalData || !signalData.title || !signalData.type) {
@@ -65,12 +66,35 @@ export default async function handler(
         return res.status(500).json({ error: 'Error creating signal' });
       }
       
-      return res.status(201).json({ id: signalId });
+      // Handle social media sharing if requested
+      let socialShareResults = {};
+      if (shareToSocial) {
+        try {
+          socialShareResults = await shareToSocialMedia(
+            {
+              title: signalData.title,
+              description: signalData.description,
+              url: signalData.url,
+              imageUrl: signalData.imageUrl
+            },
+            {
+              linkedin: shareToSocial.linkedin,
+              twitter: shareToSocial.twitter,
+              bluesky: shareToSocial.bluesky
+            }
+          );
+        } catch (error) {
+          console.error('Error sharing to social media:', error);
+          // We continue even if social sharing fails
+        }
+      }
+      
+      return res.status(201).json({ id: signalId, socialShareResults });
     }
     
     // Handle PUT request (update a signal)
     if (req.method === 'PUT') {
-      const { id, ...signalData } = req.body;
+      const { id, shareToSocial, ...signalData } = req.body;
       
       if (!id) {
         return res.status(400).json({ error: 'Missing signal ID' });
@@ -81,7 +105,30 @@ export default async function handler(
         return res.status(500).json({ error: 'Error updating signal' });
       }
       
-      return res.status(200).json({ success: true });
+      // Handle social media sharing if requested
+      let socialShareResults = {};
+      if (shareToSocial) {
+        try {
+          socialShareResults = await shareToSocialMedia(
+            {
+              title: signalData.title,
+              description: signalData.description,
+              url: signalData.url,
+              imageUrl: signalData.imageUrl
+            },
+            {
+              linkedin: shareToSocial.linkedin,
+              twitter: shareToSocial.twitter,
+              bluesky: shareToSocial.bluesky
+            }
+          );
+        } catch (error) {
+          console.error('Error sharing to social media:', error);
+          // We continue even if social sharing fails
+        }
+      }
+      
+      return res.status(200).json({ success: true, socialShareResults });
     }
     
     // Handle DELETE request

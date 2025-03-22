@@ -4,7 +4,7 @@ import { Signal, Newsletter, Article } from '@/types';
 
 interface SignalFormProps {
   initialData?: Signal;
-  onSubmit: (data: Omit<Signal, 'id'>) => void;
+  onSubmit: (data: Omit<Signal, 'id'> & { shareToSocial?: { linkedin: boolean; twitter: boolean; bluesky: boolean } }) => void;
   onCancel: () => void;
   isSubmitting: boolean;
 }
@@ -47,6 +47,11 @@ export default function SignalForm({ initialData, onSubmit, onCancel, isSubmitti
   // Common data for both types
   const [affiliateCode, setAffiliateCode] = useState(initialData?.affiliateCode || '');
   
+  // Social sharing options
+  const [shareToLinkedIn, setShareToLinkedIn] = useState(false);
+  const [shareToTwitter, setShareToTwitter] = useState(false);
+  const [shareToBlueSky, setShareToBlueSky] = useState(false);
+  
   // Add a tag
   const handleAddTag = () => {
     if (tagInput.trim() && !tags.includes(tagInput.trim())) {
@@ -72,6 +77,15 @@ export default function SignalForm({ initialData, onSubmit, onCancel, isSubmitti
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Create socialToShare object if any platforms are selected
+    const shareToSocial = (shareToLinkedIn || shareToTwitter || shareToBlueSky) 
+      ? {
+          linkedin: shareToLinkedIn,
+          twitter: shareToTwitter,
+          bluesky: shareToBlueSky
+        } 
+      : undefined;
+    
     // Common data for both signal types
     const commonData = {
       title,
@@ -94,7 +108,7 @@ export default function SignalForm({ initialData, onSubmit, onCancel, isSubmitti
         subscriptionUrl: subscriptionUrl || url,
         sampleUrl: sampleUrl || undefined,
       };
-      onSubmit(newsletterData);
+      onSubmit({ ...newsletterData, shareToSocial });
     } else {
       const articleData: Omit<Article, 'id'> = {
         type: 'article',
@@ -104,7 +118,7 @@ export default function SignalForm({ initialData, onSubmit, onCancel, isSubmitti
         publishDate: publishDate || new Date().toISOString(),
         readingTime: readingTime || undefined,
       };
-      onSubmit(articleData);
+      onSubmit({ ...articleData, shareToSocial });
     }
   };
   
@@ -209,6 +223,54 @@ export default function SignalForm({ initialData, onSubmit, onCancel, isSubmitti
               Featured (will be highlighted on the page)
             </label>
           </div>
+        </div>
+        
+        {/* Social Sharing Options */}
+        <div className="border-t border-gray-200 pt-4 pb-2">
+          <h3 className="text-md font-medium text-gray-700 mb-2">Share to Social Media</h3>
+          <div className="space-y-2">
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="shareToLinkedIn"
+                checked={shareToLinkedIn}
+                onChange={(e) => setShareToLinkedIn(e.target.checked)}
+                className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+              />
+              <label htmlFor="shareToLinkedIn" className="ml-2 block text-sm text-gray-700">
+                LinkedIn
+              </label>
+            </div>
+            
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="shareToTwitter"
+                checked={shareToTwitter}
+                onChange={(e) => setShareToTwitter(e.target.checked)}
+                className="h-4 w-4 rounded border-gray-300 text-sky-600 focus:ring-sky-500"
+              />
+              <label htmlFor="shareToTwitter" className="ml-2 block text-sm text-gray-700">
+                Twitter
+              </label>
+            </div>
+            
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="shareToBlueSky"
+                checked={shareToBlueSky}
+                onChange={(e) => setShareToBlueSky(e.target.checked)}
+                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              <label htmlFor="shareToBlueSky" className="ml-2 block text-sm text-gray-700">
+                BlueSky
+              </label>
+            </div>
+          </div>
+          <p className="text-xs text-gray-500 mt-2">
+            When checked, a post will be created on these platforms when you save this signal.
+          </p>
         </div>
         
         <div>

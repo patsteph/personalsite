@@ -77,7 +77,7 @@ export default function SignalsAdminPage({ signals: initialSignals, error: serve
   };
   
   // Handle form submission (for both create and update)
-  const handleSubmit = async (data: Omit<Signal, 'id'>) => {
+  const handleSubmit = async (data: Omit<Signal, 'id'> & { shareToSocial?: { linkedin: boolean; twitter: boolean; bluesky: boolean } }) => {
     setIsSubmitting(true);
     setError(null);
     
@@ -98,7 +98,17 @@ export default function SignalsAdminPage({ signals: initialSignals, error: serve
         const result = await response.json();
         
         if (response.ok) {
-          setSuccessMessage('Signal updated successfully');
+          let message = 'Signal updated successfully';
+          if (result.socialShareResults) {
+            const platforms = Object.entries(result.socialShareResults)
+              .filter(([_, status]) => status === 'success')
+              .map(([platform]) => platform);
+            
+            if (platforms.length > 0) {
+              message += ` and shared to ${platforms.join(', ')}`;
+            }
+          }
+          setSuccessMessage(message);
           setIsFormOpen(false);
           loadSignals(); // Reload signals to get the updated data
         } else {
@@ -117,7 +127,17 @@ export default function SignalsAdminPage({ signals: initialSignals, error: serve
         const result = await response.json();
         
         if (response.ok) {
-          setSuccessMessage('Signal created successfully');
+          let message = 'Signal created successfully';
+          if (result.socialShareResults) {
+            const platforms = Object.entries(result.socialShareResults)
+              .filter(([_, status]) => status === 'success')
+              .map(([platform]) => platform);
+            
+            if (platforms.length > 0) {
+              message += ` and shared to ${platforms.join(', ')}`;
+            }
+          }
+          setSuccessMessage(message);
           setIsFormOpen(false);
           loadSignals(); // Reload signals to get the new data
         } else {
