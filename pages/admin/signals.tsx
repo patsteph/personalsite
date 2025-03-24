@@ -16,13 +16,7 @@ interface SignalsAdminPageProps {
 }
 
 export default function SignalsAdminPage({ signals: initialSignals, error: serverError }: SignalsAdminPageProps) {
-  // Redirect to the fixed version of this page
   const router = useRouter();
-  
-  useEffect(() => {
-    console.log('Redirecting from original signals page to fixed version');
-    router.replace('/admin/signals-fixed');
-  }, [router]);
   
   // Local state
   const [signals, setSignals] = useState<Signal[]>(initialSignals);
@@ -68,25 +62,22 @@ export default function SignalsAdminPage({ signals: initialSignals, error: serve
       
       const token = await currentUser.getIdToken();
       
-      // Debug window location for GET request
-      console.log('Window location for GET:', {
-        href: window.location.href,
-        origin: window.location.origin,
-        host: window.location.host
-      });
-      
       console.log('Loading signals with auth token');
-      // Use relative URL to ensure we hit the current server
-      const response = await fetch('/api/signals', {
+      
+      // Use the proxy endpoint instead of the direct signals API
+      const response = await fetch('/api/signals-proxy', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'X-Requested-With': 'XMLHttpRequest'
-        },
-        credentials: 'include',
-        mode: 'cors'
+        }
       });
       
       console.log('GET response status:', response.status);
+      
+      if (!response.ok) {
+        throw new Error(`API returned ${response.status}: ${response.statusText}`);
+      }
+      
       const data = await response.json();
       
       if (response.ok) {
@@ -98,7 +89,7 @@ export default function SignalsAdminPage({ signals: initialSignals, error: serve
       }
     } catch (err) {
       console.error('Error loading signals:', err);
-      setError('Network error. Please try again.');
+      setError(`Network error: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       setIsLoading(false);
     }
@@ -138,7 +129,8 @@ export default function SignalsAdminPage({ signals: initialSignals, error: serve
       // Common headers for API requests
       const headers = {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
+        'Authorization': `Bearer ${token}`,
+        'X-Requested-With': 'XMLHttpRequest'
       };
       
       console.log('Submitting signal with auth token', {
@@ -147,151 +139,87 @@ export default function SignalsAdminPage({ signals: initialSignals, error: serve
       });
       
       if (selectedSignal) {
-        // Update existing signal
+        // Update existing signal using the proxy endpoint
         console.log('Updating signal with ID:', selectedSignal.id);
-        try {
-          // Debug window location for PUT request
-          console.log('Window location for PUT:', {
-            href: window.location.href,
-            origin: window.location.origin,
-            host: window.location.host
-          });
-          
-          // Use relative URL with explicit fetch options
-          const response = await fetch('/api/signals', {
-            method: 'PUT',
-            headers: {
-              ...headers,
-              'X-Requested-With': 'XMLHttpRequest'
-            },
-            body: JSON.stringify({
-              id: selectedSignal.id,
-              ...data,
-            }),
-            credentials: 'include',
-            mode: 'cors',
-            cache: 'no-cache'
-          });
-          
-          console.log('PUT response status:', response.status);
-          const contentType = response.headers.get('content-type');
-          
-          // Check if response is JSON
-          if (contentType && contentType.includes('application/json')) {
-            const result = await response.json();
-            console.log('PUT response data:', result);
-            
-            if (response.ok) {
-              let message = 'Signal updated successfully';
-              if (result.socialShareResults) {
-                const platforms = Object.entries(result.socialShareResults)
-                  .filter(([_, status]) => status === 'success')
-                  .map(([platform]) => platform);
-                
-                if (platforms.length > 0) {
-                  message += ` and shared to ${platforms.join(', ')}`;
-                }
-              }
-              setSuccessMessage(message);
-              setIsFormOpen(false);
-              loadSignals(); // Reload signals to get the updated data
-            } else {
-              setError(result.error || 'Failed to update signal');
-            }
-          } else {
-            // Handle non-JSON response
-            const text = await response.text();
-            console.error('Non-JSON response:', text);
-            setError(`Failed to update signal: ${response.status} ${response.statusText}`);
-          }
-        } catch (error) {
-          console.error('Error during PUT request:', error);
-          setError(`Failed to update signal: ${error instanceof Error ? error.message : String(error)}`);
+        
+        const response = await fetch('/api/signals-proxy', {
+          method: 'PUT',
+          headers,
+          body: JSON.stringify({
+            id: selectedSignal.id,
+            ...data,
+          }),
+          credentials: 'include',
+          mode: 'cors',
+          cache: 'no-cache'
+        });
+        
+        console.log('PUT response status:', response.status);
+        
+        if (!response.ok) {
+          throw new Error(`API returned ${response.status}: ${response.statusText}`);
         }
+        
+        const result = await response.json();
+        console.log('PUT response data:', result);
+        
+        let message = 'Signal updated successfully';
+        if (result.socialShareResults) {
+          const platforms = Object.entries(result.socialShareResults)
+            .filter(([_, status]) => status === 'success')
+            .map(([platform]) => platform);
+          
+          if (platforms.length > 0) {
+            message += ` and shared to ${platforms.join(', ')}`;
+          }
+        }
+        
+        setSuccessMessage(message);
+        setIsFormOpen(false);
+        loadSignals(); // Reload signals to get the updated data
       } else {
-        // Create new signal
+        // Create new signal using the proxy endpoint
         console.log('Creating new signal with data:', {
           ...data,
           shareToSocial: data.shareToSocial ? 'Specified' : 'Not specified'
         });
         
-        try {
-          // Debug window location and origin
-          console.log('Window location:', {
-            href: window.location.href,
-            origin: window.location.origin,
-            host: window.location.host,
-            hostname: window.location.hostname,
-            protocol: window.location.protocol
-          });
-            
-          // Force relative URL to ensure we hit the current origin
-          const apiUrl = '/api/signals';
-          console.log('Fetching from relative URL:', apiUrl);
-          
-          // Explicitly specify all fetch options
-          const fetchOptions = {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`,
-              'X-Requested-With': 'XMLHttpRequest'
-            },
-            body: JSON.stringify(data),
-            mode: 'cors' as RequestMode,
-            credentials: 'include' as RequestCredentials,
-            cache: 'no-cache' as RequestCache,
-            redirect: 'follow' as RequestRedirect
-          };
-          
-          console.log('Fetch options:', {
-            ...fetchOptions,
-            headers: { ...fetchOptions.headers, Authorization: 'Bearer [REDACTED]' }
-          });
-          
-          const response = await fetch(apiUrl, fetchOptions);
-          
-          console.log('POST response status:', response.status);
-          console.log('POST response headers:', Array.from(response.headers.entries()));
-          
-          const contentType = response.headers.get('content-type');
-          
-          // Check if response is JSON
-          if (contentType && contentType.includes('application/json')) {
-            const result = await response.json();
-            console.log('POST response data:', result);
-            
-            if (response.ok) {
-              let message = 'Signal created successfully';
-              if (result.socialShareResults) {
-                const platforms = Object.entries(result.socialShareResults)
-                  .filter(([_, status]) => status === 'success')
-                  .map(([platform]) => platform);
-                
-                if (platforms.length > 0) {
-                  message += ` and shared to ${platforms.join(', ')}`;
-                }
-              }
-              setSuccessMessage(message);
-              setIsFormOpen(false);
-              loadSignals(); // Reload signals to get the new data
-            } else {
-              setError(result.error || 'Failed to create signal');
-            }
-          } else {
-            // Handle non-JSON response
-            const text = await response.text();
-            console.error('Non-JSON response:', text);
-            setError(`Failed to create signal: ${response.status} ${response.statusText}`);
-          }
-        } catch (error) {
-          console.error('Error during POST request:', error);
-          setError(`Failed to create signal: ${error instanceof Error ? error.message : String(error)}`);
+        const response = await fetch('/api/signals-proxy', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(data),
+          credentials: 'include',
+          mode: 'cors',
+          cache: 'no-cache'
+        });
+        
+        console.log('POST response status:', response.status);
+        
+        if (!response.ok) {
+          throw new Error(`API returned ${response.status}: ${response.statusText}`);
         }
+        
+        const result = await response.json();
+        console.log('POST response data:', result);
+        
+        let message = 'Signal created successfully';
+        if (result.socialShareResults) {
+          const platforms = Object.entries(result.socialShareResults)
+            .filter(([_, status]) => status === 'success')
+            .map(([platform]) => platform);
+          
+          if (platforms.length > 0) {
+            message += ` and shared to ${platforms.join(', ')}`;
+          }
+        }
+        
+        setSuccessMessage(message);
+        setIsFormOpen(false);
+        loadSignals(); // Reload signals to get the new data
       }
     } catch (err) {
       console.error('Error submitting signal:', err);
-      setError('Network error. Please try again.');
+      setError(`Network error: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -322,15 +250,8 @@ export default function SignalsAdminPage({ signals: initialSignals, error: serve
       
       console.log('Deleting signal with ID:', id);
       
-      // Debug window location for DELETE request
-      console.log('Window location for DELETE:', {
-        href: window.location.href,
-        origin: window.location.origin,
-        host: window.location.host
-      });
-      
-      // Use relative URL with explicit fetch options
-      const response = await fetch(`/api/signals?id=${id}`, {
+      // Use the proxy endpoint
+      const response = await fetch(`/api/signals-proxy?id=${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -342,6 +263,11 @@ export default function SignalsAdminPage({ signals: initialSignals, error: serve
       });
       
       console.log('DELETE response status:', response.status);
+      
+      if (!response.ok) {
+        throw new Error(`API returned ${response.status}: ${response.statusText}`);
+      }
+      
       const result = await response.json();
       
       if (response.ok) {
@@ -353,7 +279,7 @@ export default function SignalsAdminPage({ signals: initialSignals, error: serve
       }
     } catch (err) {
       console.error('Error deleting signal:', err);
-      setError('Network error. Please try again.');
+      setError(`Network error: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       setIsLoading(false);
     }

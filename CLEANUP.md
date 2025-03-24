@@ -48,9 +48,10 @@ Once signals API issues are resolved in production, consider removing these temp
 2. `/public/direct-url-fix.js` - Script to patch production URLs in bundled code
 3. `/public/personalsite/signals-redirect.js` - Script to redirect signals API calls
 
-Note: Keep the following files as they provide a permanent solution:
+Note: Keep the following file as it provides a permanent solution:
 - `/pages/api/signals-proxy.ts` - Proxy endpoint for signals API
-- `/pages/admin/signals-fixed.tsx` - Fixed signals admin page
+
+The original signals admin page (`/pages/admin/signals.tsx`) has been updated to use the proxy endpoint directly, so `signals-fixed.tsx` is no longer required.
 
 ## Steps to Clean Up
 
@@ -72,17 +73,18 @@ const handleAdminClick = () => {
 
 ### Signals API Fixes
 
-For the Signals API issues:
+The Signals API issues have been addressed with the following solutions:
 
-1. Implement the signals-proxy API endpoint (`/api/signals-proxy.ts`)
-2. Create a fixed signals admin page (`/admin/signals-fixed.tsx`)
-3. Add the redirect from `/admin/signals` to `/admin/signals-fixed`
-4. Implement browser-side URL interception as a temporary solution
-5. Fix the original API endpoints by:
-   - Adding proper CORS headers
-   - Enhancing error handling
-   - Fixing auth token validation
-   - Ensuring proper handling of string and object request bodies
+1. Implemented the signals-proxy API endpoint (`/api/signals-proxy.ts`) that handles all signal operations correctly
+2. Updated the original signals admin page (`/admin/signals.tsx`) to use the proxy endpoint directly
+3. Kept browser-side URL interception in `_document.tsx` as a fallback
+4. Fixed API endpoints with:
+   - Proper CORS headers
+   - Enhanced error handling
+   - Fixed auth token validation
+   - Better handling of string and object request bodies
+
+This approach simplifies the implementation and eliminates the need for redirects between admin pages.
 
 ## Testing After Cleanup
 
@@ -97,10 +99,9 @@ After removing the redundant files and implementing the fixes, test the followin
    - Verify changes appear on the public-facing bookshelf
 
 3. **Signals Management**:
-   - Navigate to `/admin/signals-fixed`
+   - Navigate to `/admin/signals`
    - Add, edit, and delete signals
    - Verify changes appear on the public-facing signals page
-   - Test the URL redirects from `/admin/signals` to `/admin/signals-fixed`
 
 4. **API Functionality**:
    - Test the signals API endpoints:
@@ -110,6 +111,28 @@ After removing the redundant files and implementing the fixes, test the followin
      - DELETE: Removing signals
    - Check network requests in browser dev tools for proper headers and responses
    - Verify CORS headers are being set correctly
+
+## Signals API Simplification
+
+As of the latest update, we've simplified the signals admin implementation:
+
+1. The original signals admin page (`/admin/signals.tsx`) now uses the proxy endpoint directly
+2. The redirect from `/admin/signals` to `/admin/signals-fixed` has been removed
+3. The inline JavaScript in `_document.tsx` remains as a fallback for intercepting URLs
+
+This simplification makes the codebase more maintainable and eliminates the need for complex redirects.
+
+### Next steps for Signals API:
+
+1. Once the current implementation is confirmed working in production:
+   - You may remove `/pages/admin/signals-fixed.tsx` as it's no longer needed
+   - Consider removing the URL interception code in `_document.tsx` if all API requests are using the proxy endpoint
+   - Keep `/api/signals-proxy.ts` as the primary API endpoint for signals
+
+2. Long-term solution:
+   - Update all client-side code to use relative URLs
+   - Fix the core API endpoint to handle CORS and authentication properly
+   - Implement comprehensive error handling and validation
 
 ## Configuration Consolidation
 

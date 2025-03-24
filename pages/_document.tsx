@@ -99,11 +99,8 @@ export default function Document() {
                   return originalFetch(url, options);
                 };
                 
-                // Handle potential redirect to fixed signals admin
-                if (window.location.pathname === '/admin/signals') {
-                  console.log('Redirecting to fixed signals admin page');
-                  window.location.href = '/admin/signals-fixed';
-                }
+                // No longer needed to redirect to signals-fixed
+                // We've updated the original signals.tsx to use the proxy
                 
                 console.log('Inline URL fix script initialized');
               })();
@@ -150,11 +147,8 @@ export default function Document() {
         <script
           dangerouslySetInnerHTML={{
             __html: `
-              // Redirect to fixed signals admin page directly if needed
-              if (window.location.pathname === '/admin/signals') {
-                console.log('Immediate redirect to fixed signals admin page');
-                window.location.href = '/admin/signals-fixed';
-              }
+              // No longer needed to redirect to signals-fixed page
+              // Original signals page now uses the proxy API
               
               // Also set up fetch interception as early as possible
               (function() {
