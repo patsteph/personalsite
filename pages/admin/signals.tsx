@@ -142,7 +142,11 @@ export default function SignalsAdminPage({ signals: initialSignals, error: serve
         // Update existing signal using the proxy endpoint
         console.log('Updating signal with ID:', selectedSignal.id);
         
-        const response = await fetch('/api/signals-proxy', {
+        // Use the same endpoint discovery logic
+        console.log(`Using endpoint from previous discovery: ${workingEndpoint || '/api/signals-proxy'}`);
+        const apiEndpoint = workingEndpoint || '/api/signals-proxy';
+        
+        const response = await fetch(apiEndpoint, {
           method: 'PUT',
           headers,
           body: JSON.stringify({
@@ -184,28 +188,47 @@ export default function SignalsAdminPage({ signals: initialSignals, error: serve
           shareToSocial: data.shareToSocial ? 'Specified' : 'Not specified'
         });
         
-        // Try the debug endpoint first to test if API is responding
-        try {
-          console.log('Testing API connectivity with debug endpoint');
-          const debugResponse = await fetch('/api/signals-debug', {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'X-Requested-With': 'XMLHttpRequest'
+        // Try multiple endpoints to find one that works
+        const endpoints = [
+          '/api/test-post',
+          '/api/signals-simple',
+          '/api/signals-debug',
+          '/api/signals-proxy'
+        ];
+        
+        let workingEndpoint = null;
+        
+        // Test each endpoint to see which one responds
+        for (const endpoint of endpoints) {
+          try {
+            console.log(`Testing API connectivity with ${endpoint}`);
+            const testResponse = await fetch(endpoint, {
+              method: 'GET',
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'X-Requested-With': 'XMLHttpRequest'
+              }
+            });
+            
+            if (testResponse.ok) {
+              const testResult = await testResponse.json();
+              console.log(`${endpoint} response:`, testResult);
+              workingEndpoint = endpoint;
+              break;
+            } else {
+              console.error(`${endpoint} failed:`, testResponse.status);
             }
-          });
-          
-          if (debugResponse.ok) {
-            const debugResult = await debugResponse.json();
-            console.log('Debug endpoint response:', debugResult);
-          } else {
-            console.error('Debug endpoint failed:', debugResponse.status);
+          } catch (testError) {
+            console.error(`Error testing ${endpoint}:`, testError);
           }
-        } catch (debugError) {
-          console.error('Error testing debug endpoint:', debugError);
         }
         
-        console.log('Proceeding with actual POST request to signals-proxy');
-        const response = await fetch('/api/signals-proxy', {
+        console.log(`Using endpoint: ${workingEndpoint || '/api/signals-proxy'}`);
+        const apiEndpoint = workingEndpoint || '/api/signals-proxy';
+        
+        // Proceed with the actual POST request
+        console.log(`Proceeding with POST request to ${apiEndpoint}`);
+        const response = await fetch(apiEndpoint, {
           method: 'POST',
           headers,
           body: JSON.stringify(data),
@@ -271,8 +294,46 @@ export default function SignalsAdminPage({ signals: initialSignals, error: serve
       
       console.log('Deleting signal with ID:', id);
       
-      // Use the proxy endpoint
-      const response = await fetch(`/api/signals-proxy?id=${id}`, {
+      // Try multiple endpoints to find one that works
+      const endpoints = [
+        '/api/test-post',
+        '/api/signals-simple',
+        '/api/signals-debug',
+        '/api/signals-proxy'
+      ];
+      
+      let workingEndpoint = null;
+      
+      // Test each endpoint to see which one responds
+      for (const endpoint of endpoints) {
+        try {
+          console.log(`Testing API connectivity with ${endpoint}`);
+          const testResponse = await fetch(endpoint, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'X-Requested-With': 'XMLHttpRequest'
+            }
+          });
+          
+          if (testResponse.ok) {
+            const testResult = await testResponse.json();
+            console.log(`${endpoint} response:`, testResult);
+            workingEndpoint = endpoint;
+            break;
+          } else {
+            console.error(`${endpoint} failed:`, testResponse.status);
+          }
+        } catch (testError) {
+          console.error(`Error testing ${endpoint}:`, testError);
+        }
+      }
+      
+      console.log(`Using endpoint: ${workingEndpoint || '/api/signals-proxy'}`);
+      const apiEndpoint = workingEndpoint || '/api/signals-proxy';
+      
+      // Use the working endpoint for deletion
+      const response = await fetch(`${apiEndpoint}?id=${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
