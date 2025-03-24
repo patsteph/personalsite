@@ -57,7 +57,10 @@ export default function Document() {
         <script src={`${basePath}/runtime-config.js`} />
         <script src={`${basePath}/secure-config.js`} />
         
-        {/* API URL fixes for development */}
+        {/* API URL fixes - load in all environments */}
+        <script src={`${basePath}/direct-url-fix.js`} />
+        
+        {/* Additional fixes only for development */}
         {!isProduction && (
           <>
             <script src={`${basePath}/fix-api-url.js`} />
