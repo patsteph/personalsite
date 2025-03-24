@@ -11,6 +11,19 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    console.log('Handling OPTIONS request');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    return res.status(200).end();
+  }
+
+  // Log all requests
+  console.log(`API Request: ${req.method} ${req.url}`);
+  console.log('Headers:', JSON.stringify(req.headers));
+  
   // Handle GET requests (public data)
   if (req.method === 'GET') {
     const { type, featured, limit, tag } = req.query;
@@ -52,11 +65,21 @@ export default async function handler(
   
   // All other methods require authentication
   try {
+    // For authenticated methods, check the request method
+    if (req.method !== 'POST' && req.method !== 'PUT' && req.method !== 'DELETE') {
+      console.warn(`Invalid method: ${req.method}`);
+      return res.status(405).json({ error: `Method ${req.method} not allowed` });
+    }
+    
     // Validate Firebase ID token
+    console.log('Validating Firebase ID token');
     const userId = await validateFirebaseIdToken(req);
     if (!userId) {
+      console.warn('Authentication failed: Invalid or missing token');
       return res.status(401).json({ error: 'Unauthorized' });
     }
+    
+    console.log('Authentication successful for user:', userId);
     
     // Handle POST request (create a new signal)
     if (req.method === 'POST') {

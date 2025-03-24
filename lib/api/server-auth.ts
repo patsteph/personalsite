@@ -10,10 +10,24 @@ import { auth as adminAuth } from '../firebase-admin';
  */
 export async function validateFirebaseIdToken(req: NextApiRequest): Promise<string | null> {
   try {
+    // Check if Firebase admin is initialized
+    if (!adminAuth) {
+      console.error('Firebase Admin Auth is not initialized');
+      return null;
+    }
+
+    // Log headers for debugging
+    console.log('Request headers:', JSON.stringify(req.headers));
+    
     // Check for authorization header
     const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      console.warn('No valid Authorization header found');
+    if (!authHeader) {
+      console.warn('No Authorization header found');
+      return null;
+    }
+    
+    if (!authHeader.startsWith('Bearer ')) {
+      console.warn('Authorization header does not start with Bearer');
       return null;
     }
 
@@ -24,11 +38,23 @@ export async function validateFirebaseIdToken(req: NextApiRequest): Promise<stri
       return null;
     }
 
-    // Verify the token
-    const decodedToken = await adminAuth.verifyIdToken(token);
-    return decodedToken.uid;
+    console.log('Token found, verifying...');
+    
+    try {
+      // Verify the token
+      const decodedToken = await adminAuth.verifyIdToken(token);
+      console.log('Token verified successfully for user:', decodedToken.uid);
+      return decodedToken.uid;
+    } catch (verifyError) {
+      console.error('Token verification failed:', verifyError);
+      return null;
+    }
   } catch (error) {
     console.error('Error validating Firebase ID token:', error);
+    if (error instanceof Error) {
+      console.error('Error details:', error.message);
+      console.error('Stack trace:', error.stack);
+    }
     return null;
   }
 }

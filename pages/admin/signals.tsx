@@ -124,70 +124,107 @@ export default function SignalsAdminPage({ signals: initialSignals, error: serve
         'Authorization': `Bearer ${token}`
       };
       
-      console.log('Submitting signal with auth token');
+      console.log('Submitting signal with auth token', {
+        method: selectedSignal ? 'PUT' : 'POST',
+        headers: { ...headers, Authorization: 'Bearer [REDACTED]' }
+      });
       
       if (selectedSignal) {
         // Update existing signal
         console.log('Updating signal with ID:', selectedSignal.id);
-        const response = await fetch('/api/signals', {
-          method: 'PUT',
-          headers,
-          body: JSON.stringify({
-            id: selectedSignal.id,
-            ...data,
-          }),
-        });
-        
-        console.log('PUT response status:', response.status);
-        const result = await response.json();
-        console.log('PUT response data:', result);
-        
-        if (response.ok) {
-          let message = 'Signal updated successfully';
-          if (result.socialShareResults) {
-            const platforms = Object.entries(result.socialShareResults)
-              .filter(([_, status]) => status === 'success')
-              .map(([platform]) => platform);
+        try {
+          const response = await fetch('/api/signals', {
+            method: 'PUT',
+            headers,
+            body: JSON.stringify({
+              id: selectedSignal.id,
+              ...data,
+            }),
+          });
+          
+          console.log('PUT response status:', response.status);
+          const contentType = response.headers.get('content-type');
+          
+          // Check if response is JSON
+          if (contentType && contentType.includes('application/json')) {
+            const result = await response.json();
+            console.log('PUT response data:', result);
             
-            if (platforms.length > 0) {
-              message += ` and shared to ${platforms.join(', ')}`;
+            if (response.ok) {
+              let message = 'Signal updated successfully';
+              if (result.socialShareResults) {
+                const platforms = Object.entries(result.socialShareResults)
+                  .filter(([_, status]) => status === 'success')
+                  .map(([platform]) => platform);
+                
+                if (platforms.length > 0) {
+                  message += ` and shared to ${platforms.join(', ')}`;
+                }
+              }
+              setSuccessMessage(message);
+              setIsFormOpen(false);
+              loadSignals(); // Reload signals to get the updated data
+            } else {
+              setError(result.error || 'Failed to update signal');
             }
+          } else {
+            // Handle non-JSON response
+            const text = await response.text();
+            console.error('Non-JSON response:', text);
+            setError(`Failed to update signal: ${response.status} ${response.statusText}`);
           }
-          setSuccessMessage(message);
-          setIsFormOpen(false);
-          loadSignals(); // Reload signals to get the updated data
-        } else {
-          setError(result.error || 'Failed to update signal');
+        } catch (error) {
+          console.error('Error during PUT request:', error);
+          setError(`Failed to update signal: ${error instanceof Error ? error.message : String(error)}`);
         }
       } else {
         // Create new signal
-        console.log('Creating new signal');
-        const response = await fetch('/api/signals', {
-          method: 'POST',
-          headers,
-          body: JSON.stringify(data),
+        console.log('Creating new signal with data:', {
+          ...data,
+          shareToSocial: data.shareToSocial ? 'Specified' : 'Not specified'
         });
         
-        console.log('POST response status:', response.status);
-        const result = await response.json();
-        console.log('POST response data:', result);
-        
-        if (response.ok) {
-          let message = 'Signal created successfully';
-          if (result.socialShareResults) {
-            const platforms = Object.entries(result.socialShareResults)
-              .filter(([_, status]) => status === 'success')
-              .map(([platform]) => platform);
+        try {
+          const response = await fetch('/api/signals', {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(data),
+          });
+          
+          console.log('POST response status:', response.status);
+          const contentType = response.headers.get('content-type');
+          
+          // Check if response is JSON
+          if (contentType && contentType.includes('application/json')) {
+            const result = await response.json();
+            console.log('POST response data:', result);
             
-            if (platforms.length > 0) {
-              message += ` and shared to ${platforms.join(', ')}`;
+            if (response.ok) {
+              let message = 'Signal created successfully';
+              if (result.socialShareResults) {
+                const platforms = Object.entries(result.socialShareResults)
+                  .filter(([_, status]) => status === 'success')
+                  .map(([platform]) => platform);
+                
+                if (platforms.length > 0) {
+                  message += ` and shared to ${platforms.join(', ')}`;
+                }
+              }
+              setSuccessMessage(message);
+              setIsFormOpen(false);
+              loadSignals(); // Reload signals to get the new data
+            } else {
+              setError(result.error || 'Failed to create signal');
             }
+          } else {
+            // Handle non-JSON response
+            const text = await response.text();
+            console.error('Non-JSON response:', text);
+            setError(`Failed to create signal: ${response.status} ${response.statusText}`);
           }
-          setSuccessMessage(message);
-          setIsFormOpen(false);
-          loadSignals(); // Reload signals to get the new data
-        } else {
-          setError(result.error || 'Failed to create signal');
+        } catch (error) {
+          console.error('Error during POST request:', error);
+          setError(`Failed to create signal: ${error instanceof Error ? error.message : String(error)}`);
         }
       }
     } catch (err) {
