@@ -1,6 +1,6 @@
 # Modern Personal Website with Next.js and Firebase
 
-A sophisticated personal website built with Next.js, TypeScript, Tailwind CSS, and Firebase, featuring a virtual bookshelf, blog platform, CV showcase, and multi-language support.
+A sophisticated personal website built with Next.js 15, TypeScript, Tailwind CSS, and Firebase, featuring a virtual bookshelf, blog platform, CV showcase, signals management, and multi-language support.
 
 ## ✨ Features
 
@@ -352,10 +352,18 @@ Books are managed through the admin interface. To add a book:
 
 2. **Fix for "Signals Management not displaying"**:
    - Navigate directly to React-based admin: `/admin` (not `/admin-dashboard.html`)
+   - If having issues with signals admin, use the fixed version: `/admin/signals-fixed`
    - Clear browser cache and cookies or try a different browser
    - Make sure you're not using the standalone HTML page which doesn't have Signals management
 
-3. **Admin URL configuration**:
+3. **API 405 Method Not Allowed Errors**:
+   - If you encounter 405 errors with the signals API, use the signals-proxy endpoint:
+     - Navigate to `/admin/signals-fixed` instead of `/admin/signals`
+     - The fixed page uses a proxy API approach to avoid issues with hardcoded URLs
+   - Check the browser console for specific error details
+   - In development, the signals-dev.ts endpoint provides enhanced debugging output
+
+4. **Admin URL configuration**:
    - The AdminButton component in the site footer should link to `/admin` not `/admin-dashboard.html`
    - Check navigation links in `/components/ui/AdminButton.tsx`
 
@@ -395,11 +403,23 @@ The Signals feature allows you to curate and share recommended newsletters and a
 
 /pages/
 ├── signals.tsx        # Public signals page
-└── admin/signals.tsx  # Admin management page
+├── admin/signals.tsx  # Admin management page (redirects to signals-fixed)
+└── admin/signals-fixed.tsx # Fixed signals admin page
 
 /lib/api/signals.ts    # API client for signals
-/pages/api/signals.ts  # Server API endpoint
+/pages/api/signals.ts  # Main API endpoint
+/pages/api/signals-proxy.ts # Proxy endpoint for signals API
+/pages/api/signals-dev.ts # Development-specific API endpoint
 ```
+
+### Signals API Structure
+
+The signals feature uses a multi-layered API approach:
+
+1. **Main API Endpoint** (`/api/signals.ts`): Handles CRUD operations for signals
+2. **Proxy Endpoint** (`/api/signals-proxy.ts`): Provides a reliable alternative endpoint that uses relative URLs
+3. **Development API** (`/api/signals-dev.ts`): Enhanced logging for debugging during development
+4. **Fixed Admin Page** (`/admin/signals-fixed.tsx`): Uses the proxy endpoint to avoid URL-related issues
 
 ## 🔧 GitHub to Standard Hosting Migration
 
