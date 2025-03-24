@@ -196,7 +196,8 @@ export default function SignalsAdminPage({ signals: initialSignals, error: serve
           '/api/test-post',
           '/api/signals-simple',
           '/api/signals-debug',
-          '/api/signals-proxy'
+          '/api/signals-proxy',
+          '/api/auth-debug'
         ];
         
         let workingEndpoint = null;

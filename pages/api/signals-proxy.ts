@@ -16,8 +16,15 @@ export default async function handler(
   
   // Log request body for debugging (redact sensitive information)
   if (req.body) {
-    let body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
-    console.log('Request body:', { ...body, auth: body.auth ? '[REDACTED]' : undefined });
+    let body;
+    try {
+      body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+      console.log('Request body:', { ...body, auth: body.auth ? '[REDACTED]' : undefined });
+    } catch (error) {
+      console.error('Error parsing request body:', error);
+      console.log('Raw request body type:', typeof req.body);
+      console.log('Raw request body:', req.body);
+    }
   }
 
   // Add CORS headers - with explicit content type
