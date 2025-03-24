@@ -185,13 +185,35 @@ export default function SignalsAdminPage({ signals: initialSignals, error: serve
         });
         
         try {
-          const response = await fetch('/api/signals', {
+          // Use absolute URL to avoid any path issues
+          const apiUrl = new URL('/api/signals', window.location.origin).toString();
+          console.log('Fetching from URL:', apiUrl);
+          
+          // Explicitly specify all fetch options
+          const fetchOptions = {
             method: 'POST',
-            headers,
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+              'X-Requested-With': 'XMLHttpRequest'
+            },
             body: JSON.stringify(data),
+            mode: 'cors' as RequestMode,
+            credentials: 'include' as RequestCredentials,
+            cache: 'no-cache' as RequestCache,
+            redirect: 'follow' as RequestRedirect
+          };
+          
+          console.log('Fetch options:', {
+            ...fetchOptions,
+            headers: { ...fetchOptions.headers, Authorization: 'Bearer [REDACTED]' }
           });
           
+          const response = await fetch(apiUrl, fetchOptions);
+          
           console.log('POST response status:', response.status);
+          console.log('POST response headers:', Array.from(response.headers.entries()));
+          
           const contentType = response.headers.get('content-type');
           
           // Check if response is JSON
