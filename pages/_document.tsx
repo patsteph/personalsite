@@ -57,10 +57,59 @@ export default function Document() {
         <script src={`${basePath}/runtime-config.js`} />
         <script src={`${basePath}/secure-config.js`} />
         
-        {/* API URL fixes - load in all environments */}
-        <script src={`${basePath}/signals-js-fix.js`} />
-        <script src={`${basePath}/direct-url-fix.js`} />
-        <script src={`${basePath}/signal-admin-redirect.js`} />
+        {/* Inline script for critical URL fixes - no external dependencies */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              // Inline URL fix script that doesn't depend on external files
+              (function() {
+                console.log('Inline URL fix script loaded');
+                
+                // Store the original fetch function
+                const originalFetch = window.fetch;
+                
+                // Patch fetch to intercept signals API calls
+                window.fetch = function(url, options) {
+                  // Check if URL is a signals API call
+                  if (typeof url === 'string' && 
+                      (url.includes('/api/signals') || 
+                       url.includes('personalsite77.vercel.app/api/signals'))) {
+                    
+                    console.log('Intercepting signals API call:', url);
+                    
+                    // Create the proxy URL
+                    let proxyUrl;
+                    
+                    if (url.includes('personalsite77.vercel.app')) {
+                      // Extract path and query from absolute URL
+                      const urlObj = new URL(url);
+                      proxyUrl = '/api/signals-proxy' + urlObj.search;
+                    } else {
+                      // Replace /api/signals with /api/signals-proxy in relative URL
+                      proxyUrl = url.replace('/api/signals', '/api/signals-proxy');
+                    }
+                    
+                    console.log('Redirecting API call to:', proxyUrl);
+                    
+                    // Call with modified URL
+                    return originalFetch(proxyUrl, options);
+                  }
+                  
+                  // For all other URLs, use the original fetch
+                  return originalFetch(url, options);
+                };
+                
+                // Handle potential redirect to fixed signals admin
+                if (window.location.pathname === '/admin/signals') {
+                  console.log('Redirecting to fixed signals admin page');
+                  window.location.href = '/admin/signals-fixed';
+                }
+                
+                console.log('Inline URL fix script initialized');
+              })();
+            `
+          }}
+        />
         
         {/* Additional fixes only for development */}
         {!isProduction && (
@@ -97,6 +146,35 @@ export default function Document() {
             `
           }}
         />
+        {/* Inline script for critical URL fixes in body */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              // Redirect to fixed signals admin page directly if needed
+              if (window.location.pathname === '/admin/signals') {
+                console.log('Immediate redirect to fixed signals admin page');
+                window.location.href = '/admin/signals-fixed';
+              }
+              
+              // Also set up fetch interception as early as possible
+              (function() {
+                if (typeof window.fetch === 'function') {
+                  const originalFetch = window.fetch;
+                  window.fetch = function(url, options) {
+                    if (typeof url === 'string' && url.includes('personalsite77.vercel.app/api/signals')) {
+                      console.log('Early interception of signals API call, redirecting to proxy');
+                      const urlObj = new URL(url);
+                      const proxyUrl = '/api/signals-proxy' + urlObj.search;
+                      return originalFetch(proxyUrl, options);
+                    }
+                    return originalFetch(url, options);
+                  };
+                }
+              })();
+            `
+          }}
+        />
+        
         <Main />
         <NextScript />
       </body>
