@@ -70,8 +70,9 @@ export default function Document() {
                 
                 // Patch fetch to intercept signals API calls
                 window.fetch = function(url, options) {
-                  // Check if URL is a signals API call
+                  // Check if URL is a signals API call and NOT already using the proxy
                   if (typeof url === 'string' && 
+                      !url.includes('-proxy') &&
                       (url.includes('/api/signals') || 
                        url.includes('personalsite77.vercel.app/api/signals'))) {
                     
@@ -150,21 +151,8 @@ export default function Document() {
               // No longer needed to redirect to signals-fixed page
               // Original signals page now uses the proxy API
               
-              // Also set up fetch interception as early as possible
-              (function() {
-                if (typeof window.fetch === 'function') {
-                  const originalFetch = window.fetch;
-                  window.fetch = function(url, options) {
-                    if (typeof url === 'string' && url.includes('personalsite77.vercel.app/api/signals')) {
-                      console.log('Early interception of signals API call, redirecting to proxy');
-                      const urlObj = new URL(url);
-                      const proxyUrl = '/api/signals-proxy' + urlObj.search;
-                      return originalFetch(proxyUrl, options);
-                    }
-                    return originalFetch(url, options);
-                  };
-                }
-              })();
+              // No additional fetch interception needed - the head script handles this
+              console.log('URL interception already handled by the earlier script');
             `
           }}
         />
