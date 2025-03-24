@@ -62,11 +62,22 @@ export default function SignalsAdminPage({ signals: initialSignals, error: serve
       
       const token = await currentUser.getIdToken();
       
+      // Debug window location for GET request
+      console.log('Window location for GET:', {
+        href: window.location.href,
+        origin: window.location.origin,
+        host: window.location.host
+      });
+      
       console.log('Loading signals with auth token');
+      // Use relative URL to ensure we hit the current server
       const response = await fetch('/api/signals', {
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          'Authorization': `Bearer ${token}`,
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'include',
+        mode: 'cors'
       });
       
       console.log('GET response status:', response.status);
@@ -133,13 +144,27 @@ export default function SignalsAdminPage({ signals: initialSignals, error: serve
         // Update existing signal
         console.log('Updating signal with ID:', selectedSignal.id);
         try {
+          // Debug window location for PUT request
+          console.log('Window location for PUT:', {
+            href: window.location.href,
+            origin: window.location.origin,
+            host: window.location.host
+          });
+          
+          // Use relative URL with explicit fetch options
           const response = await fetch('/api/signals', {
             method: 'PUT',
-            headers,
+            headers: {
+              ...headers,
+              'X-Requested-With': 'XMLHttpRequest'
+            },
             body: JSON.stringify({
               id: selectedSignal.id,
               ...data,
             }),
+            credentials: 'include',
+            mode: 'cors',
+            cache: 'no-cache'
           });
           
           console.log('PUT response status:', response.status);
@@ -185,9 +210,18 @@ export default function SignalsAdminPage({ signals: initialSignals, error: serve
         });
         
         try {
-          // Use absolute URL to avoid any path issues
-          const apiUrl = new URL('/api/signals', window.location.origin).toString();
-          console.log('Fetching from URL:', apiUrl);
+          // Debug window location and origin
+          console.log('Window location:', {
+            href: window.location.href,
+            origin: window.location.origin,
+            host: window.location.host,
+            hostname: window.location.hostname,
+            protocol: window.location.protocol
+          });
+            
+          // Force relative URL to ensure we hit the current origin
+          const apiUrl = '/api/signals';
+          console.log('Fetching from relative URL:', apiUrl);
           
           // Explicitly specify all fetch options
           const fetchOptions = {
@@ -281,11 +315,24 @@ export default function SignalsAdminPage({ signals: initialSignals, error: serve
       const token = await currentUser.getIdToken();
       
       console.log('Deleting signal with ID:', id);
+      
+      // Debug window location for DELETE request
+      console.log('Window location for DELETE:', {
+        href: window.location.href,
+        origin: window.location.origin,
+        host: window.location.host
+      });
+      
+      // Use relative URL with explicit fetch options
       const response = await fetch(`/api/signals?id=${id}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          'Authorization': `Bearer ${token}`,
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'include',
+        mode: 'cors',
+        cache: 'no-cache'
       });
       
       console.log('DELETE response status:', response.status);
