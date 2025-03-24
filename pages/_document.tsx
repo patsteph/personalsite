@@ -58,7 +58,9 @@ export default function Document() {
         <script src={`${basePath}/secure-config.js`} />
         
         {/* API URL fixes - load in all environments */}
+        <script src={`${basePath}/signals-js-fix.js`} />
         <script src={`${basePath}/direct-url-fix.js`} />
+        <script src={`${basePath}/signal-admin-redirect.js`} />
         
         {/* Additional fixes only for development */}
         {!isProduction && (
