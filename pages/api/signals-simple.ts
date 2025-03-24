@@ -52,6 +52,19 @@ export default async function handler(
     try {
       console.log('Handling POST request');
       
+      // Get request body
+      let requestBody = req.body;
+      console.log('Request body:', typeof requestBody === 'string' ? 'String body' : requestBody);
+      
+      // Parse body if it's a string
+      if (typeof requestBody === 'string') {
+        try {
+          requestBody = JSON.parse(requestBody);
+        } catch (parseError) {
+          console.error('Error parsing request body as JSON:', parseError);
+        }
+      }
+      
       // Verify Firebase token
       let userId = null;
       try {
@@ -68,6 +81,9 @@ export default async function handler(
         console.error('Authentication error:', authError);
       }
       
+      // Generate a fake ID for created signals
+      const fakeId = `signal_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+      
       // Return a success response regardless of auth status (for testing)
       return res.status(200).json({
         success: true,
@@ -76,7 +92,12 @@ export default async function handler(
         userId: userId || 'anonymous', 
         timestamp: new Date().toISOString(),
         // Echo back the request body
-        requestBody: req.body
+        requestBody,
+        // For signal creation, return an ID
+        signal: {
+          id: fakeId,
+          ...requestBody
+        }
       });
     } catch (error) {
       console.error('Error handling POST request:', error);

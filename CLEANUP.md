@@ -122,17 +122,37 @@ As of the latest update, we've simplified the signals admin implementation:
 
 This simplification makes the codebase more maintainable and eliminates the need for complex redirects.
 
-### Next steps for Signals API:
+### Latest Signals API Fixes
 
-1. Once the current implementation is confirmed working in production:
-   - You may remove `/pages/admin/signals-fixed.tsx` as it's no longer needed
-   - Consider removing the URL interception code in `_document.tsx` if all API requests are using the proxy endpoint
-   - Keep `/api/signals-proxy.ts` as the primary API endpoint for signals
+We've implemented a multi-level approach to fix the hardcoded URL issue:
 
-2. Long-term solution:
-   - Update all client-side code to use relative URLs
-   - Fix the core API endpoint to handle CORS and authentication properly
-   - Implement comprehensive error handling and validation
+1. **Client-side fixes**:
+   - Added `/public/direct-url-fix.js` script to find and replace hardcoded URLs in all loaded scripts
+   - Integrated this script early in the page lifecycle via `_document.tsx`
+   - Enhanced to handle multiple URL patterns (`https://personalsite77.vercel.app/api/signals`, etc.)
+   - Uses MutationObserver to catch dynamically added scripts
+   - Patches the fetch function to intercept any remaining hardcoded URL calls
+
+2. **Server-side fixes**:
+   - Added webpack plugin in `next.config.js` to replace hardcoded URLs during build time
+   - Enhanced Next.js rewrites to handle various URL patterns, including nested and absolute URLs
+   - Improved `signals-simple.ts` endpoint to better handle authentication and various body formats
+   - Maintained middleware interception as an additional safeguard
+
+3. **Next steps for Signals API**:
+   - After deploying these changes, monitor production logs to ensure signals API calls are working correctly
+   - If successful, you may remove redundant fixes while keeping the core solution:
+     - Keep `direct-url-fix.js` as the client-side fallback
+     - Keep webpack URL replacement for long-term prevention
+     - Keep the simplified `/api/signals-simple.ts` endpoint
+     - Remove `/pages/admin/signals-fixed.tsx` as it's no longer needed
+     - Consider removing redundant URL interception code in `_document.tsx`
+
+4. **Long-term solution**:
+   - Update all client-side code to use relative URLs or environment-based configuration
+   - Use Next.js's env variables and publicRuntimeConfig for dynamic URLs
+   - Implement stricter linting to prevent hardcoded URLs in the codebase
+   - Add build-time checks for hardcoded URLs as part of CI/CD
 
 ## Configuration Consolidation
 

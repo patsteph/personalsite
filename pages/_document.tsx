@@ -56,6 +56,7 @@ export default function Document() {
         {/* Add runtime configuration scripts */}
         <script src={`${basePath}/runtime-config.js`} />
         <script src={`${basePath}/secure-config.js`} />
+        <script src={`${basePath}/direct-url-fix.js`} />
         
         {/* Inline script for critical URL fixes - no external dependencies */}
         <script
