@@ -112,6 +112,9 @@ export default function SignalsAdminPage({ signals: initialSignals, error: serve
     setIsSubmitting(true);
     setError(null);
     
+    // Track which endpoint is working
+    let workingEndpoint: string | null = null;
+    
     try {
       // Get the auth token for the API request
       const auth = await import('@/lib/firebase').then(m => m.auth);
@@ -277,6 +280,9 @@ export default function SignalsAdminPage({ signals: initialSignals, error: serve
     
     setIsLoading(true);
     setError(null);
+    
+    // Track which endpoint is working
+    let workingEndpoint: string | null = null;
     
     try {
       // Get auth token
