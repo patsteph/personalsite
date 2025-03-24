@@ -114,17 +114,32 @@ export async function getSignalById(id: string): Promise<Signal | null> {
  */
 export async function createSignal(signal: Omit<Signal, 'id'>): Promise<string | null> {
   try {
+    console.log('Creating new signal with data:', JSON.stringify(signal));
+    
     const db = await getFirestoreInstance();
-    if (!db) throw new Error('Firestore not initialized');
+    if (!db) {
+      console.error('Firestore not initialized in createSignal');
+      throw new Error('Firestore not initialized');
+    }
 
-    const docRef = await addDoc(collection(db, SIGNALS_COLLECTION), {
+    // Prepare data for Firestore
+    const signalData = {
       ...signal,
       dateAdded: new Date().toISOString()
-    });
+    };
+    
+    console.log('Adding document to collection:', SIGNALS_COLLECTION);
+    const docRef = await addDoc(collection(db, SIGNALS_COLLECTION), signalData);
+    console.log('Signal created with ID:', docRef.id);
 
     return docRef.id;
   } catch (error) {
     console.error('Error creating signal:', error);
+    // Log more details about the error
+    if (error instanceof Error) {
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+    }
     return null;
   }
 }

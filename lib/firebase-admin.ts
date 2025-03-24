@@ -11,6 +11,20 @@ import * as admin from 'firebase-admin';
 // Initialize Firebase Admin SDK
 if (!admin.apps.length) {
   try {
+    // Validate required environment variables
+    if (!process.env.FIREBASE_PROJECT_ID) {
+      console.error("Missing FIREBASE_PROJECT_ID environment variable");
+    }
+    if (!process.env.FIREBASE_PRIVATE_KEY) {
+      console.error("Missing FIREBASE_PRIVATE_KEY environment variable");
+    }
+    if (!process.env.FIREBASE_CLIENT_EMAIL) {
+      console.error("Missing FIREBASE_CLIENT_EMAIL environment variable");
+    }
+    
+    // Log initialization attempt
+    console.log("Initializing Firebase Admin with project ID:", process.env.FIREBASE_PROJECT_ID);
+    
     admin.initializeApp({
       credential: admin.credential.cert({
         projectId: process.env.FIREBASE_PROJECT_ID,
@@ -19,6 +33,7 @@ if (!admin.apps.length) {
       }),
       databaseURL: `https://${process.env.FIREBASE_PROJECT_ID}.firebaseio.com`
     });
+    
     console.log("Firebase Admin initialized successfully");
   } catch (error) {
     console.error("Firebase admin initialization error", error);

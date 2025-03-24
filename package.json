@@ -6,6 +6,7 @@
     "node": ">=18.x"
   },
   "scripts": {
+    "predev": "npm run generate-standard-config && npm run generate-secure-config",
     "dev": "next dev",
     "build": "next build",
     "prebuild": "npm run generate-standard-config && npm run generate-secure-config",

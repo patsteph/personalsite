@@ -47,6 +47,7 @@ export default function AdminBlogPage() {
       
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [successMessage, error]);
   
   // Fetch all blog posts (published and draft)

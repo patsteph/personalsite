@@ -38,7 +38,7 @@ export default function TextEditor({ initialContent, onChange }: TextEditorProps
   
   // Execute commands on the document
   const execCommand = (command: string, value: string | null = null) => {
-    document.execCommand(command, false, value);
+    document.execCommand(command, false, value || undefined);
     
     // Refocus editor after command execution
     if (editorRef.current) {

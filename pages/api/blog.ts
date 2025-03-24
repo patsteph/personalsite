@@ -11,6 +11,10 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<BlogResponse>
 ) {
+  // Log request for debugging
+  console.log('Blog API received', req.method, 'request', 
+    req.query ? `with query: ${JSON.stringify(req.query)}` : '');
+  
   // For GET requests on published posts, no auth required
   if (req.method === 'GET' && !req.query.admin) {
     return handlePublicGet(req, res);
@@ -20,13 +24,20 @@ export default async function handler(
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.warn('Blog API: Missing or invalid authorization header');
       return res.status(401).json({ success: false, error: 'Unauthorized' });
     }
     
     const token = authHeader.split('Bearer ')[1];
-    await auth.verifyIdToken(token);
+    try {
+      await auth.verifyIdToken(token);
+      console.log('Blog API: Authentication successful');
+    } catch (authError: any) {
+      console.error('Blog API: Token verification failed:', authError);
+      return res.status(401).json({ success: false, error: 'Invalid authentication token' });
+    }
   } catch (error: any) {
-    console.error('API auth error:', error);
+    console.error('Blog API auth error:', error);
     return res.status(401).json({ success: false, error: 'Unauthorized' });
   }
   

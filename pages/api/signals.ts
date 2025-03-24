@@ -15,6 +15,9 @@ export default async function handler(
   if (req.method === 'GET') {
     const { type, featured, limit, tag } = req.query;
     
+    // Log for debugging
+    console.log('GET request received with query:', req.query);
+    
     try {
       const options: any = {};
       
@@ -36,7 +39,10 @@ export default async function handler(
         options.tags = [tag as string];
       }
       
+      console.log('Fetching signals with options:', options);
       const signals = await signalsApi.getAllSignals(options);
+      console.log(`Retrieved ${signals.length} signals`);
+      
       return res.status(200).json({ signals });
     } catch (error) {
       console.error('Error fetching signals:', error);
@@ -54,15 +60,20 @@ export default async function handler(
     
     // Handle POST request (create a new signal)
     if (req.method === 'POST') {
+      // Log for debugging
+      console.log('POST request received with body:', JSON.stringify(req.body));
+      
       const { shareToSocial, ...signalData } = req.body;
       
       // Validate the required fields
       if (!signalData || !signalData.title || !signalData.type) {
+        console.error('Missing required fields in POST request:', req.body);
         return res.status(400).json({ error: 'Missing required fields' });
       }
       
       const signalId = await signalsApi.createSignal(signalData);
       if (!signalId) {
+        console.error('Error creating signal with data:', signalData);
         return res.status(500).json({ error: 'Error creating signal' });
       }
       
@@ -94,14 +105,19 @@ export default async function handler(
     
     // Handle PUT request (update a signal)
     if (req.method === 'PUT') {
+      // Log for debugging
+      console.log('PUT request received with body:', JSON.stringify(req.body));
+      
       const { id, shareToSocial, ...signalData } = req.body;
       
       if (!id) {
+        console.error('Missing signal ID in PUT request:', req.body);
         return res.status(400).json({ error: 'Missing signal ID' });
       }
       
       const success = await signalsApi.updateSignal(id, signalData);
       if (!success) {
+        console.error('Error updating signal:', id);
         return res.status(500).json({ error: 'Error updating signal' });
       }
       

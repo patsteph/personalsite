@@ -23,6 +23,22 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
   
+  // Redirects for legacy admin HTML pages
+  async redirects() {
+    return [
+      {
+        source: '/admin-login.html',
+        destination: '/admin/login',
+        permanent: true,
+      },
+      {
+        source: '/admin-dashboard.html',
+        destination: '/admin',
+        permanent: true,
+      },
+    ];
+  },
+  
   // Image configuration
   images: {
     domains: [
@@ -38,15 +54,8 @@ const nextConfig = {
     minimumCacheTTL: 60,
   },
   
-  // Improve loading performance and optimize CSS
+  // Improve loading performance
   experimental: {
-    optimizeCss: {
-      cssModules: true,
-      critters: {
-        reduceInlineStyles: false,
-        pruneSource: false,
-      },
-    },
     scrollRestoration: true,
     isrFlushToDisk: false, // This ensures Next.js correctly handles the basePath for static assets
   },

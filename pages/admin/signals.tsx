@@ -49,15 +49,38 @@ export default function SignalsAdminPage({ signals: initialSignals, error: serve
     setError(null);
     
     try {
-      const response = await fetch('/api/signals');
+      // Get auth token
+      const auth = await import('@/lib/firebase').then(m => m.auth);
+      if (!auth) {
+        throw new Error('Authentication not initialized');
+      }
+      
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        throw new Error('User not authenticated');
+      }
+      
+      const token = await currentUser.getIdToken();
+      
+      console.log('Loading signals with auth token');
+      const response = await fetch('/api/signals', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      console.log('GET response status:', response.status);
       const data = await response.json();
       
       if (response.ok) {
-        setSignals(data.signals);
+        console.log(`Loaded ${data.signals?.length} signals`);
+        setSignals(data.signals || []);
       } else {
+        console.error('API error:', data.error);
         setError(data.error || 'Failed to load signals');
       }
     } catch (err) {
+      console.error('Error loading signals:', err);
       setError('Network error. Please try again.');
     } finally {
       setIsLoading(false);
@@ -82,20 +105,42 @@ export default function SignalsAdminPage({ signals: initialSignals, error: serve
     setError(null);
     
     try {
+      // Get the auth token for the API request
+      const auth = await import('@/lib/firebase').then(m => m.auth);
+      if (!auth) {
+        throw new Error('Authentication not initialized');
+      }
+      
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        throw new Error('User not authenticated');
+      }
+      
+      const token = await currentUser.getIdToken();
+      
+      // Common headers for API requests
+      const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      };
+      
+      console.log('Submitting signal with auth token');
+      
       if (selectedSignal) {
         // Update existing signal
+        console.log('Updating signal with ID:', selectedSignal.id);
         const response = await fetch('/api/signals', {
           method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers,
           body: JSON.stringify({
             id: selectedSignal.id,
             ...data,
           }),
         });
         
+        console.log('PUT response status:', response.status);
         const result = await response.json();
+        console.log('PUT response data:', result);
         
         if (response.ok) {
           let message = 'Signal updated successfully';
@@ -116,15 +161,16 @@ export default function SignalsAdminPage({ signals: initialSignals, error: serve
         }
       } else {
         // Create new signal
+        console.log('Creating new signal');
         const response = await fetch('/api/signals', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers,
           body: JSON.stringify(data),
         });
         
+        console.log('POST response status:', response.status);
         const result = await response.json();
+        console.log('POST response data:', result);
         
         if (response.ok) {
           let message = 'Signal created successfully';
@@ -145,6 +191,7 @@ export default function SignalsAdminPage({ signals: initialSignals, error: serve
         }
       }
     } catch (err) {
+      console.error('Error submitting signal:', err);
       setError('Network error. Please try again.');
     } finally {
       setIsSubmitting(false);
@@ -161,19 +208,39 @@ export default function SignalsAdminPage({ signals: initialSignals, error: serve
     setError(null);
     
     try {
+      // Get auth token
+      const auth = await import('@/lib/firebase').then(m => m.auth);
+      if (!auth) {
+        throw new Error('Authentication not initialized');
+      }
+      
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        throw new Error('User not authenticated');
+      }
+      
+      const token = await currentUser.getIdToken();
+      
+      console.log('Deleting signal with ID:', id);
       const response = await fetch(`/api/signals?id=${id}`, {
         method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
       });
       
+      console.log('DELETE response status:', response.status);
       const result = await response.json();
       
       if (response.ok) {
         setSuccessMessage('Signal deleted successfully');
         setSignals(signals.filter(signal => signal.id !== id));
       } else {
+        console.error('API error:', result.error);
         setError(result.error || 'Failed to delete signal');
       }
     } catch (err) {
+      console.error('Error deleting signal:', err);
       setError('Network error. Please try again.');
     } finally {
       setIsLoading(false);
