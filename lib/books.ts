@@ -175,6 +175,47 @@ export const searchBooks = async (query: string, maxResults = 10): Promise<BookS
 // Add a book to the collection
 export const addBook = async (book: Book): Promise<string> => {
   try {
+    // Try using the direct API endpoint first for reliability
+    try {
+      console.log('Trying to add book via debug API endpoint');
+      
+      // Get auth token if available
+      let token = '';
+      try {
+        const auth = await import('./firebase').then(m => m.auth);
+        if (auth && auth.currentUser) {
+          token = await auth.currentUser.getIdToken();
+        }
+      } catch (tokenError) {
+        console.warn('Error getting auth token:', tokenError);
+      }
+      
+      // Make API request
+      const response = await fetch('/api/books-debug', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : '',
+        },
+        body: JSON.stringify(book),
+      });
+      
+      // Check if successful
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Book added successfully via debug API:', data);
+        return data.data.id;
+      } else {
+        console.warn('Debug API endpoint failed:', response.status);
+        // Fall back to Firebase direct
+      }
+    } catch (apiError) {
+      console.error('Error using debug API endpoint:', apiError);
+      // Fall back to Firebase direct
+    }
+    
+    // Fall back to direct Firebase
+    console.log('Falling back to direct Firebase for adding book');
     const db = initFirebase();
     if (!db) throw new Error('Firebase is not initialized');
     
@@ -274,7 +315,47 @@ export const getBookById = async (id: string): Promise<Book | null> => {
 // Get all books
 export const getBooks = async (): Promise<Book[]> => {
   try {
-    // First try initializing Firebase
+    // Try the debug endpoint first
+    try {
+      console.log('Trying to get books via debug API endpoint');
+      
+      // Get auth token if available
+      let token = '';
+      try {
+        const auth = await import('./firebase').then(m => m.auth);
+        if (auth && auth.currentUser) {
+          token = await auth.currentUser.getIdToken();
+        }
+      } catch (tokenError) {
+        console.warn('Error getting auth token:', tokenError);
+      }
+      
+      // Make API request
+      const response = await fetch('/api/books-debug', {
+        method: 'GET',
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+        },
+      });
+      
+      // Check if successful
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Books retrieved successfully via debug API:', data);
+        return data.data || [];
+      } else {
+        console.warn('Debug API endpoint failed:', response.status);
+        // Fall back to Firebase direct
+      }
+    } catch (apiError) {
+      console.error('Error using debug API endpoint:', apiError);
+      // Fall back to Firebase direct
+    }
+    
+    // Fallback to Firebase direct
+    console.log('Falling back to direct Firebase for getting books');
+    
+    // Try initializing Firebase
     const db = initFirebase();
     
     if (!db) {
