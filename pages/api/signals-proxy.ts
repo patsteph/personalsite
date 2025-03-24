@@ -12,16 +12,29 @@ export default async function handler(
   res: NextApiResponse
 ) {
   console.log('PROXY API:', req.method, req.url);
+  console.log('Request headers:', JSON.stringify(req.headers));
+  
+  // Log request body for debugging (redact sensitive information)
+  if (req.body) {
+    let body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+    console.log('Request body:', { ...body, auth: body.auth ? '[REDACTED]' : undefined });
+  }
 
-  // Add CORS headers
+  // Add CORS headers - with explicit content type
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
   res.setHeader('Access-Control-Max-Age', '86400');
+  
+  // Always set content type for non-OPTIONS requests
+  if (req.method !== 'OPTIONS') {
+    res.setHeader('Content-Type', 'application/json');
+  }
 
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
+    console.log('Handling OPTIONS preflight request');
     return res.status(200).end();
   }
 
@@ -60,54 +73,100 @@ export default async function handler(
   // POST method for creating signals
   if (req.method === 'POST') {
     try {
+      console.log('Handling POST request to create signal');
+      
       // Authenticate
+      console.log('Validating Firebase ID token');
       const userId = await validateFirebaseIdToken(req);
       if (!userId) {
+        console.error('Authentication failed - no valid token');
         return res.status(401).json({ error: 'Unauthorized' });
       }
+      console.log('Authentication successful, user ID:', userId);
 
       // Parse body
-      const { shareToSocial, ...signalData } = typeof req.body === 'string' 
-        ? JSON.parse(req.body) 
-        : req.body;
+      let signalData, shareToSocial;
+      try {
+        const parsedBody = typeof req.body === 'string' 
+          ? JSON.parse(req.body) 
+          : req.body;
+        
+        console.log('Parsed request body successfully');
+        ({ shareToSocial, ...signalData } = parsedBody);
+      } catch (parseError) {
+        console.error('Error parsing request body:', parseError);
+        return res.status(400).json({ error: 'Invalid request body format' });
+      }
 
       // Validate
+      console.log('Validating signal data');
       if (!signalData || !signalData.title || !signalData.type) {
+        console.error('Missing required fields in signal data');
         return res.status(400).json({ error: 'Missing required fields' });
       }
 
       // Create signal
-      const signalId = await signalsApi.createSignal(signalData);
-      if (!signalId) {
-        return res.status(500).json({ error: 'Error creating signal' });
-      }
-
-      // Handle social sharing
-      let socialShareResults = {};
-      if (shareToSocial) {
-        try {
-          socialShareResults = await shareToSocialMedia(
-            {
-              title: signalData.title,
-              description: signalData.description,
-              url: signalData.url,
-              imageUrl: signalData.imageUrl
-            },
-            {
-              linkedin: shareToSocial.linkedin,
-              twitter: shareToSocial.twitter,
-              bluesky: shareToSocial.bluesky
-            }
-          );
-        } catch (error) {
-          console.error('Error sharing to social media:', error);
+      console.log('Creating signal with data:', {
+        ...signalData,
+        title: signalData.title,
+        type: signalData.type
+      });
+      
+      try {
+        const signalId = await signalsApi.createSignal(signalData);
+        if (!signalId) {
+          console.error('Signal creation returned null ID');
+          return res.status(500).json({ error: 'Error creating signal' });
         }
-      }
+        console.log('Signal created successfully with ID:', signalId);
+        
+        // Handle social sharing
+        let socialShareResults = {};
+        if (shareToSocial) {
+          console.log('Processing social sharing');
+          try {
+            socialShareResults = await shareToSocialMedia(
+              {
+                title: signalData.title,
+                description: signalData.description,
+                url: signalData.url,
+                imageUrl: signalData.imageUrl
+              },
+              {
+                linkedin: shareToSocial.linkedin,
+                twitter: shareToSocial.twitter,
+                bluesky: shareToSocial.bluesky
+              }
+            );
+            console.log('Social sharing completed:', socialShareResults);
+          } catch (shareError) {
+            console.error('Error sharing to social media:', shareError);
+          }
+        }
 
-      return res.status(201).json({ id: signalId, socialShareResults });
+        console.log('Returning successful response');
+        return res.status(201).json({ id: signalId, socialShareResults });
+      } catch (createError) {
+        console.error('Error in signalsApi.createSignal:', createError);
+        if (createError instanceof Error) {
+          console.error('Error message:', createError.message);
+          console.error('Error stack:', createError.stack);
+        }
+        return res.status(500).json({ 
+          error: 'Error creating signal', 
+          message: createError instanceof Error ? createError.message : String(createError) 
+        });
+      }
     } catch (error) {
       console.error('PROXY POST ERROR:', error);
-      return res.status(500).json({ error: 'Error processing request' });
+      if (error instanceof Error) {
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
+      }
+      return res.status(500).json({ 
+        error: 'Error processing request',
+        message: error instanceof Error ? error.message : String(error)
+      });
     }
   }
 
@@ -196,5 +255,12 @@ export default async function handler(
   }
 
   // Fallback for unsupported methods
-  return res.status(405).json({ error: `Method ${req.method} not allowed` });
+  console.error(`Unsupported HTTP method: ${req.method}`);
+  console.log('Available methods: GET, POST, PUT, DELETE, OPTIONS');
+  
+  return res.status(405).json({ 
+    error: `Method ${req.method} not allowed`,
+    message: 'The API only supports GET, POST, PUT, DELETE, and OPTIONS methods',
+    requestPath: req.url
+  });
 }
