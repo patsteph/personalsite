@@ -68,11 +68,20 @@ export default function Document() {
                 // Store the original fetch function
                 const originalFetch = window.fetch;
                 
+                // Track if interception is enabled
+                window.signalInterceptionEnabled = true;
+                
                 // Patch fetch to intercept signals API calls
                 window.fetch = function(url, options) {
+                  // Skip interception if disabled globally or this specific request opts out
+                  const skipInterception = !window.signalInterceptionEnabled || 
+                                         (options && options.noInterception);
+                  
                   // Check if URL is a signals API call and NOT already using the proxy
-                  if (typeof url === 'string' && 
+                  if (!skipInterception && 
+                      typeof url === 'string' && 
                       !url.includes('-proxy') &&
+                      !url.includes('-debug') &&
                       (url.includes('/api/signals') || 
                        url.includes('personalsite77.vercel.app/api/signals'))) {
                     
@@ -92,8 +101,14 @@ export default function Document() {
                     
                     console.log('Redirecting API call to:', proxyUrl);
                     
-                    // Call with modified URL
-                    return originalFetch(proxyUrl, options);
+                    // Create new options that disable further interception
+                    const newOptions = { 
+                      ...(options || {}),
+                      noInterception: true  // Flag to prevent recursive interception
+                    };
+                    
+                    // Call with modified URL and new options
+                    return originalFetch(proxyUrl, newOptions);
                   }
                   
                   // For all other URLs, use the original fetch

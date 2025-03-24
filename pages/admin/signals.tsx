@@ -184,6 +184,27 @@ export default function SignalsAdminPage({ signals: initialSignals, error: serve
           shareToSocial: data.shareToSocial ? 'Specified' : 'Not specified'
         });
         
+        // Try the debug endpoint first to test if API is responding
+        try {
+          console.log('Testing API connectivity with debug endpoint');
+          const debugResponse = await fetch('/api/signals-debug', {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'X-Requested-With': 'XMLHttpRequest'
+            }
+          });
+          
+          if (debugResponse.ok) {
+            const debugResult = await debugResponse.json();
+            console.log('Debug endpoint response:', debugResult);
+          } else {
+            console.error('Debug endpoint failed:', debugResponse.status);
+          }
+        } catch (debugError) {
+          console.error('Error testing debug endpoint:', debugError);
+        }
+        
+        console.log('Proceeding with actual POST request to signals-proxy');
         const response = await fetch('/api/signals-proxy', {
           method: 'POST',
           headers,
