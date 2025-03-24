@@ -4,6 +4,7 @@
  * that is used during development to help debug issues.
  */
 import type { NextApiRequest, NextApiResponse } from 'next';
+// Import server-auth directly, not through the API index
 import { validateFirebaseIdToken } from '@/lib/api/server-auth';
 import * as signalsApi from '@/lib/api/signals';
 import { shareToSocialMedia } from '@/lib/socialShare';

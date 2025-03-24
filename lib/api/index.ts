@@ -1,8 +1,8 @@
 /**
  * API module index
  * 
- * This module exports all API functions from the auth, books, blog, and signals modules.
- * Also includes utility functions for API URL handling.
+ * This module exports all client-side API functions.
+ * Server-side modules should be imported directly, not through this index.
  */
 
 // Re-export all functions from auth API
@@ -16,9 +16,6 @@ export * as blog from './blog';
 
 // Re-export all functions from signals API
 export * as signals from './signals';
-
-// Re-export server-auth for API routes
-export * as serverAuth from './server-auth';
 
 /**
  * Helper to get API URL - ensures we use relative URLs during development
@@ -44,13 +41,12 @@ export function getApiUrl(path: string): string {
   return path;
 }
 
-// Main API object for convenience
+// Main API object for convenience (only include client-side modules)
 const api = {
   auth: require('./auth'),
   books: require('./books'),
   blog: require('./blog'),
   signals: require('./signals'),
-  serverAuth: require('./server-auth'),
   getApiUrl
 };
 
