@@ -64,8 +64,8 @@ export default function SignalsAdminPage({ signals: initialSignals, error: serve
       
       console.log('Loading signals with auth token');
       
-      // Use the proxy endpoint instead of the direct signals API
-      const response = await fetch('/api/signals-proxy', {
+      // Use the debug endpoint directly
+      const response = await fetch('/api/signals-debug', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'X-Requested-With': 'XMLHttpRequest'
@@ -112,9 +112,6 @@ export default function SignalsAdminPage({ signals: initialSignals, error: serve
     setIsSubmitting(true);
     setError(null);
     
-    // Track which endpoint is working
-    let workingEndpoint: string | null = null;
-    
     try {
       // Get the auth token for the API request
       const auth = await import('@/lib/firebase').then(m => m.auth);
@@ -142,12 +139,11 @@ export default function SignalsAdminPage({ signals: initialSignals, error: serve
       });
       
       if (selectedSignal) {
-        // Update existing signal using the proxy endpoint
+        // Update existing signal - use the debug endpoint directly
         console.log('Updating signal with ID:', selectedSignal.id);
         
-        // Use the same endpoint discovery logic
-        console.log(`Using endpoint from previous discovery: ${workingEndpoint || '/api/signals-proxy'}`);
-        const apiEndpoint = workingEndpoint || '/api/signals-proxy';
+        // Use the debug endpoint
+        const apiEndpoint = '/api/signals-debug';
         
         const response = await fetch(apiEndpoint, {
           method: 'PUT',
@@ -155,10 +151,7 @@ export default function SignalsAdminPage({ signals: initialSignals, error: serve
           body: JSON.stringify({
             id: selectedSignal.id,
             ...data,
-          }),
-          credentials: 'include',
-          mode: 'cors',
-          cache: 'no-cache'
+          })
         });
         
         console.log('PUT response status:', response.status);
@@ -185,60 +178,21 @@ export default function SignalsAdminPage({ signals: initialSignals, error: serve
         setIsFormOpen(false);
         loadSignals(); // Reload signals to get the updated data
       } else {
-        // Create new signal using the proxy endpoint
+        // Create new signal - use the debug endpoint directly
         console.log('Creating new signal with data:', {
           ...data,
           shareToSocial: data.shareToSocial ? 'Specified' : 'Not specified'
         });
         
-        // Try multiple endpoints to find one that works
-        const endpoints = [
-          '/api/test-post',
-          '/api/signals-simple',
-          '/api/signals-debug',
-          '/api/signals-proxy',
-          '/api/auth-debug'
-        ];
-        
-        let workingEndpoint = null;
-        
-        // Test each endpoint to see which one responds
-        for (const endpoint of endpoints) {
-          try {
-            console.log(`Testing API connectivity with ${endpoint}`);
-            const testResponse = await fetch(endpoint, {
-              method: 'GET',
-              headers: {
-                'Authorization': `Bearer ${token}`,
-                'X-Requested-With': 'XMLHttpRequest'
-              }
-            });
-            
-            if (testResponse.ok) {
-              const testResult = await testResponse.json();
-              console.log(`${endpoint} response:`, testResult);
-              workingEndpoint = endpoint;
-              break;
-            } else {
-              console.error(`${endpoint} failed:`, testResponse.status);
-            }
-          } catch (testError) {
-            console.error(`Error testing ${endpoint}:`, testError);
-          }
-        }
-        
-        console.log(`Using endpoint: ${workingEndpoint || '/api/signals-proxy'}`);
-        const apiEndpoint = workingEndpoint || '/api/signals-proxy';
+        // Use the debug endpoint directly - no more endpoint discovery
+        const apiEndpoint = '/api/signals-debug';
         
         // Proceed with the actual POST request
         console.log(`Proceeding with POST request to ${apiEndpoint}`);
         const response = await fetch(apiEndpoint, {
           method: 'POST',
           headers,
-          body: JSON.stringify(data),
-          credentials: 'include',
-          mode: 'cors',
-          cache: 'no-cache'
+          body: JSON.stringify(data)
         });
         
         console.log('POST response status:', response.status);
@@ -282,9 +236,6 @@ export default function SignalsAdminPage({ signals: initialSignals, error: serve
     setIsLoading(true);
     setError(null);
     
-    // Track which endpoint is working
-    let workingEndpoint: string | null = null;
-    
     try {
       // Get auth token
       const auth = await import('@/lib/firebase').then(m => m.auth);
@@ -301,54 +252,16 @@ export default function SignalsAdminPage({ signals: initialSignals, error: serve
       
       console.log('Deleting signal with ID:', id);
       
-      // Try multiple endpoints to find one that works
-      const endpoints = [
-        '/api/test-post',
-        '/api/signals-simple',
-        '/api/signals-debug',
-        '/api/signals-proxy'
-      ];
+      // Use the debug endpoint directly
+      const apiEndpoint = '/api/signals-debug';
       
-      let workingEndpoint = null;
-      
-      // Test each endpoint to see which one responds
-      for (const endpoint of endpoints) {
-        try {
-          console.log(`Testing API connectivity with ${endpoint}`);
-          const testResponse = await fetch(endpoint, {
-            method: 'GET',
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'X-Requested-With': 'XMLHttpRequest'
-            }
-          });
-          
-          if (testResponse.ok) {
-            const testResult = await testResponse.json();
-            console.log(`${endpoint} response:`, testResult);
-            workingEndpoint = endpoint;
-            break;
-          } else {
-            console.error(`${endpoint} failed:`, testResponse.status);
-          }
-        } catch (testError) {
-          console.error(`Error testing ${endpoint}:`, testError);
-        }
-      }
-      
-      console.log(`Using endpoint: ${workingEndpoint || '/api/signals-proxy'}`);
-      const apiEndpoint = workingEndpoint || '/api/signals-proxy';
-      
-      // Use the working endpoint for deletion
+      // Use the debug endpoint for deletion
       const response = await fetch(`${apiEndpoint}?id=${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
           'X-Requested-With': 'XMLHttpRequest'
-        },
-        credentials: 'include',
-        mode: 'cors',
-        cache: 'no-cache'
+        }
       });
       
       console.log('DELETE response status:', response.status);
@@ -359,13 +272,8 @@ export default function SignalsAdminPage({ signals: initialSignals, error: serve
       
       const result = await response.json();
       
-      if (response.ok) {
-        setSuccessMessage('Signal deleted successfully');
-        setSignals(signals.filter(signal => signal.id !== id));
-      } else {
-        console.error('API error:', result.error);
-        setError(result.error || 'Failed to delete signal');
-      }
+      setSuccessMessage('Signal deleted successfully');
+      setSignals(signals.filter(signal => signal.id !== id));
     } catch (err) {
       console.error('Error deleting signal:', err);
       setError(`Network error: ${err instanceof Error ? err.message : String(err)}`);
@@ -630,13 +538,10 @@ export default function SignalsAdminPage({ signals: initialSignals, error: serve
 
 export const getServerSideProps: GetServerSideProps<SignalsAdminPageProps, ParsedUrlQuery> = async (context) => {
   try {
-    // Get signals from the API server-side
-    // This assumes you have a valid auth cookie for the server-side request
-    const signals = await api.signals.getAllSignals();
-    
+    // Don't try to fetch signals server-side, we'll load them client-side with the debug endpoint
     return {
       props: {
-        signals
+        signals: []
       }
     };
   } catch (error) {
