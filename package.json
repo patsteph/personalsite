@@ -6,10 +6,10 @@
     "node": ">=18.x"
   },
   "scripts": {
-    "predev": "npm run generate-standard-config && npm run generate-secure-config",
+    "predev": "npm run generate-runtime-config && npm run generate-standard-config && npm run generate-secure-config",
     "dev": "next dev",
     "build": "next build",
-    "prebuild": "npm run generate-standard-config && npm run generate-secure-config",
+    "prebuild": "npm run generate-runtime-config && npm run generate-standard-config && npm run generate-secure-config",
     "start": "next start",
     "lint": "next lint",
     "generate-runtime-config": "node scripts/generate-runtime-config.js",
