@@ -57,6 +57,14 @@ export default function Document() {
         <script src={`${basePath}/runtime-config.js`} />
         <script src={`${basePath}/secure-config.js`} />
         
+        {/* API URL fixes for development */}
+        {!isProduction && (
+          <>
+            <script src={`${basePath}/fix-api-url.js`} />
+            <script src={`${basePath}/personalsite/signals-redirect.js`} />
+          </>
+        )}
+        
         {/* Stylesheet */}
         <link 
           rel="stylesheet" 
