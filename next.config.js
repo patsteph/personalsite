@@ -23,7 +23,7 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
   
-  // Redirects for legacy admin HTML pages
+  // Redirects for legacy admin HTML pages and API endpoints
   async redirects() {
     return [
       {
@@ -36,6 +36,32 @@ const nextConfig = {
         destination: '/admin',
         permanent: true,
       },
+      // Handle direct Vercel domain API requests with a server-side redirect
+      {
+        source: '/api/signals',
+        has: [
+          {
+            type: 'header',
+            key: 'host',
+            value: 'personalsite77.vercel.app'
+          }
+        ],
+        destination: '/api/signals-simple',
+        permanent: false
+      },
+      // Redirect API requests when using any Vercel domain
+      {
+        source: '/api/signals',
+        has: [
+          {
+            type: 'header',
+            key: 'referer',
+            value: '(.*vercel.app.*)'
+          }
+        ],
+        destination: '/api/signals-simple',
+        permanent: false
+      }
     ];
   },
   
@@ -112,6 +138,19 @@ const nextConfig = {
   experimental: {
     scrollRestoration: true,
     isrFlushToDisk: false, // This ensures Next.js correctly handles the basePath for static assets
+  },
+  
+  // Add rewrites to handle hardcoded API URLs
+  async rewrites() {
+    return {
+      beforeFiles: [
+        // Handle absolute URLs to the Vercel domain
+        {
+          source: '/api/signals',
+          destination: '/api/signals-simple',
+        },
+      ]
+    };
   },
   
   // Customize the build ID for more consistent builds
