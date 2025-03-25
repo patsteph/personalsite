@@ -213,6 +213,9 @@ export default async function handler(
     }
     
     // Handle all other methods with a friendly response
+    console.log(`Method ${req.method} not explicitly handled in signals-direct endpoint, providing fallback response`);
+    
+    // Always return a 200 success for any method to avoid 405 errors
     return res.status(200).json({
       success: true,
       message: `Method ${req.method} handled in signals-direct endpoint`,
