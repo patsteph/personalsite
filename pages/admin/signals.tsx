@@ -64,8 +64,8 @@ export default function SignalsAdminPage({ signals: initialSignals, error: serve
       
       console.log('Loading signals with auth token');
       
-      // Use the direct endpoint that's guaranteed to work
-      const response = await fetch('/api/signals-direct', {
+      // Use the main signals API endpoint
+      const response = await fetch('/api/signals', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'X-Requested-With': 'XMLHttpRequest'
@@ -80,8 +80,8 @@ export default function SignalsAdminPage({ signals: initialSignals, error: serve
       
       const data = await response.json();
       
-      if (response.ok) {
-        console.log(`Loaded ${data.signals?.length} signals`);
+      if (data.signals) {
+        console.log(`Loaded ${data.signals.length} signals`);
         setSignals(data.signals || []);
       } else {
         console.error('API error:', data.error);
@@ -140,13 +140,10 @@ export default function SignalsAdminPage({ signals: initialSignals, error: serve
       });
       
       if (selectedSignal) {
-        // Update existing signal - use the debug endpoint directly
+        // Update existing signal
         console.log('Updating signal with ID:', selectedSignal.id);
         
-        // Use the direct endpoint that's guaranteed to work
-        const apiEndpoint = '/api/signals-direct';
-        
-        const response = await fetch(apiEndpoint, {
+        const response = await fetch('/api/signals', {
           method: 'PUT',
           headers,
           body: JSON.stringify({
@@ -179,24 +176,18 @@ export default function SignalsAdminPage({ signals: initialSignals, error: serve
         setIsFormOpen(false);
         loadSignals(); // Reload signals to get the updated data
       } else {
-        // Create new signal - use the debug endpoint directly
+        // Create new signal
         console.log('Creating new signal with data:', {
           ...data,
           shareToSocial: data.shareToSocial ? 'Specified' : 'Not specified'
         });
-        
-        // Use the direct endpoint that's guaranteed to work
-        const apiEndpoint = '/api/signals-direct';
-        
-        // Proceed with the actual POST request
-        console.log(`Proceeding with POST request to ${apiEndpoint}`);
         
         // Create the stringified body first so we can log it
         const jsonBody = JSON.stringify(data);
         console.log('POST request body:', jsonBody.substring(0, 200) + (jsonBody.length > 200 ? '...' : ''));
         
         // Send the request with extra error handling
-        const response = await fetch(apiEndpoint, {
+        const response = await fetch('/api/signals', {
           method: 'POST',
           headers,
           body: jsonBody,
@@ -276,11 +267,8 @@ export default function SignalsAdminPage({ signals: initialSignals, error: serve
       
       console.log('Deleting signal with ID:', id);
       
-      // Use the direct endpoint that's guaranteed to work
-      const apiEndpoint = '/api/signals-direct';
-      
-      // Use the debug endpoint for deletion
-      const response = await fetch(`${apiEndpoint}?id=${id}`, {
+      // Use the main API endpoint
+      const response = await fetch(`/api/signals?id=${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -562,7 +550,7 @@ export default function SignalsAdminPage({ signals: initialSignals, error: serve
 
 export const getServerSideProps: GetServerSideProps<SignalsAdminPageProps, ParsedUrlQuery> = async (context) => {
   try {
-    // Don't try to fetch signals server-side, we'll load them client-side with the debug endpoint
+    // We'll load signals client-side for better reliability
     return {
       props: {
         signals: []

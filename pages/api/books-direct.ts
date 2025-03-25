@@ -1,12 +1,12 @@
 /**
- * Direct signals API endpoint that connects directly to Firebase
+ * Direct books API endpoint that connects directly to Firebase
  * This endpoint uses Firebase Admin SDK for direct database access
  * while still maintaining proper authentication validation
  */
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { firestore } from '@/lib/firebase-admin';
 import { validateFirebaseIdToken } from '@/lib/api/server-auth';
-import { Signal } from '@/types';
+import { Book } from '@/types/book';
 
 // Configure API to handle both JSON and form data
 export const config = {
@@ -21,7 +21,7 @@ export default async function handler(
   req: NextApiRequest, 
   res: NextApiResponse
 ) {
-  console.log('SIGNALS-DIRECT API:', req.method, req.url);
+  console.log('BOOKS-DIRECT API:', req.method, req.url);
   
   // Set CORS headers
   res.setHeader('Access-Control-Allow-Credentials', 'true');
@@ -34,15 +34,11 @@ export default async function handler(
     return res.status(200).end();
   }
   
-  // For all non-OPTIONS responses, set content type
-  res.setHeader('Content-Type', 'application/json');
-  
-  // Authenticate the request for write operations
-  let userId = null;
+  // Authenticate the request
   try {
-    // Only validate token for write operations (not GET)
+    // Allow unauthenticated GET requests for the public books endpoint
     if (req.method !== 'GET') {
-      userId = await validateFirebaseIdToken(req);
+      const userId = await validateFirebaseIdToken(req);
       if (!userId) {
         return res.status(401).json({ 
           success: false, 
@@ -69,7 +65,7 @@ export default async function handler(
   }
   
   // Collection name
-  const SIGNALS_COLLECTION = 'signals';
+  const BOOKS_COLLECTION = 'books';
   
   // Log request body for debugging
   if (req.method !== 'GET' && req.body) {
@@ -84,106 +80,90 @@ export default async function handler(
       const { id } = req.query;
       
       if (id) {
-        // Get single signal
-        const signalRef = firestore.collection(SIGNALS_COLLECTION).doc(id as string);
-        const signalSnap = await signalRef.get();
+        // Get single book
+        const bookRef = firestore.collection(BOOKS_COLLECTION).doc(id as string);
+        const bookSnap = await bookRef.get();
         
-        if (!signalSnap.exists) {
+        if (!bookSnap.exists) {
           return res.status(404).json({ 
             success: false, 
-            error: `Signal with ID ${id} not found` 
+            error: `Book with ID ${id} not found` 
           });
         }
         
-        const signalData = signalSnap.data();
+        const bookData = bookSnap.data();
         return res.status(200).json({
           success: true,
           data: {
-            id: signalSnap.id,
-            ...signalData
+            id: bookSnap.id,
+            ...bookData
           }
         });
       } else {
-        // Get all signals
-        const signalsSnapshot = await firestore.collection(SIGNALS_COLLECTION)
+        // Get all books
+        const booksSnapshot = await firestore.collection(BOOKS_COLLECTION)
           .orderBy('dateAdded', 'desc')
           .get();
         
-        const signals = signalsSnapshot.docs.map(doc => {
-          const data = doc.data();
-          // Convert date objects to strings for proper JSON serialization
-          return {
-            id: doc.id,
-            ...data,
-            dateAdded: data.dateAdded && typeof data.dateAdded.toDate === 'function' ? 
-              data.dateAdded.toDate().toISOString() : 
-              data.dateAdded
-          };
-        });
+        const books = booksSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
         
         return res.status(200).json({
           success: true,
-          signals
+          data: books
         });
       }
     }
     
     // Handle POST request (create)
     if (req.method === 'POST') {
-      const signalData = req.body;
+      const bookData = req.body;
       
       // Add some required fields if missing
-      const enhancedSignalData = {
-        ...signalData,
+      const enhancedBookData = {
+        ...bookData,
         dateAdded: new Date().toISOString()
       };
       
-      const docRef = await firestore.collection(SIGNALS_COLLECTION).add(enhancedSignalData);
+      const docRef = await firestore.collection(BOOKS_COLLECTION).add(enhancedBookData);
       
       return res.status(201).json({
         success: true,
-        message: 'Signal created successfully',
-        id: docRef.id,
-        signal: {
+        message: 'Book created successfully',
+        data: {
           id: docRef.id,
-          ...enhancedSignalData
+          ...enhancedBookData
         }
       });
     }
     
     // Handle PUT request (update)
     if (req.method === 'PUT') {
-      // Extract ID from body or query
-      const id = typeof req.body === 'object' && req.body.id ? req.body.id : 
-               req.query.id ? req.query.id : null;
-               
-      if (!id) {
+      const { id } = req.query;
+      
+      if (!id || typeof id !== 'string') {
         return res.status(400).json({
           success: false,
-          error: 'Signal ID is required for update operation'
+          error: 'Book ID is required for update operation'
         });
       }
       
-      const signalData = req.body;
+      const bookData = req.body;
       
       // Add updated timestamp
       const updatedData = {
-        ...signalData,
+        ...bookData,
         updatedAt: new Date().toISOString()
       };
       
-      // Remove id from the update data (can't update document ID)
-      if (updatedData.id === id) {
-        delete updatedData.id;
-      }
-      
-      await firestore.collection(SIGNALS_COLLECTION).doc(id as string).update(updatedData);
+      await firestore.collection(BOOKS_COLLECTION).doc(id).update(updatedData);
       
       return res.status(200).json({
         success: true,
-        message: 'Signal updated successfully',
-        id,
-        signal: {
+        message: 'Book updated successfully',
+        data: {
           id,
           ...updatedData
         }
@@ -192,36 +172,34 @@ export default async function handler(
     
     // Handle DELETE request
     if (req.method === 'DELETE') {
-      // Extract ID from query or body
-      const id = req.query.id ? req.query.id : 
-               typeof req.body === 'object' && req.body.id ? req.body.id : null;
-               
-      if (!id) {
+      const { id } = req.query;
+      
+      if (!id || typeof id !== 'string') {
         return res.status(400).json({
           success: false,
-          error: 'Signal ID is required for delete operation'
+          error: 'Book ID is required for delete operation'
         });
       }
       
-      await firestore.collection(SIGNALS_COLLECTION).doc(id as string).delete();
+      await firestore.collection(BOOKS_COLLECTION).doc(id).delete();
       
       return res.status(200).json({
         success: true,
-        message: 'Signal deleted successfully',
-        id
+        message: 'Book deleted successfully',
+        data: { id }
       });
     }
     
-    // Handle all other methods with a friendly response
+    // If we get here, method not supported but respond nicely
     return res.status(200).json({
       success: true,
-      message: `Method ${req.method} handled in signals-direct endpoint`,
+      message: `Method ${req.method} handled in books-direct endpoint`,
       note: 'This is a fallback response - method not fully implemented',
       timestamp: new Date().toISOString()
     });
     
   } catch (error) {
-    console.error('Error in signals-direct API:', error);
+    console.error('Error in books-direct API:', error);
     return res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : String(error)

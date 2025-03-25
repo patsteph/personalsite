@@ -172,49 +172,57 @@ export const searchBooks = async (query: string, maxResults = 10): Promise<BookS
   }
 };
 
+// Get authentication token
+const getAuthToken = async (): Promise<string | null> => {
+  try {
+    const auth = await import('./firebase').then(m => m.auth);
+    if (!auth) return null;
+    
+    const currentUser = auth.currentUser;
+    if (!currentUser) return null;
+    
+    return currentUser.getIdToken();
+  } catch (error) {
+    console.error('Error getting auth token:', error);
+    return null;
+  }
+};
+
 // Add a book to the collection
 export const addBook = async (book: Book): Promise<string> => {
   try {
-    // Try using the direct API endpoint first for reliability
-    try {
-      console.log('Trying to add book via debug API endpoint');
-      
-      // Get auth token if available
-      let token = '';
+    console.log('Adding new book to collection:', book.title);
+    
+    // Use the main API endpoint
+    const token = await getAuthToken();
+    
+    if (token) {
       try {
-        const auth = await import('./firebase').then(m => m.auth);
-        if (auth && auth.currentUser) {
-          token = await auth.currentUser.getIdToken();
+        console.log('Adding book via main API endpoint');
+        const response = await fetch('/api/books', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(book)
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log('Book added successfully via API:', data);
+          return data.data.id;
+        } else {
+          console.error('API failed:', await response.text());
+          throw new Error(`API error: ${response.status}`);
         }
-      } catch (tokenError) {
-        console.warn('Error getting auth token:', tokenError);
-      }
-      
-      // Make API request
-      const response = await fetch('/api/books-debug', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': token ? `Bearer ${token}` : '',
-        },
-        body: JSON.stringify(book),
-      });
-      
-      // Check if successful
-      if (response.ok) {
-        const data = await response.json();
-        console.log('Book added successfully via debug API:', data);
-        return data.data.id;
-      } else {
-        console.warn('Debug API endpoint failed:', response.status);
+      } catch (apiError) {
+        console.error('Error using API endpoint:', apiError);
         // Fall back to Firebase direct
       }
-    } catch (apiError) {
-      console.error('Error using debug API endpoint:', apiError);
-      // Fall back to Firebase direct
     }
     
-    // Fall back to direct Firebase
+    // Fall back to direct Firebase operation
     console.log('Falling back to direct Firebase for adding book');
     const db = initFirebase();
     if (!db) throw new Error('Firebase is not initialized');
@@ -235,6 +243,37 @@ export const addBook = async (book: Book): Promise<string> => {
 // Update a book
 export const updateBook = async (id: string, updates: Partial<Book>): Promise<void> => {
   try {
+    console.log('Updating book:', id);
+    
+    // Use the main API endpoint
+    const token = await getAuthToken();
+    
+    if (token) {
+      try {
+        console.log('Updating book via main API endpoint');
+        const response = await fetch(`/api/books?id=${id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(updates)
+        });
+        
+        if (response.ok) {
+          console.log('Book updated successfully via API');
+          return;
+        } else {
+          console.error('API update failed:', await response.text());
+          throw new Error(`API error: ${response.status}`);
+        }
+      } catch (apiError) {
+        console.error('Error using API for update:', apiError);
+        // Fall back to Firebase direct
+      }
+    }
+    
+    // Fall back to direct Firebase operation
     const db = initFirebase();
     if (!db) throw new Error('Firebase is not initialized');
     
@@ -249,6 +288,36 @@ export const updateBook = async (id: string, updates: Partial<Book>): Promise<vo
 // Delete a book
 export const deleteBook = async (id: string): Promise<void> => {
   try {
+    console.log('Deleting book:', id);
+    
+    // Use the main API endpoint
+    const token = await getAuthToken();
+    
+    if (token) {
+      try {
+        console.log('Deleting book via main API endpoint');
+        const response = await fetch(`/api/books?id=${id}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (response.ok) {
+          console.log('Book deleted successfully via API');
+          return;
+        } else {
+          console.error('API delete failed:', await response.text());
+          throw new Error(`API error: ${response.status}`);
+        }
+      } catch (apiError) {
+        console.error('Error using API for delete:', apiError);
+        // Fall back to Firebase direct
+      }
+    }
+    
+    // Fall back to direct Firebase operation
     const db = initFirebase();
     if (!db) throw new Error('Firebase is not initialized');
     
@@ -296,6 +365,31 @@ export const getBookStats = async (): Promise<{
 // Get book by ID (re-export from API)
 export const getBookById = async (id: string): Promise<Book | null> => {
   try {
+    // Use the main API endpoint
+    const token = await getAuthToken();
+    
+    if (token) {
+      try {
+        console.log('Getting book by ID via main API endpoint');
+        const response = await fetch(`/api/books?id=${id}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.data) {
+            return data.data;
+          }
+        }
+      } catch (apiError) {
+        console.error('Error using API to get book by ID:', apiError);
+        // Fall back to Firebase direct
+      }
+    }
+    
     // Initialize Firebase
     const db = initFirebase();
     if (!db) {
@@ -315,9 +409,37 @@ export const getBookById = async (id: string): Promise<Book | null> => {
 // Get all books
 export const getBooks = async (): Promise<Book[]> => {
   try {
-    // Try to get books from Firebase first (direct access)
+    // Try the direct API endpoint first
     try {
-      console.log('Trying to get books directly from Firebase');
+      console.log('Getting books via main API endpoint');
+      const token = await getAuthToken();
+      const headers: HeadersInit = {};
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
+      const response = await fetch('/api/books', { headers });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && Array.isArray(data.data)) {
+          console.log(`Successfully got ${data.data.length} books from direct API`);
+          return data.data;
+        } else {
+          console.warn('Direct API returned success but no data array');
+        }
+      } else {
+        console.error('Direct API failed:', response.status);
+      }
+    } catch (apiError) {
+      console.error('Error using direct API to get books:', apiError);
+      // Fall back to Firebase direct
+    }
+    
+    // Try to get books from Firebase directly (fallback)
+    try {
+      console.log('Falling back to getting books directly from Firebase');
       
       // Try initializing Firebase
       const db = initFirebase();
@@ -371,11 +493,10 @@ export const getBooks = async (): Promise<Book[]> => {
                 dateAdded: serializedData.dateAdded || new Date().toISOString()
               };
               
-              console.log(`Sanitized book ${doc.id}, authors: ${JSON.stringify(safeData.authors)}`);
               return safeData;
             }) as Book[];
             
-            console.log(`Retrieved ${books.length} books from Firestore "${collName}" collection:`, books);
+            console.log(`Retrieved ${books.length} books from Firestore "${collName}" collection`);
             collectionSuccess = true;
             break; // Exit the loop if we found books
           } else {
@@ -390,18 +511,10 @@ export const getBooks = async (): Promise<Book[]> => {
       if (collectionSuccess && books.length > 0) {
         console.log(`Successfully returning ${books.length} books from Firebase`);
         return books;
-      } else {
-        // If no books found in any collection, throw error to trigger fallback
-        console.warn('No books found in Firestore, falling back to debug API');
-        throw new Error('No books found in Firestore');
       }
     } catch (error) {
       console.error('Error getting books from Firebase:', error);
-      // Don't return here - let it fall through to the debug API fallback
-      throw error; // Re-throw to catch in the outer try/catch
     }
-  } catch (outerError) {
-    console.warn('Using debug API as fallback due to error:', outerError);
     
     // As a final fallback, try the debug API
     try {
@@ -409,7 +522,7 @@ export const getBooks = async (): Promise<Book[]> => {
       const response = await fetch('/api/books-debug');
       if (response.ok) {
         const data = await response.json();
-        console.log('Books retrieved from debug API as fallback:', data);
+        console.log('Books retrieved from debug API as fallback');
         if (data.data && data.data.length > 0) {
           return data.data;
         }
@@ -421,6 +534,8 @@ export const getBooks = async (): Promise<Book[]> => {
     // If all else fails, return empty array
     console.warn('All fallbacks failed, returning empty array');
     return [];
+  } catch (outerError) {
+    console.error('Unhandled error in getBooks:', outerError);
+    return [];
   }
 };
-
