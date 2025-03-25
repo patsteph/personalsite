@@ -58,66 +58,56 @@ export default function Document() {
         <script src={`${basePath}/secure-config.js`} />
         <script src={`${basePath}/direct-url-fix.js`} />
         
-        {/* Inline script for critical URL fixes - no external dependencies */}
+        {/* Simplified inline script for basic URL redirection */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
-              // Inline URL fix script that doesn't depend on external files
+              // Simple inline URL fix script
               (function() {
                 console.log('Inline URL fix script loaded');
                 
                 // Store the original fetch function
                 const originalFetch = window.fetch;
                 
-                // Track if interception is enabled
-                window.signalInterceptionEnabled = true;
-                
-                // Patch fetch to intercept signals API calls
+                // Patch fetch to intercept API calls
                 window.fetch = function(url, options) {
-                  // Skip interception if disabled globally or this specific request opts out
-                  const skipInterception = !window.signalInterceptionEnabled || 
-                                         (options && options.noInterception);
+                  // Skip interception if this request opts out
+                  if (options && options.noInterception) {
+                    return originalFetch(url, options);
+                  }
                   
-                  // Check if URL is a signals API call and NOT already using the proxy
-                  if (!skipInterception && 
-                      typeof url === 'string' && 
-                      !url.includes('-proxy') &&
-                      !url.includes('-debug') &&
+                  // Handle signals API
+                  if (typeof url === 'string' && 
                       (url.includes('/api/signals') || 
                        url.includes('personalsite77.vercel.app/api/signals'))) {
                     
                     console.log('Intercepting signals API call:', url);
+                    let debugUrl = '/api/signals-debug';
                     
-                    // Create the proxy URL
-                    let proxyUrl;
-                    
-                    if (url.includes('personalsite77.vercel.app')) {
-                      // Extract path and query from absolute URL
-                      const urlObj = new URL(url);
-                      proxyUrl = '/api/signals-proxy' + urlObj.search;
-                    } else {
-                      // Replace /api/signals with /api/signals-proxy in relative URL
-                      proxyUrl = url.replace('/api/signals', '/api/signals-proxy');
+                    // Pass the query string if any
+                    if (url.includes('?')) {
+                      try {
+                        const urlObj = new URL(url.startsWith('http') ? url : 'http://example.com' + url);
+                        debugUrl += urlObj.search;
+                      } catch (e) {
+                        console.error('Error parsing URL:', e);
+                      }
                     }
                     
-                    console.log('Redirecting API call to:', proxyUrl);
+                    console.log('Redirecting to debug endpoint:', debugUrl);
                     
                     // Create new options that disable further interception
                     const newOptions = { 
                       ...(options || {}),
-                      noInterception: true  // Flag to prevent recursive interception
+                      noInterception: true
                     };
                     
-                    // Call with modified URL and new options
-                    return originalFetch(proxyUrl, newOptions);
+                    return originalFetch(debugUrl, newOptions);
                   }
                   
                   // For all other URLs, use the original fetch
                   return originalFetch(url, options);
                 };
-                
-                // No longer needed to redirect to signals-fixed
-                // We've updated the original signals.tsx to use the proxy
                 
                 console.log('Inline URL fix script initialized');
               })();
@@ -160,15 +150,15 @@ export default function Document() {
             `
           }}
         />
-        {/* Inline script for critical URL fixes in body */}
+        {/* Simple debug logging script */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
-              // No longer needed to redirect to signals-fixed page
-              // Original signals page now uses the proxy API
-              
-              // No additional fetch interception needed - the head script handles this
-              console.log('URL interception already handled by the earlier script');
+              console.log('Firebase config status:', {
+                secure: !!window.SECURE_CONFIG?.firebase?.apiKey,
+                runtime: !!window.runtimeConfig?.firebase?.apiKey,
+                projectId: window.SECURE_CONFIG?.firebase?.projectId || window.runtimeConfig?.firebase?.projectId || 'unknown'
+              });
             `
           }}
         />
