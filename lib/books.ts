@@ -227,9 +227,17 @@ export const addBook = async (book: Book): Promise<string> => {
     const db = initFirebase();
     if (!db) throw new Error('Firebase is not initialized');
     
+    // Convert any undefined values to null for Firestore compatibility
+    const sanitizedBook = Object.entries(book).reduce((acc, [key, value]) => {
+      acc[key] = value === undefined ? null : value;
+      return acc;
+    }, {} as Record<string, any>);
+    
+    console.log("Sanitized book data for Firebase:", sanitizedBook);
+    
     const booksCollection = collection(db, 'books');
     const newBookRef = await addDoc(booksCollection, {
-      ...book,
+      ...sanitizedBook,
       dateAdded: serverTimestamp(),
     });
     

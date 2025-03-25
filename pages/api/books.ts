@@ -70,11 +70,19 @@ export default async function handler(
   // POST - Create a new book
   if (req.method === 'POST') {
     try {
+      // Convert any undefined values to null for Firestore compatibility
+      const sanitizedBody = Object.entries(req.body).reduce((acc, [key, value]) => {
+        acc[key] = value === undefined ? null : value;
+        return acc;
+      }, {} as Record<string, any>);
+      
       const bookData = {
-        ...req.body,
+        ...sanitizedBody,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
+      
+      console.log('API: Adding book with sanitized data', bookData);
       
       const docRef = await booksCollection.add(bookData);
       
@@ -100,8 +108,14 @@ export default async function handler(
         return res.status(400).json({ success: false, error: 'Book ID is required' });
       }
       
+      // Convert any undefined values to null for Firestore compatibility
+      const sanitizedBody = Object.entries(req.body).reduce((acc, [key, value]) => {
+        acc[key] = value === undefined ? null : value;
+        return acc;
+      }, {} as Record<string, any>);
+      
       const bookData = {
-        ...req.body,
+        ...sanitizedBody,
         updatedAt: new Date().toISOString()
       };
       
