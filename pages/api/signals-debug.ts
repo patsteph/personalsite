@@ -6,6 +6,16 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { validateFirebaseIdToken } from '@/lib/api/server-auth';
 import { Signal } from '@/types';
 
+// Configure the Next.js API to properly handle various HTTP methods
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '5mb',
+    },
+    externalResolver: true,
+  },
+};
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
@@ -20,10 +30,16 @@ export default async function handler(
   if (typeof req.body === 'string') {
     try {
       parsedBody = JSON.parse(req.body);
+      console.log('Successfully parsed JSON body');
     } catch (e) {
       console.error('Error parsing request body as JSON:', e);
     }
+  } else if (req.body && Object.keys(req.body).length > 0) {
+    console.log('Body is already parsed as object');
+  } else if (req.method === 'POST' || req.method === 'PUT') {
+    console.warn('POST or PUT request with no body or empty body');
   }
+  
   console.log('Body:', parsedBody ? JSON.stringify(parsedBody) : 'No body');
   
   // Add CORS headers
@@ -37,6 +53,7 @@ export default async function handler(
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     console.log('Handling OPTIONS preflight request');
+    // For CORS preflight, we need to return a 200 response with the appropriate headers
     return res.status(200).end();
   }
   
@@ -52,6 +69,7 @@ export default async function handler(
         console.log('Token validation result:', userId ? 'Valid token' : 'Invalid token');
       } catch (tokenError) {
         console.error('Token validation error:', tokenError);
+        // Continue anyway - this is a debug endpoint
       }
       
       // Even if validation fails, we'll still accept the token
@@ -60,9 +78,11 @@ export default async function handler(
       userId = userId || 'token-extracted-but-not-validated';
     } catch (error) {
       console.error('Error processing authorization header:', error);
+      // Continue anyway - this is a debug endpoint
     }
   } else {
     console.log('No authorization header or invalid format');
+    // Still continue - this is a debug endpoint
   }
   
   // Handle different HTTP methods with mock data
@@ -231,12 +251,16 @@ export default async function handler(
     });
   }
   
-  // For any other method, return diagnostic information
+  // If we get here, no handler matched the method
+  // Instead of returning a 405, just return a success response for debugging
+  console.warn(`No handler matched for method ${req.method}, but returning 200 for debug purposes`);
+  
   return res.status(200).json({
     success: true,
-    message: `Debug endpoint reached successfully with method ${req.method}`,
+    message: `Debug endpoint reached with method ${req.method} - this is a fallback response`,
     method: req.method,
     path: req.url,
+    supportedMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     ...debugInfo
   });
 }

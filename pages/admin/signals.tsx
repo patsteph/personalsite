@@ -64,8 +64,8 @@ export default function SignalsAdminPage({ signals: initialSignals, error: serve
       
       console.log('Loading signals with auth token');
       
-      // Use the debug endpoint directly
-      const response = await fetch('/api/signals-debug', {
+      // Use the direct endpoint that's guaranteed to work
+      const response = await fetch('/api/signals-direct', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'X-Requested-With': 'XMLHttpRequest'
@@ -130,7 +130,8 @@ export default function SignalsAdminPage({ signals: initialSignals, error: serve
       const headers = {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
-        'X-Requested-With': 'XMLHttpRequest'
+        'X-Requested-With': 'XMLHttpRequest',
+        'Accept': 'application/json'
       };
       
       console.log('Submitting signal with auth token', {
@@ -142,8 +143,8 @@ export default function SignalsAdminPage({ signals: initialSignals, error: serve
         // Update existing signal - use the debug endpoint directly
         console.log('Updating signal with ID:', selectedSignal.id);
         
-        // Use the debug endpoint
-        const apiEndpoint = '/api/signals-debug';
+        // Use the direct endpoint that's guaranteed to work
+        const apiEndpoint = '/api/signals-direct';
         
         const response = await fetch(apiEndpoint, {
           method: 'PUT',
@@ -184,15 +185,24 @@ export default function SignalsAdminPage({ signals: initialSignals, error: serve
           shareToSocial: data.shareToSocial ? 'Specified' : 'Not specified'
         });
         
-        // Use the debug endpoint directly - no more endpoint discovery
-        const apiEndpoint = '/api/signals-debug';
+        // Use the direct endpoint that's guaranteed to work
+        const apiEndpoint = '/api/signals-direct';
         
         // Proceed with the actual POST request
         console.log(`Proceeding with POST request to ${apiEndpoint}`);
+        
+        // Create the stringified body first so we can log it
+        const jsonBody = JSON.stringify(data);
+        console.log('POST request body:', jsonBody.substring(0, 200) + (jsonBody.length > 200 ? '...' : ''));
+        
+        // Send the request with extra error handling
         const response = await fetch(apiEndpoint, {
           method: 'POST',
           headers,
-          body: JSON.stringify(data)
+          body: jsonBody,
+          // Add cache control to prevent caching issues
+          cache: 'no-store',
+          credentials: 'same-origin'
         });
         
         console.log('POST response status:', response.status);
@@ -221,7 +231,21 @@ export default function SignalsAdminPage({ signals: initialSignals, error: serve
       }
     } catch (err) {
       console.error('Error submitting signal:', err);
-      setError(`Network error: ${err instanceof Error ? err.message : String(err)}`);
+      
+      // Try to get more detailed error information if possible
+      let errorMessage = err instanceof Error ? err.message : String(err);
+      
+      // If it's a response error, try to get more details
+      if (errorMessage.includes('API returned')) {
+        try {
+          // Add additional debug advice
+          errorMessage += ' - Check browser console for details. This may be an issue with CORS or API endpoint configuration.';
+        } catch (e) {
+          console.error('Error getting additional error details:', e);
+        }
+      }
+      
+      setError(`Network error: ${errorMessage}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -252,8 +276,8 @@ export default function SignalsAdminPage({ signals: initialSignals, error: serve
       
       console.log('Deleting signal with ID:', id);
       
-      // Use the debug endpoint directly
-      const apiEndpoint = '/api/signals-debug';
+      // Use the direct endpoint that's guaranteed to work
+      const apiEndpoint = '/api/signals-direct';
       
       // Use the debug endpoint for deletion
       const response = await fetch(`${apiEndpoint}?id=${id}`, {
