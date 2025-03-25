@@ -99,6 +99,7 @@ export default function BookForm({ existingBook, onSuccess }: BookFormProps) {
         dateAdded: new Date().toISOString(),
       } as Book;
       
+      // Process Google Books average rating
       if (completeBookData.averageRating !== undefined) {
         // Convert to number if it's a string
         const rating = Number(completeBookData.averageRating);
@@ -119,6 +120,20 @@ export default function BookForm({ existingBook, onSuccess }: BookFormProps) {
       } else {
         // Ensure null for missing ratings
         completeBookData.averageRating = undefined;
+      }
+      
+      // Add user rating for 'read' books
+      if (status === 'read') {
+        if (bookData.userRating && Number(bookData.userRating) > 0) {
+          completeBookData.userRating = Number(bookData.userRating);
+        } else {
+          setError('Please provide your rating for books you have read');
+          setLoading(false);
+          return;
+        }
+      } else {
+        // Clear user rating for non-read books
+        completeBookData.userRating = undefined;
       }
       
       // Log the sanitized data to help with debugging
@@ -396,6 +411,31 @@ export default function BookForm({ existingBook, onSuccess }: BookFormProps) {
           <option value="toRead">{t('books.toRead', 'Want to Read')}</option>
         </select>
       </div>
+      
+      {/* Add rating field for books that have been read */}
+      {status === 'read' && (
+        <div className="mb-4">
+          <label 
+            htmlFor="userRating" 
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
+            {t('admin.userRating', 'Your Rating:')}
+          </label>
+          <select
+            id="userRating"
+            value={bookData?.userRating || '0'}
+            onChange={(e) => setBookData(prev => ({ ...prev, userRating: Number(e.target.value) }))}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-steel-blue focus:border-steel-blue"
+          >
+            <option value="0">-- Select Rating --</option>
+            <option value="1">⭐ (1 Star)</option>
+            <option value="2">⭐⭐ (2 Stars)</option>
+            <option value="3">⭐⭐⭐ (3 Stars)</option>
+            <option value="4">⭐⭐⭐⭐ (4 Stars)</option>
+            <option value="5">⭐⭐⭐⭐⭐ (5 Stars)</option>
+          </select>
+        </div>
+      )}
       
       <div className="mb-6">
         <label 

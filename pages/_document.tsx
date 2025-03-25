@@ -76,10 +76,11 @@ export default function Document() {
                     return originalFetch(url, options);
                   }
                   
-                  // Handle signals API
+                  // Handle signals API but exclude signals-direct API
                   if (typeof url === 'string' && 
                       (url.includes('/api/signals') || 
-                       url.includes('personalsite77.vercel.app/api/signals'))) {
+                       url.includes('personalsite77.vercel.app/api/signals')) && 
+                      !url.includes('/api/signals-direct')) {
                     
                     console.log('Intercepting signals API call:', url);
                     let debugUrl = '/api/signals-debug';
