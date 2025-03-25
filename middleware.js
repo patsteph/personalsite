@@ -58,5 +58,6 @@ export const config = {
     '/admin-login.html', 
     '/admin-dashboard.html',
     '/api/signals'
+    // '/api/books' is not intercepted by middleware
   ],
 };
