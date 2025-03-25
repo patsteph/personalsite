@@ -315,14 +315,22 @@ export default function SignalsAdminPage({ signals: initialSignals, error: serve
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-2xl font-bold text-steel-blue">Manage Signals</h1>
             
-            {!isFormOpen && (
+            <div className="flex space-x-4">
+              {!isFormOpen && (
+                <button
+                  onClick={handleCreateNew}
+                  className="px-4 py-2 bg-steel-blue text-white rounded-md hover:bg-opacity-90"
+                >
+                  Add New Signal
+                </button>
+              )}
               <button
-                onClick={handleCreateNew}
-                className="px-4 py-2 bg-steel-blue text-white rounded-md hover:bg-opacity-90"
+                onClick={() => router.push('/admin')}
+                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
               >
-                Add New Signal
+                Return to Dashboard
               </button>
-            )}
+            </div>
           </div>
           
           {/* Alerts */}
