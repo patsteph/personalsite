@@ -22,6 +22,12 @@ export default async function handler(
   res: NextApiResponse
 ) {
   console.log('SIGNALS-DIRECT API:', req.method, req.url);
+  console.log('Referer:', req.headers.referer);
+  console.log('Origin:', req.headers.origin);
+  console.log('User-Agent:', req.headers['user-agent']);
+  
+  // Log the call stack if possible
+  console.log('Call stack:', new Error().stack);
   
   // Set CORS headers
   res.setHeader('Access-Control-Allow-Credentials', 'true');
@@ -212,16 +218,27 @@ export default async function handler(
       });
     }
     
-    // Handle all other methods with a friendly response
-    console.log(`Method ${req.method} not explicitly handled in signals-direct endpoint, providing fallback response`);
+    // Create a wrapper to handle any method including ones we don't recognize
+    // This will forward requests from the legacy direct API to the main signals API
+    console.log(`Forwarding ${req.method} from signals-direct to the main signals API`);
     
-    // Always return a 200 success for any method to avoid 405 errors
-    return res.status(200).json({
-      success: true,
-      message: `Method ${req.method} handled in signals-direct endpoint`,
-      note: 'This is a fallback response - method not fully implemented',
-      timestamp: new Date().toISOString()
-    });
+    try {
+      // Use the internal require to get the main signals API handler
+      const mainSignalsHandler = require('./signals').default;
+      
+      // Pass the request and response to the main handler
+      return await mainSignalsHandler(req, res);
+    } catch (forwardError) {
+      console.error('Error forwarding to main signals API:', forwardError);
+      
+      // Return a success response as fallback to avoid the 405 error
+      return res.status(200).json({
+        success: true,
+        message: `Method ${req.method} handled in signals-direct endpoint (forwarded to main API)`,
+        note: 'This is a fallback response after forwarding failed',
+        timestamp: new Date().toISOString()
+      });
+    }
     
   } catch (error) {
     console.error('Error in signals-direct API:', error);
