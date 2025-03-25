@@ -246,13 +246,22 @@ const nextConfig = {
         new webpack.DefinePlugin({
           'window.API_BASE_URL': JSON.stringify('/api'),
         }),
-        // Add a string replacement plugin
+        // Add a string replacement plugin with improved error handling
         new webpack.NormalModuleReplacementPlugin(
           /(.*)/, 
           (resource) => {
+            // Skip if resource or resource.request is undefined
+            if (!resource || !resource.request) {
+              return;
+            }
+            
             // Only process JS/TS files
             if (resource.request.match(/\.(js|jsx|ts|tsx)$/)) {
-              const originalRequest = resource.request;
+              // Skip node_modules files for better build performance
+              if (resource.context && resource.context.includes('node_modules')) {
+                return;
+              }
+              
               // Replace hardcoded URLs in the resource content
               if (resource.context) {
                 try {
@@ -260,26 +269,43 @@ const nextConfig = {
                   const path = require('path');
                   const fullPath = path.resolve(resource.context, resource.request);
                   
-                  if (fs.existsSync(fullPath)) {
-                    let content = fs.readFileSync(fullPath, 'utf8');
-                    
-                    // Replace hardcoded URLs
-                    const hardcodedUrls = [
-                      'https://personalsite77.vercel.app/api/signals',
-                      'personalsite77.vercel.app/api/signals',
-                      '/api/signals'
-                    ];
-                    
-                    hardcodedUrls.forEach(url => {
-                      // Use a simple string replacement to avoid regex issues
-                      if (content.includes(url)) {
-                        console.log(`[webpack] Replacing hardcoded URL ${url} in ${fullPath}`);
-                        content = content.split(url).join('/api/signals-simple');
-                        
-                        // Write the modified file back
-                        fs.writeFileSync(fullPath, content, 'utf8');
-                      }
-                    });
+                  // Skip if file doesn't exist or if it's a directory
+                  if (!fs.existsSync(fullPath) || fs.statSync(fullPath).isDirectory()) {
+                    return;
+                  }
+                  
+                  let content;
+                  try {
+                    content = fs.readFileSync(fullPath, 'utf8');
+                  } catch (readError) {
+                    // Skip if we can't read the file (e.g., binary files)
+                    return;
+                  }
+                  
+                  // Replace hardcoded URLs
+                  const hardcodedUrls = [
+                    'https://personalsite77.vercel.app/api/signals',
+                    'personalsite77.vercel.app/api/signals',
+                    '/api/signals'
+                  ];
+                  
+                  let modified = false;
+                  hardcodedUrls.forEach(url => {
+                    // Use a simple string replacement to avoid regex issues
+                    if (content.includes(url)) {
+                      console.log(`[webpack] Replacing hardcoded URL ${url} in ${fullPath}`);
+                      content = content.split(url).join('/api/signals-simple');
+                      modified = true;
+                    }
+                  });
+                  
+                  // Only write if we made changes
+                  if (modified) {
+                    try {
+                      fs.writeFileSync(fullPath, content, 'utf8');
+                    } catch (writeError) {
+                      console.error(`[webpack] Error writing to ${fullPath}:`, writeError);
+                    }
                   }
                 } catch (err) {
                   // Log but continue on error

@@ -315,125 +315,111 @@ export const getBookById = async (id: string): Promise<Book | null> => {
 // Get all books
 export const getBooks = async (): Promise<Book[]> => {
   try {
-    // Try the debug endpoint first
+    // Try to get books from Firebase first (direct access)
     try {
-      console.log('Trying to get books via debug API endpoint');
+      console.log('Trying to get books directly from Firebase');
       
-      // Get auth token if available
-      let token = '';
-      try {
-        const auth = await import('./firebase').then(m => m.auth);
-        if (auth && auth.currentUser) {
-          token = await auth.currentUser.getIdToken();
-        }
-      } catch (tokenError) {
-        console.warn('Error getting auth token:', tokenError);
+      // Try initializing Firebase
+      const db = initFirebase();
+    
+      if (!db) {
+        console.warn('Firebase not initialized, falling back to debug API');
+        throw new Error('Firebase not initialized');
       }
       
-      // Make API request
-      const response = await fetch('/api/books-debug', {
-        method: 'GET',
-        headers: {
-          'Authorization': token ? `Bearer ${token}` : '',
-        },
-      });
+      console.log('Firebase initialized successfully, attempting to get books collection');
       
-      // Check if successful
+      // Try both 'books' and 'Books' collections since Firebase is case-sensitive
+      const collectionNames = ['books', 'Books'];
+      let books: Book[] = [];
+      let collectionSuccess = false;
+      
+      for (const collName of collectionNames) {
+        try {
+          const booksCollection = collection(db, collName);
+          console.log(`Attempting to query "${collName}" collection`);
+          
+          // With no filters, just get all books
+          const snapshot = await getDocs(booksCollection);
+          
+          if (!snapshot.empty) {
+            books = snapshot.docs.map(doc => {
+              const data = doc.data();
+              
+              // Convert Firestore Timestamps to ISO strings for serialization
+              const serializedData: any = {};
+              Object.keys(data).forEach(key => {
+                // Convert any Firestore timestamps to ISO strings
+                if (data[key] && typeof data[key].toDate === 'function') {
+                  serializedData[key] = data[key].toDate().toISOString();
+                } else {
+                  serializedData[key] = data[key];
+                }
+              });
+              
+              // Sanitize data before returning
+              const safeData = {
+                id: doc.id,
+                ...serializedData,
+                // Ensure critical fields have safe defaults
+                title: serializedData.title || 'Untitled Book',
+                // Handle authors field which can be string, array, or undefined
+                authors: Array.isArray(serializedData.authors) ? serializedData.authors : 
+                        typeof serializedData.authors === 'string' ? [serializedData.authors] : 
+                        ['Unknown Author'],
+                status: serializedData.status || 'read',
+                dateAdded: serializedData.dateAdded || new Date().toISOString()
+              };
+              
+              console.log(`Sanitized book ${doc.id}, authors: ${JSON.stringify(safeData.authors)}`);
+              return safeData;
+            }) as Book[];
+            
+            console.log(`Retrieved ${books.length} books from Firestore "${collName}" collection:`, books);
+            collectionSuccess = true;
+            break; // Exit the loop if we found books
+          } else {
+            console.warn(`Collection "${collName}" exists but is empty`);
+          }
+        } catch (collError) {
+          console.error(`Error querying collection "${collName}":`, collError);
+        }
+      }
+      
+      // If books found, return them
+      if (collectionSuccess && books.length > 0) {
+        console.log(`Successfully returning ${books.length} books from Firebase`);
+        return books;
+      } else {
+        // If no books found in any collection, throw error to trigger fallback
+        console.warn('No books found in Firestore, falling back to debug API');
+        throw new Error('No books found in Firestore');
+      }
+    } catch (error) {
+      console.error('Error getting books from Firebase:', error);
+      // Don't return here - let it fall through to the debug API fallback
+      throw error; // Re-throw to catch in the outer try/catch
+    }
+  } catch (outerError) {
+    console.warn('Using debug API as fallback due to error:', outerError);
+    
+    // As a final fallback, try the debug API
+    try {
+      console.log('Trying debug API as final fallback');
+      const response = await fetch('/api/books-debug');
       if (response.ok) {
         const data = await response.json();
-        console.log('Books retrieved successfully via debug API:', data);
-        return data.data || [];
-      } else {
-        console.warn('Debug API endpoint failed:', response.status);
-        // Fall back to Firebase direct
-      }
-    } catch (apiError) {
-      console.error('Error using debug API endpoint:', apiError);
-      // Fall back to Firebase direct
-    }
-    
-    // Fallback to Firebase direct
-    console.log('Falling back to direct Firebase for getting books');
-    
-    // Try initializing Firebase
-    const db = initFirebase();
-    
-    if (!db) {
-      console.warn('Firebase not initialized, returning empty array');
-      return [];
-    }
-    
-    console.log('Firebase initialized successfully, attempting to get books collection');
-    
-    // Try both 'books' and 'Books' collections since Firebase is case-sensitive
-    const collectionNames = ['books', 'Books'];
-    let books: Book[] = [];
-    let collectionSuccess = false;
-    
-    for (const collName of collectionNames) {
-      try {
-        const booksCollection = collection(db, collName);
-        console.log(`Attempting to query "${collName}" collection`);
-        
-        // With no filters, just get all books
-        const snapshot = await getDocs(booksCollection);
-        
-        if (!snapshot.empty) {
-          books = snapshot.docs.map(doc => {
-            const data = doc.data();
-            
-            // Convert Firestore Timestamps to ISO strings for serialization
-            const serializedData: any = {};
-            Object.keys(data).forEach(key => {
-              // Convert any Firestore timestamps to ISO strings
-              if (data[key] && typeof data[key].toDate === 'function') {
-                serializedData[key] = data[key].toDate().toISOString();
-              } else {
-                serializedData[key] = data[key];
-              }
-            });
-            
-            // Sanitize data before returning
-            const safeData = {
-              id: doc.id,
-              ...serializedData,
-              // Ensure critical fields have safe defaults
-              title: serializedData.title || 'Untitled Book',
-              // Handle authors field which can be string, array, or undefined
-              authors: Array.isArray(serializedData.authors) ? serializedData.authors : 
-                      typeof serializedData.authors === 'string' ? [serializedData.authors] : 
-                      ['Unknown Author'],
-              status: serializedData.status || 'read',
-              dateAdded: serializedData.dateAdded || new Date().toISOString()
-            };
-            
-            console.log(`Sanitized book ${doc.id}, authors: ${JSON.stringify(safeData.authors)}`);
-            return safeData;
-          }) as Book[];
-          
-          console.log(`Retrieved ${books.length} books from Firestore "${collName}" collection:`, books);
-          collectionSuccess = true;
-          break; // Exit the loop if we found books
-        } else {
-          console.warn(`Collection "${collName}" exists but is empty`);
+        console.log('Books retrieved from debug API as fallback:', data);
+        if (data.data && data.data.length > 0) {
+          return data.data;
         }
-      } catch (collError) {
-        console.error(`Error querying collection "${collName}":`, collError);
       }
+    } catch (e) {
+      console.error('Error using debug API as fallback:', e);
     }
     
-    // If no books found in any collection, return empty array
-    if (!collectionSuccess || books.length === 0) {
-      console.warn('No books found in Firestore, returning empty array');
-      return [];
-    }
-    
-    return books;
-  } catch (error) {
-    console.error('Error getting books:', error);
-    
-    // Return empty array if there's an error getting books
-    console.warn('Returning empty array due to error');
+    // If all else fails, return empty array
+    console.warn('All fallbacks failed, returning empty array');
     return [];
   }
 };

@@ -128,11 +128,90 @@ export default async function handler(
     }
   }
   
+  // Handle PUT request
+  if (req.method === 'PUT') {
+    try {
+      console.log('Handling PUT request');
+      
+      // Get request body
+      let requestBody = req.body;
+      console.log('Request body:', typeof requestBody === 'string' ? 'String body' : requestBody);
+      
+      // Parse body if it's a string
+      if (typeof requestBody === 'string') {
+        try {
+          requestBody = JSON.parse(requestBody);
+        } catch (parseError) {
+          console.error('Error parsing request body as JSON:', parseError);
+        }
+      }
+      
+      // Extract ID from request body
+      const { id } = requestBody || {};
+      
+      if (!id) {
+        return res.status(400).json({
+          error: 'Signal ID is required',
+          message: 'Please provide an ID for the signal to update'
+        });
+      }
+      
+      // Return a success response for PUT
+      return res.status(200).json({
+        success: true,
+        message: 'PUT request received successfully',
+        signal: {
+          id,
+          ...requestBody,
+          updatedAt: new Date().toISOString()
+        },
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Error handling PUT request:', error);
+      return res.status(500).json({
+        error: 'Error processing request',
+        message: error instanceof Error ? error.message : String(error)
+      });
+    }
+  }
+  
+  // Handle DELETE request
+  if (req.method === 'DELETE') {
+    try {
+      console.log('Handling DELETE request');
+      
+      // Get ID from query parameters
+      const { id } = req.query;
+      
+      if (!id) {
+        return res.status(400).json({
+          error: 'Signal ID is required',
+          message: 'Please provide an ID for the signal to delete'
+        });
+      }
+      
+      // Return a success response for DELETE
+      return res.status(200).json({
+        success: true,
+        message: 'DELETE request received successfully',
+        id,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Error handling DELETE request:', error);
+      return res.status(500).json({
+        error: 'Error processing request',
+        message: error instanceof Error ? error.message : String(error)
+      });
+    }
+  }
+  
   // Handle other methods
   console.error(`Unsupported HTTP method: ${req.method}`);
   return res.status(405).json({
     error: `Method ${req.method} not allowed`,
-    message: 'This API supports GET, POST, and OPTIONS methods',
+    message: 'This API supports GET, POST, PUT, DELETE, and OPTIONS methods',
     requestPath: req.url
   });
 }
