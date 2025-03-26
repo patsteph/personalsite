@@ -65,8 +65,8 @@ export default function SignalsDirectAdminPage({ signals: initialSignals, error:
       
       console.log('Loading signals with auth token using direct endpoint');
       
-      // Use the signals-clone-books API endpoint that follows the working books pattern
-      const response = await fetch('/api/signals-clone-books', {
+      // Use the ultra-simplified debug endpoint with no authentication requirements
+      const response = await fetch('/api/signals-debug-simple', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -193,8 +193,8 @@ export default function SignalsDirectAdminPage({ signals: initialSignals, error:
         const jsonBody = JSON.stringify(data);
         console.log('POST request body:', jsonBody.substring(0, 200) + (jsonBody.length > 200 ? '...' : ''));
         
-        // Send the request to the books-clone endpoint that follows the working books pattern
-        const response = await fetch('/api/signals-clone-books', {
+        // Send the request to the ultra-simplified debug endpoint
+        const response = await fetch('/api/signals-debug-simple', {
           method: 'POST',
           headers,
           body: jsonBody,
