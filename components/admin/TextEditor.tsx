@@ -104,6 +104,9 @@ export default function TextEditor({ initialContent, onChange }: TextEditorProps
       
       return () => observer.disconnect();
     }
+    
+    // TypeScript requires all code paths to return a value in useEffect cleanup function
+    return () => {}; // Empty cleanup function for when conditions aren't met
   }, [enforceLTR, isInitialized]);
   
   // Handle paste to strip formatting and ensure LTR
