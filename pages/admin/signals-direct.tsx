@@ -65,8 +65,8 @@ export default function SignalsDirectAdminPage({ signals: initialSignals, error:
       
       console.log('Loading signals with auth token using direct endpoint');
       
-      // Use the signals-direct API endpoint for better reliability
-      const response = await fetch('/api/signals-direct', {
+      // Use the signals-clone-books API endpoint that follows the working books pattern
+      const response = await fetch('/api/signals-clone-books', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -87,9 +87,9 @@ export default function SignalsDirectAdminPage({ signals: initialSignals, error:
       
       console.log('GET response data:', data);
       
-      if (data.success && data.signals) {
-        console.log(`Loaded ${data.signals.length} signals`);
-        setSignals(data.signals || []);
+      if (data.success && data.data) {
+        console.log(`Loaded ${data.data.length} signals`);
+        setSignals(data.data || []);
       } else {
         console.error('API error:', data.error || 'Unknown error');
         setError(data.error || 'Failed to load signals');
@@ -150,11 +150,10 @@ export default function SignalsDirectAdminPage({ signals: initialSignals, error:
         // Update existing signal
         console.log('Updating signal with ID:', selectedSignal.id);
         
-        const response = await fetch('/api/signals-direct', {
+        const response = await fetch(`/api/signals-clone-books?id=${selectedSignal.id}`, {
           method: 'PUT',
           headers,
           body: JSON.stringify({
-            id: selectedSignal.id,
             ...data,
           }),
           cache: 'no-store'
@@ -194,8 +193,8 @@ export default function SignalsDirectAdminPage({ signals: initialSignals, error:
         const jsonBody = JSON.stringify(data);
         console.log('POST request body:', jsonBody.substring(0, 200) + (jsonBody.length > 200 ? '...' : ''));
         
-        // Send the request to the special signals-post endpoint that bypasses middleware
-        const response = await fetch('/api/signals-post', {
+        // Send the request to the books-clone endpoint that follows the working books pattern
+        const response = await fetch('/api/signals-clone-books', {
           method: 'POST',
           headers,
           body: jsonBody,
@@ -275,12 +274,13 @@ export default function SignalsDirectAdminPage({ signals: initialSignals, error:
       
       console.log('Deleting signal with ID:', id);
       
-      // Use the direct API endpoint
-      const response = await fetch(`/api/signals-direct?id=${id}`, {
+      // Use the signals-clone-books API endpoint
+      const response = await fetch(`/api/signals-clone-books?id=${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
-          'X-Requested-With': 'XMLHttpRequest'
+          'X-Requested-With': 'XMLHttpRequest',
+          'Content-Type': 'application/json'
         }
       });
       
