@@ -207,6 +207,8 @@ export default function TextEditor({ initialContent, onChange }: TextEditorProps
         contentEditable
         onInput={handleInput}
         onPaste={handlePaste}
+        dir="ltr" 
+        style={{ unicodeBidi: 'isolate', direction: 'ltr', textAlign: 'left' }}
       />
       
       {/* HTML preview (for debugging) */}
