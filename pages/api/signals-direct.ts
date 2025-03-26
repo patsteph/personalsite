@@ -39,11 +39,20 @@ export default async function handler(
   // For all non-OPTIONS responses, set content type
   res.setHeader('Content-Type', 'application/json');
   
+  // Log request details for debugging
+  console.log('Request method:', req.method);
+  console.log('Headers:', JSON.stringify(req.headers, null, 2));
+  console.log('Auth header present:', !!req.headers.authorization);
+  
   // Log request body for debugging
   if (req.body) {
-    console.log('Request body:', 
-      typeof req.body === 'string' ? req.body.substring(0, 200) : JSON.stringify(req.body).substring(0, 200)
-    );
+    try {
+      console.log('Request body:', 
+        typeof req.body === 'string' ? req.body.substring(0, 200) : JSON.stringify(req.body).substring(0, 200)
+      );
+    } catch (e) {
+      console.error('Error logging request body:', e);
+    }
   }
   
   try {
@@ -109,6 +118,36 @@ export default async function handler(
           ...enhancedSignalData
         }
       });
+    }
+    
+    // Handle GET request (list signals)
+    if (req.method === 'GET') {
+      console.log('Processing GET request for signals');
+      
+      try {
+        // Get signals from Firestore
+        const signalsSnapshot = await firestore.collection('signals').orderBy('dateAdded', 'desc').get();
+        const signals = signalsSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        
+        console.log(`Retrieved ${signals.length} signals from Firestore`);
+        
+        return res.status(200).json({
+          success: true,
+          signals: signals,
+          count: signals.length,
+          timestamp: new Date().toISOString()
+        });
+      } catch (error) {
+        console.error('Error fetching signals:', error);
+        return res.status(500).json({
+          success: false,
+          error: 'Error fetching signals',
+          message: error instanceof Error ? error.message : String(error)
+        });
+      }
     }
     
     // If we get here, return a success response for any other method

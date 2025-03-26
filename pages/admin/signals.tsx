@@ -64,12 +64,16 @@ export default function SignalsAdminPage({ signals: initialSignals, error: serve
       
       console.log('Loading signals with auth token');
       
-      // Use the direct signals API endpoint for better reliability
+      // Use the signals-direct API endpoint for better reliability
       const response = await fetch('/api/signals-direct', {
+        method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
-          'X-Requested-With': 'XMLHttpRequest'
-        }
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+          'Accept': 'application/json'
+        },
+        cache: 'no-store'
       });
       
       console.log('GET response status:', response.status);
@@ -80,11 +84,13 @@ export default function SignalsAdminPage({ signals: initialSignals, error: serve
       
       const data = await response.json();
       
-      if (data.signals) {
+      console.log('GET response data:', data);
+      
+      if (data.success && data.signals) {
         console.log(`Loaded ${data.signals.length} signals`);
         setSignals(data.signals || []);
       } else {
-        console.error('API error:', data.error);
+        console.error('API error:', data.error || 'Unknown error');
         setError(data.error || 'Failed to load signals');
       }
     } catch (err) {
