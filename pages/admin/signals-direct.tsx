@@ -141,7 +141,7 @@ export default function SignalsDirectAdminPage({ signals: initialSignals, error:
         'Accept': 'application/json'
       };
       
-      console.log('Submitting signal with auth token to direct endpoint', {
+      console.log('Submitting signal with auth token to post-only endpoint', {
         method: selectedSignal ? 'PUT' : 'POST',
         headers: { ...headers, Authorization: 'Bearer [REDACTED]' }
       });
@@ -156,7 +156,8 @@ export default function SignalsDirectAdminPage({ signals: initialSignals, error:
           body: JSON.stringify({
             id: selectedSignal.id,
             ...data,
-          })
+          }),
+          cache: 'no-store'
         });
         
         console.log('PUT response status:', response.status);
@@ -193,8 +194,8 @@ export default function SignalsDirectAdminPage({ signals: initialSignals, error:
         const jsonBody = JSON.stringify(data);
         console.log('POST request body:', jsonBody.substring(0, 200) + (jsonBody.length > 200 ? '...' : ''));
         
-        // Send the request directly to the signals-direct endpoint
-        const response = await fetch('/api/signals-direct', {
+        // Send the request to the special signals-post endpoint that bypasses middleware
+        const response = await fetch('/api/signals-post', {
           method: 'POST',
           headers,
           body: jsonBody,
