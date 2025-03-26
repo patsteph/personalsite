@@ -57,7 +57,9 @@ export const config = {
     '/admin/:path*', 
     '/admin-login.html', 
     '/admin-dashboard.html',
-    '/api/signals'
+    '/api/signals',
+    // Explicitly exclude our bypass endpoint from middleware
+    '/((?!api/test-post-bypass).*)'
     // '/api/books' is not intercepted by middleware
   ],
 };

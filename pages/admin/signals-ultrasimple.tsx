@@ -56,9 +56,9 @@ export default function SignalsUltraSimplePage() {
       
       const token = await currentUser.getIdToken();
       
-      console.log('Loading signals with test endpoint (GET only)');
+      console.log('Loading signals with bypass endpoint (GET only)');
       
-      const response = await fetch('/api/test-post', {
+      const response = await fetch('/api/test-post-bypass', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -163,8 +163,8 @@ export default function SignalsUltraSimplePage() {
             publishDate: new Date().toISOString() // Required for articles
           };
       
-      // Try direct fetch to test endpoint with no interception
-      const response = await fetch('/api/test-post', {
+      // Try direct fetch to bypass endpoint with no interception
+      const response = await fetch('/api/test-post-bypass', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -472,7 +472,7 @@ export default function SignalsUltraSimplePage() {
                         timestamp: new Date().toISOString()
                       };
                       
-                      const response = await fetch('/api/test-post', {
+                      const response = await fetch('/api/test-post-bypass', {
                         method: 'POST',
                         headers: {
                           'Content-Type': 'application/json',
