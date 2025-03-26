@@ -88,7 +88,7 @@ export default function AdminPage() {
                 <h2 className="text-xl font-bold text-amber-600 mb-2">Signals</h2>
                 <p className="text-gray-600 mb-4">Manage newsletters and articles you recommend.</p>
                 <button 
-                  onClick={() => navigateTo('/admin/signals')}
+                  onClick={() => navigateTo('/admin/signals-direct')}
                   className="w-full py-2 bg-amber-600 text-white rounded hover:bg-opacity-90 transition-colors"
                 >
                   Manage Signals
@@ -127,7 +127,7 @@ export default function AdminPage() {
                 Add New Book
               </button>
               <button 
-                onClick={() => navigateTo('/admin/signals')}
+                onClick={() => navigateTo('/admin/signals-direct')}
                 className="px-4 py-2 bg-amber-600 text-white rounded hover:bg-opacity-90 transition-colors"
               >
                 Add New Signal
