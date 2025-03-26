@@ -5,6 +5,10 @@ type SignalResponse = {
   success: boolean;
   data?: any;
   error?: string;
+  count?: number;
+  message?: string;
+  method?: string;
+  supportedMethods?: string[];
 }
 
 export default async function handler(
