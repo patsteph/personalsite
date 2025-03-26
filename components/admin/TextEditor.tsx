@@ -42,18 +42,18 @@ export default function TextEditor({ initialContent, onChange }: TextEditorProps
         style.id = styleId;
         style.innerHTML = `
           [contenteditable] {
-            direction: ltr !important;
-            text-align: left !important;
-            unicode-bidi: isolate !important;
+            direction: ltr;
+            text-align: left;
+            unicode-bidi: isolate;
           }
           [contenteditable] * {
-            direction: ltr !important;
-            text-align: left !important;
-            unicode-bidi: isolate !important;
+            direction: ltr;
+            text-align: left;
+            unicode-bidi: isolate;
           }
           .editor-content {
-            direction: ltr !important;
-            text-align: left !important;
+            direction: ltr;
+            text-align: left;
           }
         `;
         document.head.appendChild(style);
@@ -279,7 +279,7 @@ export default function TextEditor({ initialContent, onChange }: TextEditorProps
         <button
           type="button"
           onClick={() => {
-            const codeBlock = `<pre dir="ltr" style="direction: ltr !important; text-align: left !important; unicode-bidi: isolate; white-space: pre; font-family: monospace;" lang="en" data-direction="ltr"><code dir="ltr" style="direction: ltr !important; text-align: left !important; unicode-bidi: isolate; font-family: monospace;" lang="en" data-direction="ltr">// Your code here</code></pre>`;
+            const codeBlock = `<pre dir="ltr" style="direction: ltr; text-align: left; unicode-bidi: isolate; white-space: pre; font-family: monospace;" lang="en" data-direction="ltr"><code dir="ltr" style="direction: ltr; text-align: left; unicode-bidi: isolate; font-family: monospace;" lang="en" data-direction="ltr">// Your code here</code></pre>`;
             execCommand('insertHTML', codeBlock);
             // After inserting, re-enforce LTR
             setTimeout(() => {
@@ -327,8 +327,8 @@ export default function TextEditor({ initialContent, onChange }: TextEditorProps
         lang="en"
         style={{ 
           unicodeBidi: 'isolate', 
-          direction: 'ltr !important', 
-          textAlign: 'left !important',
+          direction: 'ltr', 
+          textAlign: 'left',
           writingMode: 'horizontal-tb'
         }}
         data-lang="en"
