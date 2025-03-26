@@ -150,7 +150,7 @@ export default function SignalsDirectAdminPage({ signals: initialSignals, error:
         // Update existing signal
         console.log('Updating signal with ID:', selectedSignal.id);
         
-        const response = await fetch(`/api/signals-clone-books?id=${selectedSignal.id}`, {
+        const response = await fetch(`/api/test-post?id=${selectedSignal.id}`, {
           method: 'PUT',
           headers,
           body: JSON.stringify({
@@ -193,8 +193,8 @@ export default function SignalsDirectAdminPage({ signals: initialSignals, error:
         const jsonBody = JSON.stringify(data);
         console.log('POST request body:', jsonBody.substring(0, 200) + (jsonBody.length > 200 ? '...' : ''));
         
-        // Send the request to the ultra-simplified debug endpoint
-        const response = await fetch('/api/signals-debug-simple', {
+        // Let's try calling the test-post endpoint which has the most basic implementation
+        const response = await fetch('/api/test-post', {
           method: 'POST',
           headers,
           body: jsonBody,
@@ -274,8 +274,8 @@ export default function SignalsDirectAdminPage({ signals: initialSignals, error:
       
       console.log('Deleting signal with ID:', id);
       
-      // Use the signals-clone-books API endpoint
-      const response = await fetch(`/api/signals-clone-books?id=${id}`, {
+      // Use the test-post endpoint for better reliability 
+      const response = await fetch(`/api/test-post?id=${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,

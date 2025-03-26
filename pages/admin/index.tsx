@@ -87,12 +87,20 @@ export default function AdminPage() {
               <div className="p-6">
                 <h2 className="text-xl font-bold text-amber-600 mb-2">Signals</h2>
                 <p className="text-gray-600 mb-4">Manage newsletters and articles you recommend.</p>
-                <button 
-                  onClick={() => navigateTo('/admin/signals-direct')}
-                  className="w-full py-2 bg-amber-600 text-white rounded hover:bg-opacity-90 transition-colors"
-                >
-                  Manage Signals
-                </button>
+                <div className="space-y-2">
+                  <button 
+                    onClick={() => navigateTo('/admin/signals-direct')}
+                    className="w-full py-2 bg-amber-600 text-white rounded hover:bg-opacity-90 transition-colors"
+                  >
+                    Manage Signals
+                  </button>
+                  <button 
+                    onClick={() => navigateTo('/admin/signals-ultrasimple')}
+                    className="w-full py-2 bg-green-600 text-white rounded hover:bg-opacity-90 transition-colors"
+                  >
+                    Ultra Simple Signals (New)
+                  </button>
+                </div>
               </div>
             </div>
             
@@ -127,10 +135,10 @@ export default function AdminPage() {
                 Add New Book
               </button>
               <button 
-                onClick={() => navigateTo('/admin/signals-direct')}
-                className="px-4 py-2 bg-amber-600 text-white rounded hover:bg-opacity-90 transition-colors"
+                onClick={() => navigateTo('/admin/signals-ultrasimple')}
+                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-opacity-90 transition-colors"
               >
-                Add New Signal
+                Add New Signal (Ultra Simple)
               </button>
               <button 
                 onClick={() => navigateTo('/admin/blog')}

@@ -90,7 +90,8 @@ export default function Document() {
         {!isProduction && (
           <>
             <script src={`${basePath}/fix-api-url.js`} />
-            <script src={`${basePath}/personalsite/signals-redirect.js`} />
+            {/* Removed signals-redirect.js - it was causing API call issues */}
+            {/* <script src={`${basePath}/personalsite/signals-redirect.js`} /> */}
           </>
         )}
         
