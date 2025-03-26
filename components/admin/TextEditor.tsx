@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 
 interface TextEditorProps {
   initialContent: string;
@@ -8,36 +8,105 @@ interface TextEditorProps {
 export default function TextEditor({ initialContent, onChange }: TextEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
   const [html, setHtml] = useState(initialContent || '');
+  const [isInitialized, setIsInitialized] = useState(false);
+  
+  // Enforce LTR direction on an element
+  const enforceLTR = useCallback((element: HTMLElement) => {
+    // Set multiple attributes and styles to ensure LTR direction
+    element.setAttribute('dir', 'ltr');
+    element.style.direction = 'ltr';
+    element.style.textAlign = 'left';
+    element.style.unicodeBidi = 'isolate';
+    element.setAttribute('data-direction', 'ltr');
+    
+    // Additional attributes that might help
+    element.setAttribute('lang', 'en');
+    
+    // Apply to all children recursively
+    Array.from(element.children).forEach(child => {
+      if (child instanceof HTMLElement) {
+        enforceLTR(child);
+      }
+    });
+  }, []);
   
   // Initialize the editor with content
   useEffect(() => {
-    if (editorRef.current) {
+    if (editorRef.current && !isInitialized) {
+      console.log('Initializing editor with LTR direction');
+      
+      // First, apply global styles to force LTR for all contentEditable elements
+      const styleId = 'editor-ltr-styles';
+      if (!document.getElementById(styleId)) {
+        const style = document.createElement('style');
+        style.id = styleId;
+        style.innerHTML = `
+          [contenteditable] {
+            direction: ltr !important;
+            text-align: left !important;
+            unicode-bidi: isolate !important;
+          }
+          [contenteditable] * {
+            direction: ltr !important;
+            text-align: left !important;
+            unicode-bidi: isolate !important;
+          }
+          .editor-content {
+            direction: ltr !important;
+            text-align: left !important;
+          }
+        `;
+        document.head.appendChild(style);
+      }
+      
       // Set initial content
       editorRef.current.innerHTML = initialContent || '';
       
-      // Force text direction for the editor
-      editorRef.current.setAttribute('dir', 'ltr');
-      editorRef.current.style.direction = 'ltr';
-      editorRef.current.style.textAlign = 'left';
-      editorRef.current.style.unicodeBidi = 'isolate';
+      // Apply LTR to the editor container
+      enforceLTR(editorRef.current);
       
-      // Set a base style for all paragraph elements and text
-      const style = document.createElement('style');
-      style.innerHTML = `
-        [contenteditable] p, [contenteditable] div {
-          direction: ltr;
-          text-align: left;
-          unicode-bidi: isolate;
+      // Force LTR for all existing elements
+      Array.from(editorRef.current.querySelectorAll('*')).forEach(el => {
+        if (el instanceof HTMLElement) {
+          enforceLTR(el);
         }
-      `;
-      document.head.appendChild(style);
+      });
       
-      // Set default paragraph formatting direction
+      // Set default paragraph formatting
       document.execCommand('defaultParagraphSeparator', false, 'p');
+      
+      setIsInitialized(true);
     }
-  }, [initialContent]);
+  }, [initialContent, enforceLTR, isInitialized]);
   
-  // Handle paste to strip formatting
+  // Additionally enforce LTR direction after component has mounted
+  useEffect(() => {
+    if (editorRef.current && isInitialized) {
+      const observer = new MutationObserver((mutations) => {
+        // When DOM changes, ensure all elements are LTR
+        mutations.forEach(mutation => {
+          if (mutation.type === 'childList') {
+            mutation.addedNodes.forEach(node => {
+              if (node instanceof HTMLElement) {
+                enforceLTR(node);
+              }
+            });
+          }
+        });
+      });
+      
+      // Start observing the editor for DOM changes
+      observer.observe(editorRef.current, { 
+        childList: true, 
+        subtree: true, 
+        attributes: true 
+      });
+      
+      return () => observer.disconnect();
+    }
+  }, [enforceLTR, isInitialized]);
+  
+  // Handle paste to strip formatting and ensure LTR
   const handlePaste = (e: React.ClipboardEvent) => {
     e.preventDefault();
     
@@ -46,22 +115,23 @@ export default function TextEditor({ initialContent, onChange }: TextEditorProps
     
     // Insert text at cursor position
     document.execCommand('insertText', false, text);
+    
+    // Re-apply LTR direction after paste
+    if (editorRef.current) {
+      enforceLTR(editorRef.current);
+    }
   };
   
   // Handle input changes
   const handleInput = () => {
     if (editorRef.current) {
+      // Enforce LTR on the entire editor
+      enforceLTR(editorRef.current);
+      
+      // Get content and update state
       const content = editorRef.current.innerHTML;
       setHtml(content);
       onChange(content);
-      
-      // Ensure direction is maintained
-      Array.from(editorRef.current.querySelectorAll('p, div')).forEach(el => {
-        if (el instanceof HTMLElement) {
-          el.style.direction = 'ltr';
-          el.style.textAlign = 'left';
-        }
-      });
     }
   };
   
@@ -205,7 +275,21 @@ export default function TextEditor({ initialContent, onChange }: TextEditorProps
         
         <button
           type="button"
-          onClick={() => execCommand('insertHTML', '<pre style="direction: ltr; text-align: left;"><code style="direction: ltr; text-align: left;">// Your code here</code></pre>')}
+          onClick={() => {
+            const codeBlock = `<pre dir="ltr" style="direction: ltr !important; text-align: left !important; unicode-bidi: isolate; white-space: pre; font-family: monospace;" lang="en" data-direction="ltr"><code dir="ltr" style="direction: ltr !important; text-align: left !important; unicode-bidi: isolate; font-family: monospace;" lang="en" data-direction="ltr">// Your code here</code></pre>`;
+            execCommand('insertHTML', codeBlock);
+            // After inserting, re-enforce LTR
+            setTimeout(() => {
+              if (editorRef.current) {
+                const allPres = editorRef.current.querySelectorAll('pre, code');
+                allPres.forEach(el => {
+                  if (el instanceof HTMLElement) {
+                    enforceLTR(el);
+                  }
+                });
+              }
+            }, 0);
+          }}
           className="p-1 hover:bg-gray-200 rounded"
           title="Insert Code Block"
         >
@@ -232,17 +316,20 @@ export default function TextEditor({ initialContent, onChange }: TextEditorProps
       {/* Editable content area */}
       <div
         ref={editorRef}
-        className="min-h-[300px] p-4 focus:outline-none overflow-auto"
+        className="min-h-[300px] p-4 focus:outline-none overflow-auto editor-content"
         contentEditable
         onInput={handleInput}
         onPaste={handlePaste}
         dir="ltr" 
+        lang="en"
         style={{ 
           unicodeBidi: 'isolate', 
-          direction: 'ltr', 
-          textAlign: 'left'
+          direction: 'ltr !important', 
+          textAlign: 'left !important',
+          writingMode: 'horizontal-tb'
         }}
         data-lang="en"
+        data-direction="ltr"
       />
     </div>
   );

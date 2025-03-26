@@ -58,61 +58,29 @@ export default function Document() {
         <script src={`${basePath}/secure-config.js`} />
         <script src={`${basePath}/direct-url-fix.js`} />
         
-        {/* Simplified inline script for basic URL redirection */}
+        {/* No interception script - use direct API endpoints */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
-              // Simple inline URL fix script
+              // API diagnostic script (no interception)
               (function() {
-                console.log('Inline URL fix script loaded');
+                console.log('API diagnostic script loaded - NO INTERCEPTION');
                 
-                // Store the original fetch function
+                // This script just logs API calls for debugging but doesn't change the behavior
                 const originalFetch = window.fetch;
                 
-                // Patch fetch to intercept API calls
                 window.fetch = function(url, options) {
-                  // Skip interception if this request opts out
-                  if (options && options.noInterception) {
-                    return originalFetch(url, options);
+                  // Log API calls for debugging without changing behavior
+                  if (typeof url === 'string' && url.includes('/api/')) {
+                    const method = options && options.method ? options.method : 'GET';
+                    console.log('API call:', { url, method });
                   }
                   
-                  // Handle signals API but exclude signals-direct API and POST requests
-                  if (typeof url === 'string' && 
-                      (url.includes('/api/signals') || 
-                       url.includes('personalsite77.vercel.app/api/signals')) && 
-                      !url.includes('/api/signals-direct') &&
-                      // Don't intercept POST, PUT, DELETE - allow them to go to the intended endpoint
-                      !(options && options.method && ['POST', 'PUT', 'DELETE'].includes(options.method))) {
-                    
-                    console.log('Intercepting signals API call:', url);
-                    let debugUrl = '/api/signals-debug';
-                    
-                    // Pass the query string if any
-                    if (url.includes('?')) {
-                      try {
-                        const urlObj = new URL(url.startsWith('http') ? url : 'http://example.com' + url);
-                        debugUrl += urlObj.search;
-                      } catch (e) {
-                        console.error('Error parsing URL:', e);
-                      }
-                    }
-                    
-                    console.log('Redirecting to debug endpoint:', debugUrl);
-                    
-                    // Create new options that disable further interception
-                    const newOptions = { 
-                      ...(options || {}),
-                      noInterception: true
-                    };
-                    
-                    return originalFetch(debugUrl, newOptions);
-                  }
-                  
-                  // For all other URLs, use the original fetch
+                  // Always use the original fetch - no modifications or redirections
                   return originalFetch(url, options);
                 };
                 
-                console.log('Inline URL fix script initialized');
+                console.log('API diagnostic script initialized - all API calls go directly to requested endpoints');
               })();
             `
           }}
