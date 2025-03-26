@@ -12,7 +12,28 @@ export default function TextEditor({ initialContent, onChange }: TextEditorProps
   // Initialize the editor with content
   useEffect(() => {
     if (editorRef.current) {
+      // Set initial content
       editorRef.current.innerHTML = initialContent || '';
+      
+      // Force text direction for the editor
+      editorRef.current.setAttribute('dir', 'ltr');
+      editorRef.current.style.direction = 'ltr';
+      editorRef.current.style.textAlign = 'left';
+      editorRef.current.style.unicodeBidi = 'isolate';
+      
+      // Set a base style for all paragraph elements and text
+      const style = document.createElement('style');
+      style.innerHTML = `
+        [contenteditable] p, [contenteditable] div {
+          direction: ltr;
+          text-align: left;
+          unicode-bidi: isolate;
+        }
+      `;
+      document.head.appendChild(style);
+      
+      // Set default paragraph formatting direction
+      document.execCommand('defaultParagraphSeparator', false, 'p');
     }
   }, [initialContent]);
   
@@ -33,6 +54,14 @@ export default function TextEditor({ initialContent, onChange }: TextEditorProps
       const content = editorRef.current.innerHTML;
       setHtml(content);
       onChange(content);
+      
+      // Ensure direction is maintained
+      Array.from(editorRef.current.querySelectorAll('p, div')).forEach(el => {
+        if (el instanceof HTMLElement) {
+          el.style.direction = 'ltr';
+          el.style.textAlign = 'left';
+        }
+      });
     }
   };
   
@@ -176,7 +205,7 @@ export default function TextEditor({ initialContent, onChange }: TextEditorProps
         
         <button
           type="button"
-          onClick={() => execCommand('insertHTML', '<pre><code>// Your code here</code></pre>')}
+          onClick={() => execCommand('insertHTML', '<pre style="direction: ltr; text-align: left;"><code style="direction: ltr; text-align: left;">// Your code here</code></pre>')}
           className="p-1 hover:bg-gray-200 rounded"
           title="Insert Code Block"
         >
@@ -208,18 +237,13 @@ export default function TextEditor({ initialContent, onChange }: TextEditorProps
         onInput={handleInput}
         onPaste={handlePaste}
         dir="ltr" 
-        style={{ unicodeBidi: 'isolate', direction: 'ltr', textAlign: 'left' }}
+        style={{ 
+          unicodeBidi: 'isolate', 
+          direction: 'ltr', 
+          textAlign: 'left'
+        }}
+        data-lang="en"
       />
-      
-      {/* HTML preview (for debugging) */}
-      {/*
-      <div className="border-t border-gray-300 p-4 bg-gray-50">
-        <h3 className="text-sm font-medium text-gray-700 mb-2">HTML Preview:</h3>
-        <pre className="text-xs bg-gray-100 p-2 rounded overflow-auto max-h-40">
-          {html}
-        </pre>
-      </div>
-      */}
     </div>
   );
 }

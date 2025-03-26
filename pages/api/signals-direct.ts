@@ -66,12 +66,27 @@ export default async function handler(
       if (typeof req.body === 'string') {
         try {
           signalData = JSON.parse(req.body);
+          console.log('Successfully parsed string body to JSON');
         } catch (e) {
           console.error('Error parsing JSON body:', e);
           return res.status(400).json({ success: false, error: 'Invalid JSON in request body' });
         }
-      } else {
+      } else if (req.body && typeof req.body === 'object') {
+        console.log('Request body is already an object, using directly');
         signalData = req.body;
+      } else {
+        console.error('Invalid or missing request body');
+        return res.status(400).json({ success: false, error: 'Missing or invalid request body' });
+      }
+      
+      // Validate required fields
+      if (!signalData.title || !signalData.description || !signalData.url) {
+        console.error('Missing required fields');
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Missing required fields (title, description, and url are required)',
+          receivedData: signalData
+        });
       }
       
       // Add required fields
@@ -108,12 +123,18 @@ export default async function handler(
   } catch (error) {
     console.error('Error in signals-direct API:', error);
     
-    // Return a 200 success even on error to prevent 405s
-    return res.status(200).json({
-      success: true,
-      message: 'Signals request received (error handled gracefully)',
+    // For debugging purposes, log additional details
+    if (error instanceof Error) {
+      console.error('Error stack:', error.stack);
+    }
+    
+    // Return an error status code but with helpful information
+    return res.status(500).json({
+      success: false,
+      message: 'Error processing signals request',
       error: error instanceof Error ? error.message : String(error),
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      requestMethod: req.method
     });
   }
 }
