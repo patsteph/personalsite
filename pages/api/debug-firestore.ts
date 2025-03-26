@@ -18,7 +18,7 @@ export default async function handler(
     
     // Try to access a simple collection
     let collectionAccessible = false;
-    let collections = [];
+    let collections: string[] = [];
     
     if (firestoreInitialized) {
       try {

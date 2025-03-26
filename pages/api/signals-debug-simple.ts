@@ -48,7 +48,7 @@ export default async function handler(
       try {
         // Get signals with minimal filtering
         const snapshot = await signalsCollection.orderBy('dateAdded', 'desc').limit(20).get();
-        const signals = [];
+        const signals: Array<Record<string, any>> = [];
         
         snapshot.forEach(doc => {
           signals.push({
