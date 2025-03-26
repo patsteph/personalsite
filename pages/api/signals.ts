@@ -88,7 +88,12 @@ export default async function handler(
       const signals = await signalsApi.getAllSignals(options);
       console.log(`Retrieved ${signals.length} signals`);
       
-      return res.status(200).json({ signals });
+      // Ensure we're returning a properly structured response with 'signals' property
+      return res.status(200).json({ 
+        success: true,
+        signals: signals || [],
+        count: signals?.length || 0
+      });
     } catch (error) {
       console.error('Error fetching signals:', error);
       return res.status(500).json({ error: 'Error fetching signals' });

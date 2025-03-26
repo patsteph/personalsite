@@ -64,8 +64,8 @@ export default function SignalsAdminPage({ signals: initialSignals, error: serve
       
       console.log('Loading signals with auth token');
       
-      // Use the main signals API endpoint
-      const response = await fetch('/api/signals', {
+      // Use the direct signals API endpoint for better reliability
+      const response = await fetch('/api/signals-direct', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'X-Requested-With': 'XMLHttpRequest'
@@ -186,8 +186,8 @@ export default function SignalsAdminPage({ signals: initialSignals, error: serve
         const jsonBody = JSON.stringify(data);
         console.log('POST request body:', jsonBody.substring(0, 200) + (jsonBody.length > 200 ? '...' : ''));
         
-        // Send the request with extra error handling
-        const response = await fetch('/api/signals', {
+        // Send the request to a different endpoint that's known to work
+        const response = await fetch('/api/signals-direct', {
           method: 'POST',
           headers,
           body: jsonBody,
