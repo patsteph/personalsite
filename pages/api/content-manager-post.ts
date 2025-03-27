@@ -16,11 +16,20 @@ export const config = {
   },
 };
 
+// Debug logging helper
+function logDebug(message: string, data?: any) {
+  const timestamp = new Date().toISOString();
+  console.log(`[${timestamp}] Content-Manager-POST: ${message}`);
+  if (data) {
+    console.log(typeof data === 'string' ? data : JSON.stringify(data, null, 2));
+  }
+}
+
 export default async function handler(
   req: NextApiRequest, 
   res: NextApiResponse
 ) {
-  console.log('CONTENT-MANAGER-POST API:', req.method, req.url);
+  logDebug(`API Request: ${req.method} ${req.url}`);
   
   // Set CORS headers
   res.setHeader('Access-Control-Allow-Credentials', 'true');
@@ -28,13 +37,18 @@ export default async function handler(
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
   
+  // Log headers for debugging
+  logDebug('Request headers:', req.headers);
+  
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
+    logDebug('Handling OPTIONS request');
     return res.status(200).end();
   }
   
   // Only allow POST requests
   if (req.method !== 'POST') {
+    logDebug(`Method not allowed: ${req.method}`);
     return res.status(405).json({
       success: false,
       error: `Method ${req.method} Not Allowed - Only POST is supported on this endpoint`
@@ -43,16 +57,20 @@ export default async function handler(
 
   // Authenticate the request
   try {
+    logDebug('Validating authentication token');
     const userId = await validateFirebaseIdToken(req);
+    
     if (!userId) {
+      logDebug('Authentication failed - no user ID returned');
       return res.status(401).json({ 
         success: false, 
         error: 'Unauthorized - Authentication required'
       });
     }
-    console.log('User authenticated:', userId);
+    
+    logDebug(`User authenticated: ${userId}`);
   } catch (authError) {
-    console.error('Authentication error:', authError);
+    logDebug('Authentication error', authError);
     return res.status(401).json({ 
       success: false, 
       error: 'Authentication failed',
@@ -62,20 +80,23 @@ export default async function handler(
   
   // Use Firestore Admin instance
   if (!firestore) {
+    logDebug('Firestore not initialized');
     return res.status(500).json({ 
       success: false, 
       error: 'Firestore not initialized' 
     });
   }
   
+  logDebug('Firestore instance available, proceeding with request');
+  
   // Collection name
   const SIGNALS_COLLECTION = 'signals';
   
   // Log request body for debugging
   if (req.body) {
-    console.log('Request body:', 
-      typeof req.body === 'string' ? req.body : JSON.stringify(req.body)
-    );
+    logDebug('Request body:', req.body);
+  } else {
+    logDebug('Warning: Empty request body');
   }
   
   try {
@@ -83,6 +104,7 @@ export default async function handler(
     
     // Validate required fields
     if (!signalData.title || !signalData.description || !signalData.url) {
+      logDebug('Validation failed: Missing required fields');
       return res.status(400).json({
         success: false,
         error: 'Missing required fields: title, description, and url are required'
@@ -91,6 +113,7 @@ export default async function handler(
 
     // Type-specific validation
     if (signalData.type === 'newsletter' && !signalData.publisher) {
+      logDebug('Validation failed: Missing newsletter-specific fields');
       return res.status(400).json({
         success: false,
         error: 'Missing required fields for newsletter: publisher is required'
@@ -98,6 +121,7 @@ export default async function handler(
     }
 
     if (signalData.type === 'article' && (!signalData.author || !signalData.source)) {
+      logDebug('Validation failed: Missing article-specific fields');
       return res.status(400).json({
         success: false,
         error: 'Missing required fields for article: author and source are required'
@@ -112,7 +136,10 @@ export default async function handler(
       tags: signalData.tags || []
     };
     
+    logDebug('Adding document to Firestore', enhancedSignalData);
+    
     const docRef = await firestore.collection(SIGNALS_COLLECTION).add(enhancedSignalData);
+    logDebug(`Document added with ID: ${docRef.id}`);
     
     return res.status(201).json({
       success: true,
@@ -123,7 +150,7 @@ export default async function handler(
       }
     });
   } catch (error) {
-    console.error('Error in content-manager-post API:', error);
+    logDebug('Error in API handler', error);
     return res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : String(error)

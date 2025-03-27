@@ -15,11 +15,20 @@ export const config = {
   },
 };
 
+// Debug logging helper
+function logDebug(message: string, data?: any) {
+  const timestamp = new Date().toISOString();
+  console.log(`[${timestamp}] Content-Manager-GET: ${message}`);
+  if (data) {
+    console.log(typeof data === 'string' ? data : JSON.stringify(data, null, 2));
+  }
+}
+
 export default async function handler(
   req: NextApiRequest, 
   res: NextApiResponse
 ) {
-  console.log('CONTENT-MANAGER-GET API:', req.method, req.url);
+  logDebug(`API Request: ${req.method} ${req.url}`);
   
   // Set CORS headers
   res.setHeader('Access-Control-Allow-Credentials', 'true');
@@ -29,11 +38,13 @@ export default async function handler(
   
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
+    logDebug('Handling OPTIONS request');
     return res.status(200).end();
   }
   
   // Only allow GET requests
   if (req.method !== 'GET') {
+    logDebug(`Method not allowed: ${req.method}`);
     return res.status(405).json({
       success: false,
       error: `Method ${req.method} Not Allowed - Only GET is supported on this endpoint`
@@ -42,17 +53,21 @@ export default async function handler(
   
   // Use Firestore Admin instance
   if (!firestore) {
+    logDebug('Firestore not initialized');
     return res.status(500).json({ 
       success: false, 
       error: 'Firestore not initialized' 
     });
   }
   
+  logDebug('Firestore instance available, proceeding with query');
+  
   // Collection name
   const SIGNALS_COLLECTION = 'signals';
   
   try {
     // Get all signals
+    logDebug(`Querying ${SIGNALS_COLLECTION} collection`);
     const signalsSnapshot = await firestore.collection(SIGNALS_COLLECTION)
       .orderBy('dateAdded', 'desc')
       .get();
@@ -62,12 +77,14 @@ export default async function handler(
       ...doc.data()
     })) as Signal[];
     
+    logDebug(`Found ${signals.length} signals`);
+    
     return res.status(200).json({
       success: true,
       data: signals
     });
   } catch (error) {
-    console.error('Error in content-manager-get API:', error);
+    logDebug('Error in API handler', error);
     return res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : String(error)
