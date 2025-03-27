@@ -46,21 +46,21 @@ export async function getAllSignals(options: {
           
           // Apply filters client-side
           if (options.type) {
-            signals = signals.filter(signal => signal.type === options.type);
+            signals = signals.filter((signal: Signal) => signal.type === options.type);
           }
           
           if (options.featured !== undefined) {
-            signals = signals.filter(signal => signal.featured === options.featured);
+            signals = signals.filter((signal: Signal) => signal.featured === options.featured);
           }
           
           if (options.tags && options.tags.length > 0) {
-            signals = signals.filter(signal => 
+            signals = signals.filter((signal: Signal) => 
               signal.tags && options.tags?.some(tag => signal.tags.includes(tag))
             );
           }
           
           // Sort by dateAdded
-          signals = signals.sort((a, b) => 
+          signals = signals.sort((a: Signal, b: Signal) => 
             new Date(b.dateAdded).getTime() - new Date(a.dateAdded).getTime()
           );
           
