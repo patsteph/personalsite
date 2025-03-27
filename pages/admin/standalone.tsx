@@ -6,6 +6,34 @@ import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 
+// Define signal types to satisfy TypeScript
+type SignalType = 'newsletter' | 'article';
+
+interface SignalBase {
+  id: string;
+  type: SignalType;
+  title: string;
+  description: string;
+  url: string;
+  dateAdded: string;
+  featured: boolean;
+  tags: string[];
+}
+
+interface Newsletter extends SignalBase {
+  type: 'newsletter';
+  publisher: string;
+  frequency: string;
+}
+
+interface Article extends SignalBase {
+  type: 'article';
+  author: string;
+  source: string;
+}
+
+type Signal = Newsletter | Article;
+
 // Simple loading component
 function Loading() {
   return (
@@ -18,12 +46,12 @@ function Loading() {
 
 export default function StandalonePage() {
   const router = useRouter();
-  const [signals, setSignals] = useState([]);
+  const [signals, setSignals] = useState<Signal[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
-  const [logs, setLogs] = useState([]);
+  const [logs, setLogs] = useState<string[]>([]);
   const [formData, setFormData] = useState({
-    type: 'newsletter',
+    type: 'newsletter' as SignalType,
     title: '',
     description: '',
     url: '',
@@ -33,7 +61,7 @@ export default function StandalonePage() {
   });
 
   // Function to add logs
-  const addLog = (message) => {
+  const addLog = (message: string) => {
     setLogs(prev => [...prev, `${new Date().toISOString().substring(11, 19)} - ${message}`]);
   };
 
@@ -54,9 +82,10 @@ export default function StandalonePage() {
         const data = await response.json();
         addLog(`Signals loaded: ${data.data?.length || 0} items`);
         setSignals(data.data || []);
-      } catch (err) {
-        addLog(`Error loading signals: ${err.message}`);
-        setError(`Error loading signals: ${err.message}`);
+      } catch (err: any) {
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        addLog(`Error loading signals: ${errorMessage}`);
+        setError(`Error loading signals: ${errorMessage}`);
       } finally {
         setIsLoading(false);
       }
@@ -66,16 +95,16 @@ export default function StandalonePage() {
   }, []);
 
   // Handle form change
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value, type } = e.target;
     setFormData({
       ...formData,
-      [name]: type === 'checkbox' ? checked : value,
+      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value,
     });
   };
 
   // Handle form submission
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     
@@ -102,7 +131,7 @@ export default function StandalonePage() {
       
       // Clear form
       setFormData({
-        type: 'newsletter',
+        type: 'newsletter' as SignalType,
         title: '',
         description: '',
         url: '',
@@ -116,9 +145,10 @@ export default function StandalonePage() {
       const getData = await getResponse.json();
       setSignals(getData.data || []);
       
-    } catch (err) {
-      addLog(`Error submitting signal: ${err.message}`);
-      setError(`Error submitting signal: ${err.message}`);
+    } catch (err: any) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      addLog(`Error submitting signal: ${errorMessage}`);
+      setError(`Error submitting signal: ${errorMessage}`);
     }
   };
 
