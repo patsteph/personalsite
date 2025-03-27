@@ -56,9 +56,9 @@ export default function SignalsUltraSimplePage() {
       
       const token = await currentUser.getIdToken();
       
-      console.log('Loading signals with bypass endpoint (GET only)');
+      console.log('Loading signals with method-specific GET endpoint');
       
-      const response = await fetch('/api/test-post-bypass', {
+      const response = await fetch('/api/signals-direct-get', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -163,8 +163,8 @@ export default function SignalsUltraSimplePage() {
             publishDate: new Date().toISOString() // Required for articles
           };
       
-      // Try direct fetch to bypass endpoint with no interception
-      const response = await fetch('/api/test-post-bypass', {
+      // Try direct fetch to method-specific POST endpoint
+      const response = await fetch('/api/signals-direct-post', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -469,10 +469,16 @@ export default function SignalsUltraSimplePage() {
                         title: 'Test Signal',
                         description: 'This is a test signal',
                         type: 'newsletter',
-                        timestamp: new Date().toISOString()
+                        dateAdded: new Date().toISOString(),
+                        url: 'https://example.com',
+                        publisher: 'Test Publisher',
+                        frequency: 'weekly',
+                        subscriptionUrl: 'https://example.com/subscribe',
+                        featured: false,
+                        tags: ['test']
                       };
                       
-                      const response = await fetch('/api/test-post-bypass', {
+                      const response = await fetch('/api/signals-direct-post', {
                         method: 'POST',
                         headers: {
                           'Content-Type': 'application/json',
