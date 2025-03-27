@@ -21,7 +21,7 @@ import {
 const SIGNALS_COLLECTION = 'signals';
 
 /**
- * Get all signals with optional filtering - now with signals-db endpoint fallback
+ * Get all signals with optional filtering - now with content-items endpoint fallback
  */
 export async function getAllSignals(options: {
   type?: 'newsletter' | 'article';
@@ -30,10 +30,10 @@ export async function getAllSignals(options: {
   tags?: string[];
 } = {}): Promise<Signal[]> {
   try {
-    // First try the client-side fetch to signals-db if we're in the browser
+    // First try the client-side fetch to content-items if we're in the browser
     if (typeof window !== 'undefined') {
       try {
-        const response = await fetch('/api/signals-db');
+        const response = await fetch('/api/content-items');
         
         if (!response.ok) {
           throw new Error(`API returned status ${response.status}`);
@@ -72,7 +72,7 @@ export async function getAllSignals(options: {
           return signals;
         }
       } catch (fetchError) {
-        console.error('Error fetching from signals-db endpoint:', fetchError);
+        console.error('Error fetching from content-items endpoint:', fetchError);
         // Fall through to the server-side implementation
       }
     }
