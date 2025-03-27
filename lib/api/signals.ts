@@ -21,7 +21,7 @@ import {
 const SIGNALS_COLLECTION = 'signals';
 
 /**
- * Get all signals with optional filtering
+ * Get all signals with optional filtering - now with signals-db endpoint fallback
  */
 export async function getAllSignals(options: {
   type?: 'newsletter' | 'article';
@@ -30,6 +30,54 @@ export async function getAllSignals(options: {
   tags?: string[];
 } = {}): Promise<Signal[]> {
   try {
+    // First try the client-side fetch to signals-db if we're in the browser
+    if (typeof window !== 'undefined') {
+      try {
+        const response = await fetch('/api/signals-db');
+        
+        if (!response.ok) {
+          throw new Error(`API returned status ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          let signals = data.data || [];
+          
+          // Apply filters client-side
+          if (options.type) {
+            signals = signals.filter(signal => signal.type === options.type);
+          }
+          
+          if (options.featured !== undefined) {
+            signals = signals.filter(signal => signal.featured === options.featured);
+          }
+          
+          if (options.tags && options.tags.length > 0) {
+            signals = signals.filter(signal => 
+              signal.tags && options.tags?.some(tag => signal.tags.includes(tag))
+            );
+          }
+          
+          // Sort by dateAdded
+          signals = signals.sort((a, b) => 
+            new Date(b.dateAdded).getTime() - new Date(a.dateAdded).getTime()
+          );
+          
+          // Apply limit
+          if (options.limit) {
+            signals = signals.slice(0, options.limit);
+          }
+          
+          return signals;
+        }
+      } catch (fetchError) {
+        console.error('Error fetching from signals-db endpoint:', fetchError);
+        // Fall through to the server-side implementation
+      }
+    }
+
+    // Server-side implementation
     const db = await getFirestoreInstance();
     if (!db) throw new Error('Firestore not initialized');
 
