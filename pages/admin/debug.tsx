@@ -14,6 +14,7 @@ export default function DebugPage() {
   const [apiStatuses, setApiStatuses] = useState<{[key: string]: string}>({
     contentManagerGet: 'Not tested',
     contentManagerPost: 'Not tested',
+    basicTest: 'Not tested',
   });
   const [logs, setLogs] = useState<string[]>([]);
 
@@ -92,6 +93,66 @@ export default function DebugPage() {
       setApiStatuses(prev => ({ 
         ...prev, 
         contentManagerGet: `Error: ${error instanceof Error ? error.message : String(error)}` 
+      }));
+      addLog(`Exception: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  };
+  
+  // Test basic test endpoint (minimal dependencies)
+  const testBasicEndpoint = async () => {
+    try {
+      addLog('Testing /api/basic-test endpoint - GET');
+      setApiStatuses(prev => ({ ...prev, basicTest: 'Testing...' }));
+      
+      // First test GET
+      const getResponse = await fetch('/api/basic-test');
+      addLog(`GET response status: ${getResponse.status}`);
+      
+      if (getResponse.ok) {
+        const getData = await getResponse.json();
+        addLog(`GET success: ${JSON.stringify(getData).substring(0, 100)}...`);
+        
+        // Now test POST
+        addLog('Testing /api/basic-test endpoint - POST');
+        const postData = { test: true, timestamp: new Date().toISOString() };
+        
+        const postResponse = await fetch('/api/basic-test', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(postData)
+        });
+        
+        addLog(`POST response status: ${postResponse.status}`);
+        
+        if (postResponse.ok) {
+          const postResult = await postResponse.json();
+          setApiStatuses(prev => ({ 
+            ...prev, 
+            basicTest: `Success - GET: ${getResponse.status}, POST: ${postResponse.status}`
+          }));
+          addLog(`POST success: ${JSON.stringify(postResult).substring(0, 100)}...`);
+        } else {
+          const postText = await postResponse.text();
+          setApiStatuses(prev => ({ 
+            ...prev, 
+            basicTest: `Mixed - GET: OK, POST: Failed (${postResponse.status})`
+          }));
+          addLog(`POST error: ${postResponse.status} - ${postText}`);
+        }
+      } else {
+        const getText = await getResponse.text();
+        setApiStatuses(prev => ({ 
+          ...prev, 
+          basicTest: `Failed - GET: ${getResponse.status}` 
+        }));
+        addLog(`GET error: ${getResponse.status} - ${getText}`);
+      }
+    } catch (error) {
+      setApiStatuses(prev => ({ 
+        ...prev, 
+        basicTest: `Error: ${error instanceof Error ? error.message : String(error)}` 
       }));
       addLog(`Exception: ${error instanceof Error ? error.message : String(error)}`);
     }
@@ -238,21 +299,32 @@ export default function DebugPage() {
             <h2 className="text-xl font-semibold mb-4">Test Actions</h2>
             
             <div className="space-y-4">
-              <div>
-                <button 
-                  onClick={testContentManagerGet}
-                  className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 mr-4"
-                >
-                  Test GET API
-                </button>
+              <div className="space-y-4">
+                <div>
+                  <button 
+                    onClick={testContentManagerGet}
+                    className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 mr-4"
+                  >
+                    Test GET API
+                  </button>
+                  
+                  <button 
+                    onClick={testContentManagerPost}
+                    className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+                    disabled={!isAuthenticated}
+                  >
+                    Test POST API
+                  </button>
+                </div>
                 
-                <button 
-                  onClick={testContentManagerPost}
-                  className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
-                  disabled={!isAuthenticated}
-                >
-                  Test POST API
-                </button>
+                <div>
+                  <button 
+                    onClick={testBasicEndpoint}
+                    className="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600"
+                  >
+                    Test Basic Endpoint (No Middleware)
+                  </button>
+                </div>
               </div>
               
               {!isAuthenticated && (
