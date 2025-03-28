@@ -1,7 +1,16 @@
 // lib/api/signals.ts
-import { collection, getDocs, query, addDoc, deleteDoc, doc, updateDoc } from 'firebase/firestore';
-import { firestore } from '@/lib/firebase';
-import { getCurrentUserToken } from '@/lib/auth';
+import { 
+  collection, 
+  getDocs, 
+  query, 
+  addDoc, 
+  deleteDoc, 
+  doc, 
+  updateDoc, 
+  Firestore 
+} from 'firebase/firestore';
+import { firestore } from '../firebase';
+import { getCurrentUserToken } from './auth';
 
 // API base URL
 const API_BASE = '/api';
@@ -67,7 +76,12 @@ export async function getAllSignals(): Promise<Signal[]> {
     }
     
     // Client-side fallback
-    const signalsRef = collection(firestore, 'signals');
+    if (!firestore) {
+      console.warn('Firestore not initialized, returning empty signals array');
+      return [];
+    }
+    
+    const signalsRef = collection(firestore as Firestore, 'signals');
     const signalsQuery = query(signalsRef);
     const querySnapshot = await getDocs(signalsQuery);
     
@@ -140,7 +154,12 @@ export async function addSignal(signal: Signal): Promise<Signal | null> {
     }
     
     // Client-side fallback
-    const signalsRef = collection(firestore, 'signals');
+    if (!firestore) {
+      console.warn('Firestore not initialized, cannot add signal');
+      return null;
+    }
+    
+    const signalsRef = collection(firestore as Firestore, 'signals');
     const now = new Date().toISOString();
     const signalWithTimestamp = {
       ...signal,
@@ -184,12 +203,17 @@ export async function updateSignal(signal: Signal): Promise<boolean> {
     }
     
     // Client-side fallback
+    if (!firestore) {
+      console.warn('Firestore not initialized, cannot update signal');
+      return false;
+    }
+    
     const updatedSignal = {
       ...signal,
       updatedAt: new Date().toISOString()
     };
     
-    const signalRef = doc(firestore, 'signals', signal.id);
+    const signalRef = doc(firestore as Firestore, 'signals', signal.id);
     await updateDoc(signalRef, updatedSignal);
     return true;
   } catch (error) {
@@ -222,11 +246,58 @@ export async function deleteSignal(id: string): Promise<boolean> {
     }
     
     // Client-side fallback
-    const signalRef = doc(firestore, 'signals', id);
+    if (!firestore) {
+      console.warn('Firestore not initialized, cannot delete signal');
+      return false;
+    }
+    
+    const signalRef = doc(firestore as Firestore, 'signals', id);
     await deleteDoc(signalRef);
     return true;
   } catch (error) {
     console.error('Error deleting signal:', error);
     return false;
   }
+}
+
+/**
+ * Get all newsletters
+ */
+export async function getAllNewsletters(options: {
+  featured?: boolean;
+  limit?: number;
+} = {}): Promise<Newsletter[]> {
+  const signals = await getAllSignals();
+  let newsletters = signals.filter(s => s.type === 'newsletter') as Newsletter[];
+  
+  if (options.featured !== undefined) {
+    newsletters = newsletters.filter(n => n.featured === options.featured);
+  }
+  
+  if (options.limit && options.limit > 0) {
+    newsletters = newsletters.slice(0, options.limit);
+  }
+  
+  return newsletters;
+}
+
+/**
+ * Get all articles
+ */
+export async function getAllArticles(options: {
+  featured?: boolean;
+  limit?: number;
+} = {}): Promise<Article[]> {
+  const signals = await getAllSignals();
+  let articles = signals.filter(s => s.type === 'article') as Article[];
+  
+  if (options.featured !== undefined) {
+    articles = articles.filter(a => a.featured === options.featured);
+  }
+  
+  if (options.limit && options.limit > 0) {
+    articles = articles.slice(0, options.limit);
+  }
+  
+  return articles;
 }

@@ -52,22 +52,46 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     switch (req.method) {
       case 'GET':
         // Get signals (with optional filtering)
-        const { type, featured } = req.query;
-        let query = signalsCollection;
+        const { id, type, featured } = req.query;
         
-        if (type) {
-          query = query.where('type', '==', type);
+        // Get a specific signal if ID is provided
+        if (id && typeof id === 'string') {
+          const doc = await signalsCollection.doc(id).get();
+          
+          if (!doc.exists) {
+            return res.status(404).json({ success: false, error: 'Signal not found' });
+          }
+          
+          return res.status(200).json({
+            success: true,
+            data: {
+              id: doc.id,
+              ...doc.data()
+            }
+          });
         }
         
-        if (featured) {
-          query = query.where('featured', '==', featured === 'true');
-        }
+        // Get all signals and filter client-side if needed
+        const snapshot = await signalsCollection.orderBy('dateAdded', 'desc').get();
+        const signals: any[] = [];
         
-        const snapshot = await query.orderBy('dateAdded', 'desc').get();
-        const signals = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          
+          // Client-side filtering
+          if (type && typeof type === 'string' && data.type !== type) {
+            return;
+          }
+          
+          if (featured && data.featured !== (featured === 'true')) {
+            return;
+          }
+          
+          signals.push({
+            id: doc.id,
+            ...data
+          });
+        });
         
         return res.status(200).json({ success: true, data: signals });
 
@@ -98,9 +122,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       case 'PUT':
         // Update a signal
-        const { id, ...updateData } = req.body;
+        const { id: updateId, ...updateData } = req.body;
         
-        if (!id) {
+        if (!updateId) {
           return res.status(400).json({ success: false, error: 'Signal ID is required' });
         }
         
@@ -108,23 +132,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         updateData.updatedAt = new Date().toISOString();
         
         // Update the signal in Firestore
-        await signalsCollection.doc(id).update(updateData);
+        await signalsCollection.doc(updateId).update(updateData);
         
         return res.status(200).json({ 
           success: true, 
-          data: { id, ...updateData } 
+          data: { id: updateId, ...updateData } 
         });
 
       case 'DELETE':
         // Delete a signal
-        const signalId = req.query.id as string;
+        const deleteId = req.query.id as string;
         
-        if (!signalId) {
+        if (!deleteId) {
           return res.status(400).json({ success: false, error: 'Signal ID is required' });
         }
         
         // Delete the signal from Firestore
-        await signalsCollection.doc(signalId).delete();
+        await signalsCollection.doc(deleteId).delete();
         
         return res.status(200).json({ 
           success: true, 
@@ -135,7 +159,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         res.setHeader('Allow', ['GET', 'POST', 'PUT', 'DELETE']);
         return res.status(405).json({ success: false, error: `Method ${req.method} Not Allowed` });
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error handling signals request:', error);
     return res.status(500).json({ 
       success: false, 
