@@ -1,314 +1,146 @@
-/**
- * Signals API endpoint
- */
+// pages/api/signals.ts
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { validateFirebaseIdToken } from '@/lib/api/server-auth';
-import * as signalsApi from '@/lib/api/signals';
-import { shareToSocialMedia } from '@/lib/socialShare';
-import { Signal } from '@/types';
+import { firestore, auth } from '@/lib/firebase-admin';
+import Cors from 'cors';
 
-// Helper function to add CORS headers
-const setCorsHeaders = (res: NextApiResponse) => {
-  // Allow credentials
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  // Be more specific with allowed origins in production
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  // Specify all allowed methods
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  // Allow all necessary headers
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
-  // Allow cache for preflight requests (improves performance)
-  res.setHeader('Access-Control-Max-Age', '86400');
-};
+// Initialize CORS middleware
+const cors = Cors({
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  origin: true,
+  credentials: true,
+});
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  // Set CORS headers for all requests
-  setCorsHeaders(res);
-  
-  // Handle CORS preflight requests - must come first
-  if (req.method === 'OPTIONS') {
-    console.log('Handling OPTIONS preflight request');
-    return res.status(200).end();
-  }
+// Helper function to run middleware
+function runMiddleware(req: NextApiRequest, res: NextApiResponse, fn: Function) {
+  return new Promise((resolve, reject) => {
+    fn(req, res, (result: any) => {
+      if (result instanceof Error) {
+        return reject(result);
+      }
+      return resolve(result);
+    });
+  });
+}
 
-  // Log all requests
-  console.log(`API Request: ${req.method} ${req.url}`);
-  console.log('Request headers:', JSON.stringify(req.headers, null, 2));
-  
-  // Log the origin of the request to debug CORS issues
-  const origin = req.headers.origin || req.headers.referer || 'unknown';
-  console.log(`Request origin: ${origin}`);
-  console.log('Request body type:', typeof req.body);
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  // Run the CORS middleware
+  await runMiddleware(req, res, cors);
 
   try {
-    // Dump request body if available
-    if (req.body) {
+    // Set cache headers to prevent caching
+    res.setHeader('Cache-Control', 'no-store, max-age=0');
+    
+    // Verify authentication for non-GET requests
+    if (req.method !== 'GET') {
       try {
-        console.log('Request body:', typeof req.body === 'string' ? req.body : JSON.stringify(req.body, null, 2));
+        const authHeader = req.headers.authorization;
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+          return res.status(401).json({ success: false, error: 'Unauthorized' });
+        }
+        
+        const token = authHeader.split('Bearer ')[1];
+        await auth.verifyIdToken(token);
       } catch (error) {
-        console.log('Could not stringify request body:', error);
+        console.error('API auth error:', error);
+        return res.status(401).json({ success: false, error: 'Unauthorized' });
       }
     }
-  } catch (error) {
-    console.log('Error accessing request body:', error);
-  }
-  
-  // Handle GET requests (public data)
-  if (req.method === 'GET') {
-    const { type, featured, limit, tag } = req.query;
-    
-    // Log for debugging
-    console.log('GET request received with query:', req.query);
-    
-    try {
-      const options: any = {};
-      
-      if (type === 'newsletter' || type === 'article') {
-        options.type = type;
-      }
-      
-      if (featured === 'true') {
-        options.featured = true;
-      } else if (featured === 'false') {
-        options.featured = false;
-      }
-      
-      if (limit && !isNaN(Number(limit))) {
-        options.limit = Number(limit);
-      }
-      
-      if (tag) {
-        options.tags = [tag as string];
-      }
-      
-      console.log('Fetching signals with options:', options);
-      const signals = await signalsApi.getAllSignals(options);
-      console.log(`Retrieved ${signals.length} signals`);
-      
-      // Ensure we're returning a properly structured response with 'signals' property
-      return res.status(200).json({ 
-        success: true,
-        signals: signals || [],
-        count: signals?.length || 0
-      });
-    } catch (error) {
-      console.error('Error fetching signals:', error);
-      return res.status(500).json({ error: 'Error fetching signals' });
-    }
-  }
-  
-  // Handle POST request (create a new signal)
-  if (req.method === 'POST') {
-    console.log('POST request received');
-    
-    // Validate Firebase ID token
-    console.log('Validating Firebase ID token for POST');
-    try {
-      const userId = await validateFirebaseIdToken(req);
-      if (!userId) {
-        console.warn('Authentication failed for POST: Invalid or missing token');
-        return res.status(401).json({ error: 'Unauthorized' });
-      }
-      
-      console.log('Authentication successful for user:', userId);
-      
-      try {
-        // Ensure request body is parsed correctly
-        let signalData;
-        let shareToSocial;
+
+    const signalsCollection = firestore.collection('signals');
+
+    // Handle different HTTP methods
+    switch (req.method) {
+      case 'GET':
+        // Get signals (with optional filtering)
+        const { type, featured } = req.query;
+        let query = signalsCollection;
         
-        if (typeof req.body === 'string') {
-          const parsedBody = JSON.parse(req.body);
-          shareToSocial = parsedBody.shareToSocial;
-          signalData = { ...parsedBody };
-          delete signalData.shareToSocial;
-        } else {
-          shareToSocial = req.body.shareToSocial;
-          signalData = { ...req.body };
-          delete signalData.shareToSocial;
+        if (type) {
+          query = query.where('type', '==', type);
         }
         
-        // Validate the required fields
-        if (!signalData || !signalData.title || !signalData.type) {
-          console.error('Missing required fields in POST request');
-          return res.status(400).json({ error: 'Missing required fields' });
+        if (featured) {
+          query = query.where('featured', '==', featured === 'true');
         }
         
-        console.log('Creating signal with data:', {
-          title: signalData.title,
-          type: signalData.type
+        const snapshot = await query.orderBy('dateAdded', 'desc').get();
+        const signals = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        
+        return res.status(200).json({ success: true, data: signals });
+
+      case 'POST':
+        // Create a new signal
+        const signalData = req.body;
+        
+        // Validate required fields
+        if (!signalData.title || !signalData.type || !signalData.url) {
+          return res.status(400).json({ 
+            success: false, 
+            error: 'Missing required fields: title, type, and url are required' 
+          });
+        }
+        
+        // Add timestamps
+        const now = new Date().toISOString();
+        signalData.dateAdded = now;
+        signalData.updatedAt = now;
+        
+        // Add the signal to Firestore
+        const docRef = await signalsCollection.add(signalData);
+        
+        return res.status(201).json({ 
+          success: true, 
+          data: { id: docRef.id, ...signalData } 
         });
-        
-        const signalId = await signalsApi.createSignal(signalData);
-        if (!signalId) {
-          console.error('Error creating signal in API');
-          return res.status(500).json({ error: 'Error creating signal' });
-        }
-        
-        console.log('Signal created successfully with ID:', signalId);
-        
-        // Handle social media sharing if requested
-        let socialShareResults = {};
-        if (shareToSocial) {
-          try {
-            socialShareResults = await shareToSocialMedia(
-              {
-                title: signalData.title,
-                description: signalData.description,
-                url: signalData.url,
-                imageUrl: signalData.imageUrl
-              },
-              {
-                linkedin: shareToSocial.linkedin,
-                twitter: shareToSocial.twitter,
-                bluesky: shareToSocial.bluesky
-              }
-            );
-          } catch (error) {
-            console.error('Error sharing to social media:', error);
-            // We continue even if social sharing fails
-          }
-        }
-        
-        return res.status(201).json({ id: signalId, socialShareResults });
-      } catch (error) {
-        console.error('Error processing POST request:', error);
-        if (error instanceof Error) {
-          console.error('Error details:', error.message);
-          console.error('Stack trace:', error.stack);
-        }
-        return res.status(500).json({ error: 'Error processing request' });
-      }
-    } catch (authError) {
-      console.error('Auth error in POST:', authError);
-      return res.status(401).json({ error: 'Authentication error' });
-    }
-  }
-  
-  // Handle PUT request (update a signal)
-  if (req.method === 'PUT') {
-    console.log('PUT request received');
-    
-    // Validate Firebase ID token
-    console.log('Validating Firebase ID token for PUT');
-    try {
-      const userId = await validateFirebaseIdToken(req);
-      if (!userId) {
-        console.warn('Authentication failed for PUT: Invalid or missing token');
-        return res.status(401).json({ error: 'Unauthorized' });
-      }
-      
-      console.log('Authentication successful for user:', userId);
-      
-      try {
-        // Ensure request body is parsed correctly
-        let signalData;
-        let shareToSocial;
-        let id;
-        
-        if (typeof req.body === 'string') {
-          const parsedBody = JSON.parse(req.body);
-          id = parsedBody.id;
-          shareToSocial = parsedBody.shareToSocial;
-          signalData = { ...parsedBody };
-          delete signalData.shareToSocial;
-          delete signalData.id;
-        } else {
-          id = req.body.id;
-          shareToSocial = req.body.shareToSocial;
-          signalData = { ...req.body };
-          delete signalData.shareToSocial;
-          delete signalData.id;
-        }
+
+      case 'PUT':
+        // Update a signal
+        const { id, ...updateData } = req.body;
         
         if (!id) {
-          console.error('Missing signal ID in PUT request');
-          return res.status(400).json({ error: 'Missing signal ID' });
+          return res.status(400).json({ success: false, error: 'Signal ID is required' });
         }
         
-        console.log('Updating signal with ID:', id);
+        // Update the timestamp
+        updateData.updatedAt = new Date().toISOString();
         
-        const success = await signalsApi.updateSignal(id, signalData);
-        if (!success) {
-          console.error('Error updating signal:', id);
-          return res.status(500).json({ error: 'Error updating signal' });
+        // Update the signal in Firestore
+        await signalsCollection.doc(id).update(updateData);
+        
+        return res.status(200).json({ 
+          success: true, 
+          data: { id, ...updateData } 
+        });
+
+      case 'DELETE':
+        // Delete a signal
+        const signalId = req.query.id as string;
+        
+        if (!signalId) {
+          return res.status(400).json({ success: false, error: 'Signal ID is required' });
         }
         
-        console.log('Signal updated successfully with ID:', id);
+        // Delete the signal from Firestore
+        await signalsCollection.doc(signalId).delete();
         
-        // Handle social media sharing if requested
-        let socialShareResults = {};
-        if (shareToSocial) {
-          try {
-            socialShareResults = await shareToSocialMedia(
-              {
-                title: signalData.title,
-                description: signalData.description,
-                url: signalData.url,
-                imageUrl: signalData.imageUrl
-              },
-              {
-                linkedin: shareToSocial.linkedin,
-                twitter: shareToSocial.twitter,
-                bluesky: shareToSocial.bluesky
-              }
-            );
-          } catch (error) {
-            console.error('Error sharing to social media:', error);
-            // We continue even if social sharing fails
-          }
-        }
-        
-        return res.status(200).json({ success: true, socialShareResults });
-      } catch (error) {
-        console.error('Error processing PUT request:', error);
-        if (error instanceof Error) {
-          console.error('Error details:', error.message);
-          console.error('Stack trace:', error.stack);
-        }
-        return res.status(500).json({ error: 'Error processing request' });
-      }
-    } catch (authError) {
-      console.error('Auth error in PUT:', authError);
-      return res.status(401).json({ error: 'Authentication error' });
+        return res.status(200).json({ 
+          success: true, 
+          data: { message: 'Signal deleted successfully' }
+        });
+
+      default:
+        res.setHeader('Allow', ['GET', 'POST', 'PUT', 'DELETE']);
+        return res.status(405).json({ success: false, error: `Method ${req.method} Not Allowed` });
     }
+  } catch (error) {
+    console.error('Error handling signals request:', error);
+    return res.status(500).json({ 
+      success: false, 
+      error: 'Internal server error',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
-  
-  // Handle DELETE request
-  if (req.method === 'DELETE') {
-    // Validate Firebase ID token
-    console.log('Validating Firebase ID token for DELETE');
-    try {
-      const userId = await validateFirebaseIdToken(req);
-      if (!userId) {
-        console.warn('Authentication failed for DELETE: Invalid or missing token');
-        return res.status(401).json({ error: 'Unauthorized' });
-      }
-      
-      console.log('Authentication successful for user:', userId);
-      
-      const { id } = req.query;
-      
-      if (!id) {
-        return res.status(400).json({ error: 'Missing signal ID' });
-      }
-      
-      const success = await signalsApi.deleteSignal(id as string);
-      if (!success) {
-        return res.status(500).json({ error: 'Error deleting signal' });
-      }
-      
-      return res.status(200).json({ success: true });
-    } catch (authError) {
-      console.error('Auth error in DELETE:', authError);
-      return res.status(401).json({ error: 'Authentication error' });
-    }
-  }
-  
-  // Handle unsupported methods
-  console.warn(`Method not allowed: ${req.method}`);
-  return res.status(405).json({ error: `Method ${req.method} not allowed` });
 }
