@@ -36,32 +36,7 @@ const nextConfig = {
         destination: '/admin',
         permanent: true,
       },
-      // Handle direct Vercel domain API requests with a server-side redirect
-      {
-        source: '/api/signals',
-        has: [
-          {
-            type: 'header',
-            key: 'host',
-            value: 'personalsite77.vercel.app'
-          }
-        ],
-        destination: '/api/signals-simple',
-        permanent: false
-      },
-      // Redirect API requests when using any Vercel domain
-      {
-        source: '/api/signals',
-        has: [
-          {
-            type: 'header',
-            key: 'referer',
-            value: '(.*vercel.app.*)'
-          }
-        ],
-        destination: '/api/signals-simple',
-        permanent: false
-      }
+      // Signals redirects removed - we now use the main signals API endpoint directly
     ];
   },
   
@@ -140,26 +115,10 @@ const nextConfig = {
     isrFlushToDisk: false, // This ensures Next.js correctly handles the basePath for static assets
   },
   
-  // Add rewrites to handle hardcoded API URLs
+  // Rewrites removed - we now use the direct API endpoints
   async rewrites() {
     return {
-      beforeFiles: [
-        // Handle absolute URLs to the Vercel domain
-        {
-          source: '/api/signals',
-          destination: '/api/signals-simple',
-        },
-        // Handle any path containing signals in the URL
-        {
-          source: '/:path*/api/signals',
-          destination: '/api/signals-simple',
-        },
-        // Handle absolute URL pattern as a path
-        {
-          source: '/https/:host*/:path*/api/signals',
-          destination: '/api/signals-simple',
-        },
-      ]
+      beforeFiles: []
     };
   },
   
@@ -282,22 +241,8 @@ const nextConfig = {
                     return;
                   }
                   
-                  // Replace hardcoded URLs
-                  const hardcodedUrls = [
-                    'https://personalsite77.vercel.app/api/signals',
-                    'personalsite77.vercel.app/api/signals',
-                    '/api/signals'
-                  ];
-                  
-                  let modified = false;
-                  hardcodedUrls.forEach(url => {
-                    // Use a simple string replacement to avoid regex issues
-                    if (content.includes(url)) {
-                      console.log(`[webpack] Replacing hardcoded URL ${url} in ${fullPath}`);
-                      content = content.split(url).join('/api/signals-simple');
-                      modified = true;
-                    }
-                  });
+                  // No longer replacing hardcoded URLs - using direct API endpoints
+                  const modified = false;
                   
                   // Only write if we made changes
                   if (modified) {
