@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { firestore, auth } from '@/lib/firebase-admin';
+import { firestore, auth } from '../../lib/firebase-admin';
 
 type SignalResponse = {
   success: boolean;
@@ -40,30 +40,19 @@ export default async function handler(
     }
   }
   
-  // Verify authentication for all requests except public GET
-  try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ success: false, error: 'Unauthorized' });
-    }
-    
-    const token = authHeader.split('Bearer ')[1];
-    await auth.verifyIdToken(token);
-    console.log('Authentication successful');
-  } catch (error: any) {
-    console.error('API auth error:', error);
-    return res.status(401).json({ success: false, error: 'Unauthorized' });
-  }
-  
+  // Initialize Firestore collection early to avoid potential initialization issues
+  console.log('Initializing signals collection');
   const signalsCollection = firestore.collection('signals');
   
   // GET - Get all signals or a specific signal
   if (req.method === 'GET') {
     try {
+      console.log('Processing GET request for signals');
       const { id, type } = req.query;
       
       if (id && typeof id === 'string') {
         // Get a specific signal
+        console.log(`Getting signal with ID: ${id}`);
         const doc = await signalsCollection.doc(id).get();
         
         if (!doc.exists) {
@@ -79,6 +68,7 @@ export default async function handler(
         });
       } else if (type && typeof type === 'string') {
         // Get signals by type
+        console.log(`Getting signals with type: ${type}`);
         const snapshot = await signalsCollection.where('type', '==', type).get();
         const signals: any[] = [];
         
@@ -92,6 +82,7 @@ export default async function handler(
         return res.status(200).json({ success: true, data: signals });
       } else {
         // Get all signals
+        console.log('Getting all signals');
         const snapshot = await signalsCollection.orderBy('dateAdded', 'desc').get();
         const signals: any[] = [];
         
@@ -110,9 +101,28 @@ export default async function handler(
     }
   }
   
+  // Check authentication for non-GET methods
+  try {
+    console.log('Checking authentication for non-GET request');
+    const authHeader = req.headers.authorization;
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.log('No valid authorization header found');
+      return res.status(401).json({ success: false, error: 'Unauthorized - No valid auth token' });
+    }
+    
+    const token = authHeader.split('Bearer ')[1];
+    await auth.verifyIdToken(token);
+    console.log('Authentication successful');
+  } catch (error: any) {
+    console.error('API auth error:', error);
+    return res.status(401).json({ success: false, error: `Authentication error: ${error.message}` });
+  }
+  
   // POST - Create a new signal
   if (req.method === 'POST') {
     try {
+      console.log('Processing POST request to create a signal');
       // Extract social share settings if present
       const { shareToSocial, ...signalData } = req.body;
       
@@ -129,9 +139,10 @@ export default async function handler(
         updatedAt: now
       };
       
-      console.log('API: Adding signal with sanitized data', newSignalData);
+      console.log('Adding signal with sanitized data', newSignalData);
       
       const docRef = await signalsCollection.add(newSignalData);
+      console.log(`Signal created with ID: ${docRef.id}`);
       
       // Handle social sharing if requested
       let socialShareResults: Record<string, 'success' | 'error'> | undefined = undefined;
@@ -162,6 +173,7 @@ export default async function handler(
   // PUT - Update a signal
   if (req.method === 'PUT') {
     try {
+      console.log('Processing PUT request to update a signal');
       const { id } = req.body;
       
       if (!id) {
@@ -186,6 +198,7 @@ export default async function handler(
       };
       
       await signalsCollection.doc(id).update(updateData);
+      console.log(`Signal with ID ${id} updated successfully`);
       
       // Handle social sharing if requested
       let socialShareResults: Record<string, 'success' | 'error'> | undefined = undefined;
@@ -216,6 +229,7 @@ export default async function handler(
   // DELETE - Delete a signal
   if (req.method === 'DELETE') {
     try {
+      console.log('Processing DELETE request');
       const { id } = req.query;
       
       if (!id || typeof id !== 'string') {
@@ -223,6 +237,7 @@ export default async function handler(
       }
       
       await signalsCollection.doc(id).delete();
+      console.log(`Signal with ID ${id} deleted successfully`);
       
       return res.status(200).json({ 
         success: true, 
@@ -235,5 +250,6 @@ export default async function handler(
   }
   
   // If we get here, the HTTP method is not supported
+  console.log(`Method ${req.method} not supported`);
   return res.status(405).json({ success: false, error: 'Method not allowed' });
 }
