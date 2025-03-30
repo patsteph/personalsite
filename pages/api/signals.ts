@@ -1,23 +1,32 @@
-// pages/api/signals.ts - SIMPLIFIED VERSION
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { firestore, auth } from '../../lib/firebase-admin';
+import { firestore, auth } from '@/lib/firebase-admin';
 
-// Debug incoming requests
-console.log('Signals API module loaded - SIMPLIFIED VERSION');
+type SignalResponse = {
+  success: boolean;
+  data?: any;
+  error?: string;
+  socialShareResults?: Record<string, 'success' | 'error'>;
+}
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  // Set CORS headers directly
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse<SignalResponse>
+) {
+  console.log('Signals API:', req.method, req.url);
+  
+  // Set CORS headers
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization');
   res.setHeader('Access-Control-Max-Age', '86400');
-
-  // Handle OPTIONS request for CORS preflight
+  
+  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
-
+  
+  // Log request details for debugging
   console.log(`Signals API: ${req.method} request received at ${new Date().toISOString()}`);
   console.log('Headers:', JSON.stringify(req.headers, null, 2));
   console.log('Query:', JSON.stringify(req.query, null, 2));
@@ -30,57 +39,201 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       console.log('Could not stringify body:', e);
     }
   }
-
+  
+  // Verify authentication for all requests except public GET
   try {
-    // Basic functionality just to test GET/POST
-    if (req.method === 'GET') {
-      // Return dummy data for testing
-      return res.status(200).json({
-        success: true,
-        data: [
-          {
-            id: '1',
-            type: 'newsletter',
-            title: 'Test Newsletter',
-            description: 'This is a test newsletter',
-            url: 'https://test.com',
-            dateAdded: new Date().toISOString()
-          },
-          {
-            id: '2',
-            type: 'article',
-            title: 'Test Article',
-            description: 'This is a test article',
-            url: 'https://test.com/article',
-            dateAdded: new Date().toISOString()
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+    
+    const token = authHeader.split('Bearer ')[1];
+    await auth.verifyIdToken(token);
+    console.log('Authentication successful');
+  } catch (error: any) {
+    console.error('API auth error:', error);
+    return res.status(401).json({ success: false, error: 'Unauthorized' });
+  }
+  
+  const signalsCollection = firestore.collection('signals');
+  
+  // GET - Get all signals or a specific signal
+  if (req.method === 'GET') {
+    try {
+      const { id, type } = req.query;
+      
+      if (id && typeof id === 'string') {
+        // Get a specific signal
+        const doc = await signalsCollection.doc(id).get();
+        
+        if (!doc.exists) {
+          return res.status(404).json({ success: false, error: 'Signal not found' });
+        }
+        
+        return res.status(200).json({
+          success: true,
+          data: {
+            id: doc.id,
+            ...doc.data()
           }
-        ]
-      });
-    } 
-    else if (req.method === 'POST') {
-      // Just echo back the request body for testing
+        });
+      } else if (type && typeof type === 'string') {
+        // Get signals by type
+        const snapshot = await signalsCollection.where('type', '==', type).get();
+        const signals: any[] = [];
+        
+        snapshot.forEach(doc => {
+          signals.push({
+            id: doc.id,
+            ...doc.data()
+          });
+        });
+        
+        return res.status(200).json({ success: true, data: signals });
+      } else {
+        // Get all signals
+        const snapshot = await signalsCollection.orderBy('dateAdded', 'desc').get();
+        const signals: any[] = [];
+        
+        snapshot.forEach(doc => {
+          signals.push({
+            id: doc.id,
+            ...doc.data()
+          });
+        });
+        
+        return res.status(200).json({ success: true, data: signals });
+      }
+    } catch (error: any) {
+      console.error('API error getting signals:', error);
+      return res.status(500).json({ success: false, error: error.message });
+    }
+  }
+  
+  // POST - Create a new signal
+  if (req.method === 'POST') {
+    try {
+      // Extract social share settings if present
+      const { shareToSocial, ...signalData } = req.body;
+      
+      // Convert any undefined values to null for Firestore compatibility
+      const sanitizedBody = Object.entries(signalData).reduce((acc, [key, value]) => {
+        acc[key] = value === undefined ? null : value;
+        return acc;
+      }, {} as Record<string, any>);
+      
+      const now = new Date().toISOString();
+      const newSignalData = {
+        ...sanitizedBody,
+        dateAdded: now,
+        updatedAt: now
+      };
+      
+      console.log('API: Adding signal with sanitized data', newSignalData);
+      
+      const docRef = await signalsCollection.add(newSignalData);
+      
+      // Handle social sharing if requested
+      let socialShareResults: Record<string, 'success' | 'error'> | undefined = undefined;
+      
+      if (shareToSocial) {
+        socialShareResults = {};
+        // This is where you would add code to handle social sharing
+        // For now, we'll simulate success for demonstration purposes
+        if (shareToSocial.linkedin) socialShareResults.linkedin = 'success';
+        if (shareToSocial.twitter) socialShareResults.twitter = 'success';
+        if (shareToSocial.bluesky) socialShareResults.bluesky = 'success';
+      }
+      
       return res.status(201).json({
         success: true,
         data: {
-          id: 'new-id-' + Date.now(),
-          ...req.body,
-          dateAdded: new Date().toISOString()
-        }
+          id: docRef.id,
+          ...newSignalData
+        },
+        socialShareResults
       });
+    } catch (error: any) {
+      console.error('API error creating signal:', error);
+      return res.status(500).json({ success: false, error: error.message });
     }
-    else {
-      // Just return 200 for any other method to test
+  }
+  
+  // PUT - Update a signal
+  if (req.method === 'PUT') {
+    try {
+      const { id } = req.body;
+      
+      if (!id) {
+        return res.status(400).json({ success: false, error: 'Signal ID is required' });
+      }
+      
+      // Extract social share settings if present
+      const { shareToSocial, ...signalData } = req.body;
+      
+      // Convert any undefined values to null for Firestore compatibility
+      const sanitizedBody = Object.entries(signalData).reduce((acc, [key, value]) => {
+        acc[key] = value === undefined ? null : value;
+        return acc;
+      }, {} as Record<string, any>);
+      
+      // Remove id from the data to be updated
+      delete sanitizedBody.id;
+      
+      const updateData = {
+        ...sanitizedBody,
+        updatedAt: new Date().toISOString()
+      };
+      
+      await signalsCollection.doc(id).update(updateData);
+      
+      // Handle social sharing if requested
+      let socialShareResults: Record<string, 'success' | 'error'> | undefined = undefined;
+      
+      if (shareToSocial) {
+        socialShareResults = {};
+        // This is where you would add code to handle social sharing
+        // For now, we'll simulate success for demonstration purposes
+        if (shareToSocial.linkedin) socialShareResults.linkedin = 'success';
+        if (shareToSocial.twitter) socialShareResults.twitter = 'success';
+        if (shareToSocial.bluesky) socialShareResults.bluesky = 'success';
+      }
+      
       return res.status(200).json({
         success: true,
-        message: `${req.method} method acknowledged`
+        data: {
+          id,
+          ...updateData
+        },
+        socialShareResults
       });
+    } catch (error: any) {
+      console.error('API error updating signal:', error);
+      return res.status(500).json({ success: false, error: error.message });
     }
-  } catch (error: any) {
-    console.error('API Error:', error);
-    return res.status(500).json({
-      success: false,
-      error: 'Server error',
-      details: error.message || 'Unknown error'
-    });
   }
+  
+  // DELETE - Delete a signal
+  if (req.method === 'DELETE') {
+    try {
+      const { id } = req.query;
+      
+      if (!id || typeof id !== 'string') {
+        return res.status(400).json({ success: false, error: 'Signal ID is required' });
+      }
+      
+      await signalsCollection.doc(id).delete();
+      
+      return res.status(200).json({ 
+        success: true, 
+        data: { message: 'Signal deleted successfully' }
+      });
+    } catch (error: any) {
+      console.error('API error deleting signal:', error);
+      return res.status(500).json({ success: false, error: error.message });
+    }
+  }
+  
+  // If we get here, the HTTP method is not supported
+  return res.status(405).json({ success: false, error: 'Method not allowed' });
 }
