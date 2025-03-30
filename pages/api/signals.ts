@@ -1,14 +1,18 @@
 // pages/api/signals.ts
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { firestore, auth } from '@/lib/firebase-admin';
+import { firestore, auth } from '../../lib/firebase-admin';
 import Cors from 'cors';
 
-// Initialize CORS middleware
+// Initialize CORS middleware with debugging
 const cors = Cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  origin: true,
+  origin: '*',
   credentials: true,
+  preflightContinue: true,
 });
+
+// Debug incoming requests
+console.log('Signals API module loaded');
 
 // Helper function to run middleware
 function runMiddleware(req: NextApiRequest, res: NextApiResponse, fn: Function) {
@@ -23,8 +27,22 @@ function runMiddleware(req: NextApiRequest, res: NextApiResponse, fn: Function) 
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  console.log(`Signals API: ${req.method} request received at ${new Date().toISOString()}`);
+  console.log('Headers:', JSON.stringify(req.headers, null, 2));
+  console.log('Query:', JSON.stringify(req.query, null, 2));
+  
+  // For POST/PUT requests, log the body too
+  if (req.method === 'POST' || req.method === 'PUT') {
+    try {
+      console.log('Body:', typeof req.body === 'string' ? req.body : JSON.stringify(req.body, null, 2));
+    } catch (e) {
+      console.log('Could not stringify body:', e);
+    }
+  }
+  
   // Run the CORS middleware
   await runMiddleware(req, res, cors);
+  console.log('CORS middleware completed');
 
   try {
     // Set cache headers to prevent caching
@@ -160,11 +178,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(405).json({ success: false, error: `Method ${req.method} Not Allowed` });
     }
   } catch (error: any) {
-    console.error('Error handling signals request:', error);
+    const errorMsg = error.message || 'Unknown error';
+    const stack = error.stack || '';
+    
+    console.error('🚨 ERROR in signals API handler:');
+    console.error(`Message: ${errorMsg}`);
+    console.error(`Stack: ${stack}`);
+    console.error('Error object:', error);
+    
+    // Always return detailed error info regardless of environment
     return res.status(500).json({ 
       success: false, 
       error: 'Internal server error',
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      details: errorMsg,
+      stack: stack.split('\n')
     });
   }
 }
