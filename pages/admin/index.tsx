@@ -87,20 +87,12 @@ export default function AdminPage() {
               <div className="p-6">
                 <h2 className="text-xl font-bold text-amber-600 mb-2">Signals</h2>
                 <p className="text-gray-600 mb-4">Manage newsletters and articles you recommend.</p>
-                <div className="space-y-2">
-                  <button 
-                    onClick={() => navigateTo('/admin/signals-direct')}
-                    className="w-full py-2 bg-amber-600 text-white rounded hover:bg-opacity-90 transition-colors"
-                  >
-                    Manage Signals
-                  </button>
-                  <button 
-                    onClick={() => navigateTo('/admin/signals-ultrasimple')}
-                    className="w-full py-2 bg-green-600 text-white rounded hover:bg-opacity-90 transition-colors"
-                  >
-                    Ultra Simple Signals (New)
-                  </button>
-                </div>
+                <button 
+                  onClick={() => navigateTo('/admin/signals')}
+                  className="w-full py-2 bg-amber-600 text-white rounded hover:bg-opacity-90 transition-colors"
+                >
+                  Manage Signals
+                </button>
               </div>
             </div>
             
@@ -124,37 +116,6 @@ export default function AdminPage() {
             </div>
           </div>
           
-          {/* Quick Actions */}
-          <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-            <h2 className="text-xl font-bold text-gray-800 mb-4">Quick Actions</h2>
-            <div className="flex flex-wrap gap-4">
-              <button 
-                onClick={() => navigateTo('/admin/books')}
-                className="px-4 py-2 bg-steel-blue text-white rounded hover:bg-opacity-90 transition-colors"
-              >
-                Add New Book
-              </button>
-              <button 
-                onClick={() => navigateTo('/admin/signals-ultrasimple')}
-                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-opacity-90 transition-colors"
-              >
-                Add New Signal (Ultra Simple)
-              </button>
-              <button 
-                onClick={() => navigateTo('/admin/blog')}
-                className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-opacity-90 transition-colors"
-              >
-                Add New Blog Post
-              </button>
-              {/* Analytics button - temporarily disabled until analytics dashboard is migrated to React */}
-              <button 
-                onClick={() => alert('Analytics dashboard is being migrated to the React-based admin interface. It will be available soon.')}
-                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-opacity-90 transition-colors"
-              >
-                View Analytics
-              </button>
-            </div>
-          </div>
         </div>
       </Layout>
     </ProtectedRoute>

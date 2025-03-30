@@ -56,35 +56,7 @@ export default function Document() {
         {/* Add runtime configuration scripts */}
         <script src={`${basePath}/runtime-config.js`} />
         <script src={`${basePath}/secure-config.js`} />
-        <script src={`${basePath}/direct-url-fix.js`} />
         
-        {/* No interception script - use direct API endpoints */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              // API diagnostic script (no interception)
-              (function() {
-                console.log('API diagnostic script loaded - NO INTERCEPTION');
-                
-                // This script just logs API calls for debugging but doesn't change the behavior
-                const originalFetch = window.fetch;
-                
-                window.fetch = function(url, options) {
-                  // Log API calls for debugging without changing behavior
-                  if (typeof url === 'string' && url.includes('/api/')) {
-                    const method = options && options.method ? options.method : 'GET';
-                    console.log('API call:', { url, method });
-                  }
-                  
-                  // Always use the original fetch - no modifications or redirections
-                  return originalFetch(url, options);
-                };
-                
-                console.log('API diagnostic script initialized - all API calls go directly to requested endpoints');
-              })();
-            `
-          }}
-        />
         
         {/* Additional fixes only for development */}
         {!isProduction && (

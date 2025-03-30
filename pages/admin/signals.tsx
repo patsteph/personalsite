@@ -43,6 +43,11 @@ export default function SignalsAdminPage({ signals: initialSignals, error: serve
     return () => clearTimeout(timer);
   }, [successMessage, error]);
   
+  // Load signals when component mounts
+  useEffect(() => {
+    loadSignals();
+  }, []);
+  
   // Load signals fresh from the API
   const loadSignals = async () => {
     setIsLoading(true);
