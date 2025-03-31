@@ -97,7 +97,8 @@ export default async function handler(
       }
     } catch (error: any) {
       console.error('API error getting signals:', error);
-      return res.status(500).json({ success: false, error: error.message });
+      console.error('Full error object:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
+      return res.status(500).json({ success: false, error: `Failed to get signals: ${error.message}` });
     }
   }
   
