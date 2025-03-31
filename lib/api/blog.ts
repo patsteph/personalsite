@@ -260,10 +260,15 @@ export async function addBlogPost(post: Omit<BlogPost, 'id' | 'createdAt' | 'upd
  */
 export async function updateBlogPost(id: string, post: Partial<BlogPost>): Promise<boolean> {
   try {
-    // Try server API first
+    console.log(`updateBlogPost (${id}): Attempting server API update...`);
     const token = await getCurrentUserToken();
+
+    // Log token status
+    console.log(`updateBlogPost (${id}): Token obtained?`, !!token);
+
     if (token) {
       try {
+        console.log(`updateBlogPost (${id}): Sending PUT request to /api/blog with data:`, JSON.stringify(post));
         const response = await fetch(`${API_BASE}/blog?id=${id}`, {
           method: 'PUT',
           headers: {
@@ -273,15 +278,21 @@ export async function updateBlogPost(id: string, post: Partial<BlogPost>): Promi
           body: JSON.stringify(post)
         });
 
+        // Log server response status
+        console.log(`updateBlogPost (${id}): Server API response status: ${response.status}, ok: ${response.ok}`);
+
         if (response.ok) {
           const data = await response.json();
+          console.log(`updateBlogPost (${id}): Server API success. Response data:`, data);
           return data.success;
         }
         // If server API fails, log error and continue with client-side fallback
-        console.warn('Server API failed, falling back to client-side API');
+        console.warn(`updateBlogPost (${id}): Server API failed (status ${response.status}), falling back to client-side API`);
       } catch (serverError) {
-        console.error('Server API error, falling back to client-side:', serverError);
+        console.error(`updateBlogPost (${id}): Server API fetch error, falling back to client-side:`, serverError);
       }
+    } else {
+      console.warn(`updateBlogPost (${id}): No token found, proceeding directly to client-side fallback.`);
     }
 
     // Client-side fallback
@@ -307,7 +318,8 @@ export async function updateBlogPost(id: string, post: Partial<BlogPost>): Promi
 
     return true;
   } catch (error) {
-    console.error(`API: Error updating blog post with ID ${id}:`, error);
+    // Log final catch block entry
+    console.error(`updateBlogPost (${id}): CAUGHT UNEXPECTED ERROR:`, error);
     return false;
   }
 }
