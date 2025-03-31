@@ -8,6 +8,7 @@ import Layout from '@/components/layout/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import SignalForm from '@/components/admin/SignalForm';
 import { Signal, Newsletter, Article } from '@/types';
+import { Signal as ApiSignal } from '@/lib/api/signals';
 import * as api from '@/lib/api';
 
 interface SignalsAdminPageProps {
@@ -54,53 +55,31 @@ export default function SignalsAdminPage({ signals: initialSignals, error: serve
     setError(null);
     
     try {
-      // Get auth token
-      const auth = await import('@/lib/firebase').then(m => m.auth);
-      if (!auth) {
-        throw new Error('Authentication not initialized');
-      }
+      console.log('Loading signals using API library with fallback mechanism');
       
-      const currentUser = auth.currentUser;
-      if (!currentUser) {
-        throw new Error('User not authenticated');
-      }
+      // Use the API library function instead of direct fetch
+      const signalsData = await api.signals.getAllSignals();
       
-      const token = await currentUser.getIdToken();
-      
-      console.log('Loading signals with auth token');
-      
-      // Use the main signals API endpoint
-      const response = await fetch('/api/signals', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest',
-          'Accept': 'application/json'
-        },
-        cache: 'no-store'
-      });
-      
-      console.log('GET response status:', response.status);
-      
-      if (!response.ok) {
-        throw new Error(`API returned ${response.status}: ${response.statusText}`);
-      }
-      
-      const data = await response.json();
-      
-      console.log('GET response data:', data);
-      
-      if (data.success && data.data) {
-        console.log(`Loaded ${data.data.length} signals`);
-        setSignals(data.data || []);
+      if (signalsData && Array.isArray(signalsData)) {
+        console.log(`Loaded ${signalsData.length} signals`);
+        // Convert API signal type to app signal type
+        const convertedSignals: Signal[] = signalsData.map((signal: ApiSignal) => {
+          return {
+            ...signal,
+            // Add any required fields for Article or Newsletter types
+            ...(signal.type === 'article' ? {
+              publishDate: signal.dateAdded || new Date().toISOString()
+            } : {})
+          } as Signal;
+        });
+        setSignals(convertedSignals);
       } else {
-        console.error('API error:', data.error || 'Unknown error');
-        setError(data.error || 'Failed to load signals');
+        console.error('API error: No signals data returned');
+        setError('Failed to load signals');
       }
     } catch (err) {
       console.error('Error loading signals:', err);
-      setError(`Network error: ${err instanceof Error ? err.message : String(err)}`);
+      setError(`Error: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       setIsLoading(false);
     }
@@ -124,130 +103,93 @@ export default function SignalsAdminPage({ signals: initialSignals, error: serve
     setError(null);
     
     try {
-      // Get the auth token for the API request
-      const auth = await import('@/lib/firebase').then(m => m.auth);
-      if (!auth) {
-        throw new Error('Authentication not initialized');
-      }
-      
-      const currentUser = auth.currentUser;
-      if (!currentUser) {
-        throw new Error('User not authenticated');
-      }
-      
-      const token = await currentUser.getIdToken();
-      
-      // Common headers for API requests
-      const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-        'X-Requested-With': 'XMLHttpRequest',
-        'Accept': 'application/json'
-      };
-      
-      console.log('Submitting signal with auth token', {
-        method: selectedSignal ? 'PUT' : 'POST',
-        headers: { ...headers, Authorization: 'Bearer [REDACTED]' }
+      console.log(selectedSignal ? 'Updating signal' : 'Creating new signal', {
+        ...data,
+        shareToSocial: data.shareToSocial ? 'Specified' : 'Not specified'
       });
       
+      let result: Signal | null = null;
+      let message = '';
+      
+      // Use the API library with fallback instead of direct fetch
       if (selectedSignal) {
         // Update existing signal
         console.log('Updating signal with ID:', selectedSignal.id);
         
-        const response = await fetch('/api/signals', {
-          method: 'PUT',
-          headers,
-          body: JSON.stringify({
-            id: selectedSignal.id,
+        // Convert to API signal type
+        const apiSignal: ApiSignal = {
+          id: selectedSignal.id,
+          ...data,
+          // Ensure required fields for API signal
+          source: (data as any).source || ''
+        };
+        
+        const updated = await api.signals.updateSignal(apiSignal);
+        
+        if (updated) {
+          message = 'Signal updated successfully';
+          // Convert from API signal type to app signal type
+          result = { 
+            id: selectedSignal.id, 
             ...data,
-          })
-        });
-        
-        console.log('PUT response status:', response.status);
-        
-        if (!response.ok) {
-          throw new Error(`API returned ${response.status}: ${response.statusText}`);
+            // Ensure required fields for Article type
+            ...(data.type === 'article' ? {
+              publishDate: data.dateAdded || new Date().toISOString()
+            } : {})
+          } as Signal;
+        } else {
+          throw new Error('Failed to update signal');
         }
-        
-        const result = await response.json();
-        console.log('PUT response data:', result);
-        
-        let message = 'Signal updated successfully';
-        if (result.socialShareResults) {
-          const platforms = Object.entries(result.socialShareResults)
-            .filter(([_, status]) => status === 'success')
-            .map(([platform]) => platform);
-          
-          if (platforms.length > 0) {
-            message += ` and shared to ${platforms.join(', ')}`;
-          }
-        }
-        
-        setSuccessMessage(message);
-        setIsFormOpen(false);
-        loadSignals(); // Reload signals to get the updated data
       } else {
         // Create new signal
-        console.log('Creating new signal with data:', {
-          ...data,
-          shareToSocial: data.shareToSocial ? 'Specified' : 'Not specified'
-        });
-        
         // Create the stringified body first so we can log it
         const jsonBody = JSON.stringify(data);
-        console.log('POST request body:', jsonBody.substring(0, 200) + (jsonBody.length > 200 ? '...' : ''));
+        console.log('Request data:', jsonBody.substring(0, 200) + (jsonBody.length > 200 ? '...' : ''));
         
-        // Send the request to the main signals API endpoint
-        const response = await fetch('/api/signals', {
-          method: 'POST',
-          headers,
-          body: jsonBody,
-          // Add cache control to prevent caching issues
-          cache: 'no-store',
-          credentials: 'same-origin'
-        });
+        // Convert to API signal type
+        const apiSignal: ApiSignal = {
+          ...data,
+          // Ensure required fields for API signal
+          source: (data as any).source || ''
+        };
         
-        console.log('POST response status:', response.status);
+        const apiResult = await api.signals.addSignal(apiSignal);
         
-        if (!response.ok) {
-          throw new Error(`API returned ${response.status}: ${response.statusText}`);
-        }
-        
-        const result = await response.json();
-        console.log('POST response data:', result);
-        
-        let message = 'Signal created successfully';
-        if (result.socialShareResults) {
-          const platforms = Object.entries(result.socialShareResults)
-            .filter(([_, status]) => status === 'success')
-            .map(([platform]) => platform);
+        if (apiResult) {
+          // Convert from API signal type to app signal type
+          result = {
+            ...apiResult,
+            // Ensure required fields for Article type
+            ...(apiResult.type === 'article' ? {
+              publishDate: apiResult.dateAdded || new Date().toISOString()
+            } : {})
+          } as Signal;
           
-          if (platforms.length > 0) {
-            message += ` and shared to ${platforms.join(', ')}`;
-          }
+          message = 'Signal created successfully';
+        } else {
+          throw new Error('Failed to create signal');
         }
-        
-        setSuccessMessage(message);
-        setIsFormOpen(false);
-        loadSignals(); // Reload signals to get the new data
       }
+      
+      // Add social share message if applicable
+      if (data.shareToSocial && Object.values(data.shareToSocial).some(v => v)) {
+        const platforms = Object.entries(data.shareToSocial)
+          .filter(([_, value]) => value)
+          .map(([platform]) => platform);
+        
+        if (platforms.length > 0) {
+          message += ` and shared to ${platforms.join(', ')}`;
+        }
+      }
+      
+      setSuccessMessage(message);
+      setIsFormOpen(false);
+      loadSignals(); // Reload signals to get the updated data
     } catch (err) {
       console.error('Error submitting signal:', err);
       
-      // Try to get more detailed error information if possible
       let errorMessage = err instanceof Error ? err.message : String(err);
-      
-      // If it's a response error, try to get more details
-      if (errorMessage.includes('API returned')) {
-        try {
-          // Add additional debug advice
-          errorMessage += ' - Check browser console for details. This may be an issue with CORS or API endpoint configuration.';
-        } catch (e) {
-          console.error('Error getting additional error details:', e);
-        }
-      }
-      
-      setError(`Network error: ${errorMessage}`);
+      setError(`Error: ${errorMessage}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -263,43 +205,21 @@ export default function SignalsAdminPage({ signals: initialSignals, error: serve
     setError(null);
     
     try {
-      // Get auth token
-      const auth = await import('@/lib/firebase').then(m => m.auth);
-      if (!auth) {
-        throw new Error('Authentication not initialized');
-      }
-      
-      const currentUser = auth.currentUser;
-      if (!currentUser) {
-        throw new Error('User not authenticated');
-      }
-      
-      const token = await currentUser.getIdToken();
-      
       console.log('Deleting signal with ID:', id);
       
-      // Use the main API endpoint
-      const response = await fetch(`/api/signals?id=${id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'X-Requested-With': 'XMLHttpRequest'
-        }
-      });
+      // Use the API library with fallback instead of direct fetch
+      const deleted = await api.signals.deleteSignal(id);
       
-      console.log('DELETE response status:', response.status);
-      
-      if (!response.ok) {
-        throw new Error(`API returned ${response.status}: ${response.statusText}`);
+      if (deleted) {
+        setSuccessMessage('Signal deleted successfully');
+        // Remove from local state instead of reloading
+        setSignals(prev => prev.filter(signal => signal.id !== id));
+      } else {
+        throw new Error('Failed to delete signal');
       }
-      
-      const result = await response.json();
-      
-      setSuccessMessage('Signal deleted successfully');
-      setSignals(signals.filter(signal => signal.id !== id));
     } catch (err) {
       console.error('Error deleting signal:', err);
-      setError(`Network error: ${err instanceof Error ? err.message : String(err)}`);
+      setError(`Error: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       setIsLoading(false);
     }
