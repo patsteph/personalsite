@@ -160,7 +160,8 @@ export async function getSignalsServerSide(): Promise<Signal[]> {
 export async function getBlogPostsServerSide(): Promise<BlogPost[]> {
   console.log('firebase-admin: getBlogPostsServerSide called');
   const db = getAdminFirestore();
-  const blogCollection = db.collection('blog'); // Assuming collection name is 'blog'
+  // Use the correct collection name provided by the user
+  const blogCollection = db.collection('blog-posts'); 
   
   try {
     const snapshot = await blogCollection.orderBy('createdAt', 'desc').get();

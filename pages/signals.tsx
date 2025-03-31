@@ -29,15 +29,9 @@ export default function SignalsPage({ newsletters, articles, error }: SignalsPag
         <section className="mb-12">
           <h2 className="text-2xl font-semibold mb-4">Newsletters</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Simplified Rendering for Debugging */}
             {newsletters.map(newsletter => (
-              <div key={newsletter.id} className="border rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
-                <h3 className="text-lg font-semibold mb-2">{newsletter.title}</h3>
-                <p className="text-gray-600 mb-3">{newsletter.description}</p>
-                <a href={newsletter.url} target="_blank" rel="noopener noreferrer" 
-                   className="text-blue-600 hover:text-blue-800 block mt-2">
-                  Subscribe
-                </a>
-              </div>
+              <p key={newsletter.id}>Newsletter: {newsletter.title}</p>
             ))}
           </div>
         </section>
@@ -45,16 +39,9 @@ export default function SignalsPage({ newsletters, articles, error }: SignalsPag
         <section>
           <h2 className="text-2xl font-semibold mb-4">Articles</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Simplified Rendering for Debugging */}
             {articles.map(article => (
-              <div key={article.id} className="border rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
-                <h3 className="text-lg font-semibold mb-2">{article.title}</h3>
-                <p className="text-gray-600 mb-1">{article.source}</p>
-                <p className="text-gray-600 mb-3">{article.description}</p>
-                <a href={article.url} target="_blank" rel="noopener noreferrer" 
-                   className="text-blue-600 hover:text-blue-800 block mt-2">
-                  Read Article
-                </a>
-              </div>
+              <p key={article.id}>Article: {article.title}</p>
             ))}
           </div>
         </section>
