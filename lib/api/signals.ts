@@ -161,14 +161,61 @@ export async function addSignal(signal: Signal): Promise<Signal | null> {
     
     const signalsRef = collection(firestore as Firestore, 'signals');
     const now = new Date().toISOString();
+    
+    // Clean up the signal object by removing undefined values
+    // Firestore accepts null but not undefined
+    const cleanedSignal: Record<string, any> = {};
+    
+    // Process all properties to replace undefined with null
+    Object.entries(signal).forEach(([key, value]) => {
+      cleanedSignal[key] = value === undefined ? null : value;
+    });
+    
+    // Ensure minimum required fields
+    if (!cleanedSignal.type) cleanedSignal.type = signal.type;
+    if (!cleanedSignal.title) cleanedSignal.title = '';
+    if (!cleanedSignal.description) cleanedSignal.description = '';
+    if (!cleanedSignal.url) cleanedSignal.url = '';
+    if (!cleanedSignal.source) cleanedSignal.source = '';
+    
+    // Add timestamp fields
     const signalWithTimestamp = {
-      ...signal,
+      ...cleanedSignal,
       dateAdded: now,
       updatedAt: now
-    };
+    } as Record<string, any>;
+    
+    console.log('Adding signal to Firestore with cleaned data:', signalWithTimestamp);
+    
+    // Validate required fields
+    const requiredFields = ['type', 'title', 'description', 'url', 'source'];
+    for (const field of requiredFields) {
+      if (!signalWithTimestamp[field]) {
+        console.error(`Missing required field ${field} in signal data`);
+        return null;
+      }
+    }
     
     const docRef = await addDoc(signalsRef, signalWithTimestamp);
-    return { ...signalWithTimestamp, id: docRef.id };
+    
+    // Create a properly typed Signal object with all fields
+    const returnSignal: Signal = {
+      id: docRef.id,
+      type: signalWithTimestamp.type as SignalType,
+      title: signalWithTimestamp.title as string,
+      description: signalWithTimestamp.description as string,
+      url: signalWithTimestamp.url as string,
+      source: signalWithTimestamp.source as string,
+      // Include optional fields if present
+      ...(signalWithTimestamp.author !== undefined && { author: signalWithTimestamp.author as string }),
+      dateAdded: signalWithTimestamp.dateAdded as string,
+      ...(signalWithTimestamp.featured !== undefined && { featured: signalWithTimestamp.featured as boolean }),
+      ...(signalWithTimestamp.tags !== undefined && { tags: signalWithTimestamp.tags as string[] }),
+      ...(signalWithTimestamp.imageUrl !== undefined && { imageUrl: signalWithTimestamp.imageUrl as string }),
+      ...(signalWithTimestamp.socialShare !== undefined && { socialShare: signalWithTimestamp.socialShare as Signal['socialShare'] })
+    };
+    
+    return returnSignal;
   } catch (error) {
     console.error('Error adding signal:', error);
     return null;
@@ -208,10 +255,23 @@ export async function updateSignal(signal: Signal): Promise<boolean> {
       return false;
     }
     
+    // Clean up the signal object by removing undefined values
+    // Firestore accepts null but not undefined
+    const cleanedSignal: Record<string, any> = {};
+    
+    // Process all properties to replace undefined with null
+    Object.entries(signal).forEach(([key, value]) => {
+      if (key !== 'id') { // Skip the id field
+        cleanedSignal[key] = value === undefined ? null : value;
+      }
+    });
+    
     const updatedSignal = {
-      ...signal,
+      ...cleanedSignal,
       updatedAt: new Date().toISOString()
     };
+    
+    console.log('Updating signal in Firestore with cleaned data:', updatedSignal);
     
     const signalRef = doc(firestore as Firestore, 'signals', signal.id);
     await updateDoc(signalRef, updatedSignal);
