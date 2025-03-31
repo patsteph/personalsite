@@ -10,6 +10,9 @@ type SignalsPageProps = {
 };
 
 export default function SignalsPage({ newsletters, articles, error }: SignalsPageProps) {
+  // Log received props in the browser console
+  console.log('SignalsPage Props:', { newsletters, articles, error });
+
   if (error) {
     return (
       <Layout title="Signals - Recommendations" section="signals">

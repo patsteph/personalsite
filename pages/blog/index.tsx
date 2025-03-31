@@ -13,6 +13,9 @@ type BlogPageProps = {
 export default function BlogPage({ posts }: BlogPageProps) {
   const { t } = useTranslation();
   
+  // Log received props in the browser console
+  console.log('BlogPage Props:', { posts });
+
   return (
     <Layout section="blog">
       <div className="max-w-3xl mx-auto">
