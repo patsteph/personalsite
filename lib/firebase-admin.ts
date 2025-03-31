@@ -94,12 +94,19 @@ export async function getSignalsServerSide(): Promise<Signal[]> {
     // Order by creation date descending, limit if necessary
     const snapshot = await signalsCollection.orderBy('createdAt', 'desc').get();
 
+    // Log snapshot details
+    console.log(`firebase-admin (getSignals): Snapshot empty? ${snapshot.empty}, Size: ${snapshot.size}`);
+
     if (snapshot.empty) {
-      console.log('getSignalsServerSide: No signals found.');
+      console.log('getSignalsServerSide: No signals found in snapshot.');
       return [];
     }
 
+    console.log('firebase-admin (getSignals): Processing snapshot documents...');
     const signals: Signal[] = snapshot.docs.map(doc => {
+      // Log raw doc data
+      console.log(`firebase-admin (getSignals): Processing doc ID: ${doc.id}, Raw data:`, JSON.stringify(doc.data()));
+
       const data = doc.data();
       const id = doc.id;
       const type = data.type as 'newsletter' | 'article' | undefined;

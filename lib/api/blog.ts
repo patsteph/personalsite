@@ -299,6 +299,9 @@ export async function updateBlogPost(id: string, post: Partial<BlogPost>): Promi
       return false;
     }
 
+    // Log the exact data being sent to Firestore in the fallback
+    console.log('API Fallback: Updating Firestore directly with data:', JSON.stringify(postData, null, 2));
+
     const docRef = doc(firestore as Firestore, COLLECTION_NAME, id);
     await updateDoc(docRef, postData);
 
