@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { firestore, auth } from '../../lib/firebase-admin';
+import { getAdminFirestore, getFirebaseAuth } from '../../lib/firebase-admin';
 
 type SignalResponse = {
   success: boolean;
@@ -42,11 +42,17 @@ export default async function handler(
   
   // Initialize Firestore collection early to avoid potential initialization issues
   console.log('Initializing signals collection');
-  const signalsCollection = firestore.collection('signals');
+  const signalsCollection = getAdminFirestore().collection('signals');
   
   // GET - Get all signals or a specific signal
   if (req.method === 'GET') {
     try {
+      console.log('API GET /signals: Attempting to get Firestore instance...');
+      // Call the getter function
+      const firestoreInstance = getAdminFirestore();
+      console.log('API GET /signals: Successfully got Firestore instance. Collection path:', 'signals');
+      const signalsCollection = firestoreInstance.collection('signals');
+      
       console.log('Processing GET request for signals');
       const { id, type } = req.query;
       
@@ -96,9 +102,11 @@ export default async function handler(
         return res.status(200).json({ success: true, data: signals });
       }
     } catch (error: any) {
-      console.error('API error getting signals:', error);
-      console.error('Full error object:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
-      return res.status(500).json({ success: false, error: `Failed to get signals: ${error.message}` });
+      console.error('API GET /signals error:', error);
+      if (error.message?.includes('initialize')) {
+        console.error('API GET /signals: Firebase Admin Initialization Error Detected!', error);
+      }
+      res.status(500).json({ success: false, error: `Failed to get signals: ${error.message}` });
     }
   }
   
@@ -112,9 +120,12 @@ export default async function handler(
       return res.status(401).json({ success: false, error: 'Unauthorized - No valid auth token' });
     }
     
+    console.log('API POST /signals: Attempting authentication...');
     const token = authHeader.split('Bearer ')[1];
-    await auth.verifyIdToken(token);
-    console.log('Authentication successful');
+    // Call the getter function
+    console.log('API POST /signals: Attempting to get Auth instance...');
+    await getFirebaseAuth().verifyIdToken(token);
+    console.log('API POST /signals: Authentication successful');
   } catch (error: any) {
     console.error('API auth error:', error);
     return res.status(401).json({ success: false, error: `Authentication error: ${error.message}` });
@@ -123,6 +134,11 @@ export default async function handler(
   // POST - Create a new signal
   if (req.method === 'POST') {
     try {
+      console.log('API POST /signals: Attempting to get Firestore instance...');
+      const firestoreInstance = getAdminFirestore();
+      console.log('API POST /signals: Successfully got Firestore instance. Collection path:', 'signals');
+      const signalsCollection = firestoreInstance.collection('signals');
+      
       console.log('Processing POST request to create a signal');
       // Extract social share settings if present
       const { shareToSocial, ...signalData } = req.body;
@@ -166,14 +182,40 @@ export default async function handler(
         socialShareResults
       });
     } catch (error: any) {
-      console.error('API error creating signal:', error);
-      return res.status(500).json({ success: false, error: error.message });
+      console.error('API POST /signals error:', error);
+      if (error.message?.includes('initialize') || error.code?.startsWith('auth/')) {
+        console.error('API POST /signals: Firebase Admin Initialization or Auth Error Detected!', error);
+      }
+      // Check if the error is an auth error or other
+      if (error.code?.startsWith('auth/')) {
+        res.status(401).json({ success: false, error: `Authentication failed: ${error.message}` });
+      } else {
+        res.status(500).json({ success: false, error: error.message });
+      }
     }
   }
   
   // PUT - Update a signal
   if (req.method === 'PUT') {
     try {
+      const authHeader = req.headers.authorization;
+      
+      if (!authHeader?.startsWith('Bearer ')) {
+        return res.status(401).json({ success: false, error: 'Unauthorized - No valid auth token' });
+      }
+
+      console.log('API PUT /signals: Attempting authentication...');
+      const token = authHeader.split('Bearer ')[1];
+      // Call the getter function
+      console.log('API PUT /signals: Attempting to get Auth instance...');
+      await getFirebaseAuth().verifyIdToken(token);
+      console.log('API PUT /signals: Authentication successful');
+
+      console.log('API PUT /signals: Attempting to get Firestore instance...');
+      const firestoreInstance = getAdminFirestore();
+      console.log('API PUT /signals: Successfully got Firestore instance. Collection path:', 'signals');
+      const signalsCollection = firestoreInstance.collection('signals');
+      
       console.log('Processing PUT request to update a signal');
       const { id } = req.body;
       
@@ -222,14 +264,40 @@ export default async function handler(
         socialShareResults
       });
     } catch (error: any) {
-      console.error('API error updating signal:', error);
-      return res.status(500).json({ success: false, error: error.message });
+      console.error('API PUT /signals error:', error);
+      if (error.message?.includes('initialize') || error.code?.startsWith('auth/')) {
+        console.error('API PUT /signals: Firebase Admin Initialization or Auth Error Detected!', error);
+      }
+      // Check if the error is an auth error or other
+      if (error.code?.startsWith('auth/')) {
+        res.status(401).json({ success: false, error: `Authentication failed: ${error.message}` });
+      } else {
+        res.status(500).json({ success: false, error: error.message });
+      }
     }
   }
   
   // DELETE - Delete a signal
   if (req.method === 'DELETE') {
     try {
+      const authHeader = req.headers.authorization;
+      
+      if (!authHeader?.startsWith('Bearer ')) {
+        return res.status(401).json({ success: false, error: 'Unauthorized - No valid auth token' });
+      }
+
+      console.log('API DELETE /signals: Attempting authentication...');
+      const token = authHeader.split('Bearer ')[1];
+      // Call the getter function
+      console.log('API DELETE /signals: Attempting to get Auth instance...');
+      await getFirebaseAuth().verifyIdToken(token);
+      console.log('API DELETE /signals: Authentication successful');
+      
+      console.log('API DELETE /signals: Attempting to get Firestore instance...');
+      const firestoreInstance = getAdminFirestore();
+      console.log('API DELETE /signals: Successfully got Firestore instance. Collection path:', 'signals');
+      const signalsCollection = firestoreInstance.collection('signals');
+      
       console.log('Processing DELETE request');
       const { id } = req.query;
       
@@ -245,8 +313,16 @@ export default async function handler(
         data: { message: 'Signal deleted successfully' }
       });
     } catch (error: any) {
-      console.error('API error deleting signal:', error);
-      return res.status(500).json({ success: false, error: error.message });
+      console.error('API DELETE /signals error:', error);
+      if (error.message?.includes('initialize') || error.code?.startsWith('auth/')) {
+        console.error('API DELETE /signals: Firebase Admin Initialization or Auth Error Detected!', error);
+      }
+      // Check if the error is an auth error or other
+      if (error.code?.startsWith('auth/')) {
+        res.status(401).json({ success: false, error: `Authentication failed: ${error.message}` });
+      } else {
+        res.status(500).json({ success: false, error: error.message });
+      }
     }
   }
   

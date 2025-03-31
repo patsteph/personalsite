@@ -1,6 +1,7 @@
 import { GetStaticProps } from 'next';
 import Layout from '@/components/layout/Layout';
-import { getAllArticles, getAllNewsletters, Article, Newsletter } from '@/lib/api/signals';
+import { getSignalsServerSide } from '@/lib/firebase-admin';
+import { Signal, Newsletter, Article } from '@/types';
 
 type SignalsPageProps = {
   newsletters: Newsletter[];
@@ -62,29 +63,32 @@ export default function SignalsPage({ newsletters, articles, error }: SignalsPag
   );
 }
 
-export const getStaticProps: GetStaticProps<SignalsPageProps> = async () => {
+export const getStaticProps: GetStaticProps = async () => {
+  console.log('signals.tsx getStaticProps: Fetching signals...');
   try {
-    const [newsletters, articles] = await Promise.all([
-      getAllNewsletters({ featured: true }),
-      getAllArticles({ featured: true })
-    ]);
-    
+    const signals: Signal[] = await getSignalsServerSide(); // Call direct server function
+    console.log(`signals.tsx getStaticProps: Received ${signals.length} signals.`);
+
+    // Fetch newsletters and articles similarly if needed, using direct server-side functions
+    const newsletters: Newsletter[] = []; // Placeholder
+    const articles: Article[] = []; // Placeholder
+
     return {
       props: {
         newsletters,
-        articles
+        articles,
       },
-      revalidate: 3600 // Revalidate once per hour
+      revalidate: 60, // Revalidate every 60 seconds
     };
   } catch (error) {
-    console.error('Error fetching signals:', error);
+    console.error('signals.tsx getStaticProps: Error fetching signals:', error);
     return {
       props: {
-        newsletters: [],
+        newsletters: [], // Return empty on error
         articles: [],
         error: 'Failed to load signals'
       },
-      revalidate: 60 // Try again sooner if there was an error
+      revalidate: 10, // Revalidate sooner if error occurred
     };
   }
-}
+};

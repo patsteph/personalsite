@@ -57,9 +57,15 @@ export async function getAllSignals(): Promise<Signal[]> {
   try {
     // Try server API first
     const token = await getCurrentUserToken();
+    
+    // Determine base URL based on environment
+    const baseUrl = typeof window === 'undefined' 
+      ? process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000' // Server-side needs full URL
+      : API_BASE; // Client-side uses relative path
+      
     if (token) {
       try {
-        const response = await fetch(`${API_BASE}/signals`, {
+        const response = await fetch(`${baseUrl}/signals`, {
           headers: {
             Authorization: `Bearer ${token}`
           }
