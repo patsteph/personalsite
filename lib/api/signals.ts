@@ -187,11 +187,11 @@ export async function addSignal(signal: Signal): Promise<Signal | null> {
     
     console.log('Adding signal to Firestore with cleaned data:', signalWithTimestamp);
     
-    // Validate required fields
+    // Validate required fields specifically for null or undefined
     const requiredFields = ['type', 'title', 'description', 'url', 'source'];
     for (const field of requiredFields) {
-      if (!signalWithTimestamp[field]) {
-        console.error(`Missing required field ${field} in signal data`);
+      if (signalWithTimestamp[field] === null || signalWithTimestamp[field] === undefined) {
+        console.error(`Missing or invalid required field ${field} in signal data`);
         return null;
       }
     }

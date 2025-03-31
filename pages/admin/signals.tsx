@@ -116,12 +116,12 @@ export default function SignalsAdminPage({ signals: initialSignals, error: serve
         // Update existing signal
         console.log('Updating signal with ID:', selectedSignal.id);
         
-        // Convert to API signal type
+        // Convert to API signal type, ensuring source field exists
         const apiSignal: ApiSignal = {
           id: selectedSignal.id,
           ...data,
-          // Ensure required fields for API signal
-          source: (data as any).source || ''
+          // Ensure required fields for API signal, default source to empty string
+          source: data.source || ''
         };
         
         const updated = await api.signals.updateSignal(apiSignal);
@@ -146,11 +146,11 @@ export default function SignalsAdminPage({ signals: initialSignals, error: serve
         const jsonBody = JSON.stringify(data);
         console.log('Request data:', jsonBody.substring(0, 200) + (jsonBody.length > 200 ? '...' : ''));
         
-        // Convert to API signal type
+        // Convert to API signal type, ensuring source field exists
         const apiSignal: ApiSignal = {
           ...data,
-          // Ensure required fields for API signal
-          source: (data as any).source || ''
+          // Ensure required fields for API signal, default source to empty string
+          source: data.source || ''
         };
         
         const apiResult = await api.signals.addSignal(apiSignal);
