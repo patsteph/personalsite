@@ -79,11 +79,18 @@ export function getAdminFirestore() {
 }
 
 export async function getSignalsServerSide(): Promise<Signal[]> {
+  console.log('firebase-admin: getSignalsServerSide called');
+  let db: admin.firestore.Firestore;
+  try {
+    db = getAdminFirestore();
+    console.log('firebase-admin (getSignals): Firestore admin obtained successfully.');
+  } catch (initError) {
+    console.error('firebase-admin (getSignals): FAILED to initialize Firestore Admin:', initError);
+    throw new Error('Failed to initialize Firestore Admin for signals.');
+  }
   console.log('getSignalsServerSide: Attempting to fetch signals server-side...');
   try {
-    const firestore = getAdminFirestore();
-    console.log('getSignalsServerSide: Firestore instance obtained.');
-    const signalsCollection = firestore.collection('signals');
+    const signalsCollection = db.collection('signals');
     // Order by creation date descending, limit if necessary
     const snapshot = await signalsCollection.orderBy('createdAt', 'desc').get();
 
@@ -144,7 +151,9 @@ export async function getSignalsServerSide(): Promise<Signal[]> {
       }
     }).filter((signal): signal is Signal => signal !== null); // Filter out nulls and assert type
 
-    console.log(`getSignalsServerSide: Successfully fetched and mapped ${signals.length} valid signals.`);
+    console.log(`firebase-admin: Fetched ${signals.length} signals.`);
+    // Log the structure JUST before returning for build logs
+    console.log('firebase-admin (getSignals): Returning signals data:', JSON.stringify(signals.slice(0, 2), null, 2)); // Log first 2 items
     return signals;
   } catch (error) {
     console.error('getSignalsServerSide: Error fetching signals:', error);
@@ -159,7 +168,15 @@ export async function getSignalsServerSide(): Promise<Signal[]> {
  */
 export async function getBlogPostsServerSide(): Promise<BlogPost[]> {
   console.log('firebase-admin: getBlogPostsServerSide called');
-  const db = getAdminFirestore();
+  let db: admin.firestore.Firestore;
+  try {
+    db = getAdminFirestore();
+    console.log('firebase-admin (getBlogPosts): Firestore admin obtained successfully.');
+  } catch (initError) {
+    console.error('firebase-admin (getBlogPosts): FAILED to initialize Firestore Admin:', initError);
+    throw new Error('Failed to initialize Firestore Admin for blog posts.');
+  }
+  console.log('firebase-admin: getBlogPostsServerSide called');
   // Use the correct collection name provided by the user
   const blogCollection = db.collection('blog-posts'); 
   
@@ -199,6 +216,8 @@ export async function getBlogPostsServerSide(): Promise<BlogPost[]> {
     });
 
     console.log(`firebase-admin: Fetched ${posts.length} blog posts.`);
+    // Log the structure JUST before returning for build logs
+    console.log('firebase-admin (getBlogPosts): Returning posts data:', JSON.stringify(posts.slice(0, 2), null, 2)); // Log first 2 items
     return posts;
   } catch (error) {
     console.error('firebase-admin: Error fetching blog posts:', error);
