@@ -66,17 +66,22 @@ export default function SignalsPage({ newsletters, articles, error }: SignalsPag
 export const getStaticProps: GetStaticProps = async () => {
   console.log('signals.tsx getStaticProps: Fetching signals...');
   try {
-    const signals: Signal[] = await getSignalsServerSide(); // Call direct server function
-    console.log(`signals.tsx getStaticProps: Received ${signals.length} signals.`);
+    const allSignals: Signal[] = await getSignalsServerSide(); // Fetch all signals
+    console.log(`signals.tsx getStaticProps: Received ${allSignals.length} signals.`);
 
-    // Fetch newsletters and articles similarly if needed, using direct server-side functions
-    const newsletters: Newsletter[] = []; // Placeholder
-    const articles: Article[] = []; // Placeholder
+    // Filter signals into newsletters and articles
+    const newsletters: Newsletter[] = allSignals.filter(
+      (signal): signal is Newsletter => signal.type === 'newsletter'
+    );
+    const articles: Article[] = allSignals.filter(
+      (signal): signal is Article => signal.type === 'article'
+    );
+    console.log(`signals.tsx getStaticProps: Filtered into ${newsletters.length} newsletters and ${articles.length} articles.`);
 
     return {
       props: {
-        newsletters,
-        articles,
+        newsletters, // Pass the filtered newsletters
+        articles,    // Pass the filtered articles
       },
       revalidate: 60, // Revalidate every 60 seconds
     };

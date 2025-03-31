@@ -8,9 +8,11 @@ if (typeof window !== 'undefined') {
 
 import * as admin from 'firebase-admin';
 import { Signal, Newsletter, Article, SignalBase } from '@/types'; // Import all needed types
+import { BlogPost } from '@/types/blog'; // Import BlogPost type
 
 // Initialize Firebase Admin SDK
 let adminInstance: admin.app.App | null = null;
+let firestoreAdmin: admin.firestore.Firestore;
 
 function initializeAdminApp() {
   if (!admin.apps.length) {
@@ -70,7 +72,10 @@ export function getFirebaseAuth() {
 
 export function getAdminFirestore() {
   const app = getFirebaseAdmin();
-  return app.firestore();
+  if (!firestoreAdmin) {
+    firestoreAdmin = app.firestore();
+  }
+  return firestoreAdmin;
 }
 
 export async function getSignalsServerSide(): Promise<Signal[]> {
@@ -145,6 +150,58 @@ export async function getSignalsServerSide(): Promise<Signal[]> {
     console.error('getSignalsServerSide: Error fetching signals:', error);
     // Return empty array on error to allow the page to build
     return [];
+  }
+}
+
+/**
+ * Fetches all blog posts directly using the Firebase Admin SDK.
+ * Suitable for server-side rendering (getStaticProps, getServerSideProps).
+ */
+export async function getBlogPostsServerSide(): Promise<BlogPost[]> {
+  console.log('firebase-admin: getBlogPostsServerSide called');
+  const db = getAdminFirestore();
+  const blogCollection = db.collection('blog'); // Assuming collection name is 'blog'
+  
+  try {
+    const snapshot = await blogCollection.orderBy('createdAt', 'desc').get();
+    
+    if (snapshot.empty) {
+      console.log('firebase-admin: No blog posts found.');
+      return [];
+    }
+
+    const posts: BlogPost[] = snapshot.docs.map(doc => {
+      const data = doc.data();
+      // Convert Firestore Timestamps to Date objects
+      const createdAt = data.createdAt?.toDate ? data.createdAt.toDate() : new Date();
+      const updatedAt = data.updatedAt?.toDate ? data.updatedAt.toDate() : createdAt;
+      const publishedAt = data.publishedAt?.toDate ? data.publishedAt.toDate() : null; 
+
+      // Map Firestore data to BlogPost type
+      return {
+        id: doc.id,
+        title: data.title || 'Untitled Post', // Provide default title
+        slug: data.slug || '', // Ensure slug is present, default to empty if not
+        content: data.content || '', 
+        summary: data.summary || data.excerpt || '', // Use summary or excerpt, default to empty
+        tags: data.tags || [],
+        published: data.isPublished || false, // Map isPublished to published
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+        publishedAt: publishedAt,
+        // Optional fields from BlogPost type - provide defaults or handle undefined
+        date: data.date || updatedAt.toISOString().split('T')[0], // Use specific date field or fallback
+        author: data.author || 'Admin', // Default author
+        coverImage: data.coverImage || undefined,
+        readingTime: data.readingTime || undefined, // Default to undefined if not present
+      } as BlogPost;
+    });
+
+    console.log(`firebase-admin: Fetched ${posts.length} blog posts.`);
+    return posts;
+  } catch (error) {
+    console.error('firebase-admin: Error fetching blog posts:', error);
+    throw new Error('Failed to fetch blog posts server-side.'); // Re-throw for getStaticProps error handling
   }
 }
 

@@ -1,7 +1,7 @@
 import { GetStaticProps } from 'next';
 import Layout from '@/components/layout/Layout';
 import BlogList from '@/components/blog/BlogList';
-import { getAllPosts } from '@/lib/blog';
+import { getBlogPostsServerSide } from '@/lib/firebase-admin';
 import { BlogPost } from '@/types/blog';
 import { useTranslation } from '@/lib/translations';
 
@@ -32,12 +32,30 @@ export default function BlogPage({ posts }: BlogPageProps) {
 
 // Fetch data at build time
 export const getStaticProps: GetStaticProps<BlogPageProps> = async () => {
-  // Get all blog posts
-  const posts = await getAllPosts();
-  
-  return {
-    props: {
-      posts,
-    },
-  };
+  console.log('blog/index.tsx getStaticProps: Fetching blog posts...');
+  try {
+    // Use the server-side function to get posts
+    const posts = await getBlogPostsServerSide(); 
+    console.log(`blog/index.tsx getStaticProps: Received ${posts.length} posts.`);
+    
+    // Filter for published posts only before passing to the page
+    const publishedPosts = posts.filter(post => post.published);
+    console.log(`blog/index.tsx getStaticProps: Filtered to ${publishedPosts.length} published posts.`);
+
+    return {
+      props: {
+        posts: publishedPosts, // Pass only published posts
+      },
+      revalidate: 60, // Add revalidation (e.g., every 60 seconds)
+    };
+  } catch (error) {
+    console.error('blog/index.tsx getStaticProps: Error fetching posts:', error);
+    return {
+      props: {
+        posts: [], // Return empty on error
+        // Consider adding an error prop to display on the page
+      },
+      revalidate: 10, // Revalidate sooner after an error
+    };
+  }
 };
