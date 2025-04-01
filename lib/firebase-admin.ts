@@ -142,12 +142,13 @@ export async function getSignalsServerSide(): Promise<Signal[]> {
           const type = data.type as 'newsletter' | 'article' | undefined;
 
           // Convert Firestore Timestamps to serializable format (ISO string)
-          // Use appropriate date field or fallback to now
+          // Use appropriate date field or fallback to null (not current date)
           const dateAdded = data.createdAt?.toDate ? 
                            data.createdAt.toDate().toISOString() : 
                            (data.dateAdded?.toDate ? 
                              data.dateAdded.toDate().toISOString() : 
-                             new Date().toISOString());
+                             (data.dateAdded && typeof data.dateAdded === 'string' ? 
+                               data.dateAdded : null));
                              
           const publishDate = data.publishDate?.toDate ? 
                              data.publishDate.toDate().toISOString() : 
@@ -158,7 +159,7 @@ export async function getSignalsServerSide(): Promise<Signal[]> {
             description: data.content || data.description || '', // Try both content and description fields
             url: data.sourceUrl || data.url || '', // Try both sourceUrl and url fields
             imageUrl: data.imageUrl || data.image || null, // Try both imageUrl and image fields, use null instead of undefined
-            dateAdded: dateAdded, // Already converted to ISO string above
+            dateAdded: dateAdded || new Date(data.createdAt || data.dateAdded || Date.now()).toISOString(), // Use dateAdded or fallback to a parsed date
             featured: typeof data.published === 'boolean' ? data.published : 
                      (typeof data.featured === 'boolean' ? data.featured : false), // Try both published and featured
             tags: data.tags || [],

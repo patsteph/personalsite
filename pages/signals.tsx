@@ -75,7 +75,10 @@ export default function SignalsPage({ newsletters, articles, error }: SignalsPag
                     
                     <div className="px-4 py-2 bg-gray-50 border-t border-gray-200 flex justify-between items-center">
                       <span className="text-xs text-gray-500">
-                        Added {new Date(newsletter.dateAdded).toLocaleDateString('en-US', {year: 'numeric', month: 'short', day: 'numeric'})}
+                        {newsletter.dateAdded && newsletter.dateAdded !== 'null' && newsletter.dateAdded !== 'undefined'
+                          ? `Added ${new Date(newsletter.dateAdded).toLocaleDateString('en-US', {year: 'numeric', month: 'short', day: 'numeric'})}`
+                          : 'Recently added'
+                        }
                       </span>
                       <span className="text-steel-blue text-sm hover:underline">
                         View Newsletter →
@@ -137,7 +140,10 @@ export default function SignalsPage({ newsletters, articles, error }: SignalsPag
                     
                     <div className="px-4 py-2 bg-gray-50 border-t border-gray-200 flex justify-between items-center">
                       <span className="text-xs text-gray-500">
-                        Added {new Date(article.dateAdded).toLocaleDateString('en-US', {year: 'numeric', month: 'short', day: 'numeric'})}
+                        {article.dateAdded && article.dateAdded !== 'null' && article.dateAdded !== 'undefined'
+                          ? `Added ${new Date(article.dateAdded).toLocaleDateString('en-US', {year: 'numeric', month: 'short', day: 'numeric'})}`
+                          : 'Recently added'
+                        }
                       </span>
                       <span className="text-steel-blue text-sm hover:underline">
                         View Article →

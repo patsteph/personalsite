@@ -110,7 +110,7 @@ export default function SignalCard({ signal, onViewDetails }: SignalCardProps) {
       {/* Card Footer */}
       <div className="px-4 py-2 bg-gray-50 border-t border-gray-200 flex justify-between items-center">
         <span className="text-xs text-gray-500">
-          {signal.dateAdded 
+          {signal.dateAdded && signal.dateAdded !== 'null' && signal.dateAdded !== 'undefined'
             ? `Added ${new Date(signal.dateAdded).toLocaleDateString('en-US', {year: 'numeric', month: 'short', day: 'numeric'})}`
             : 'Recently added'
           }
