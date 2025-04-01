@@ -1,46 +1,85 @@
-# Modern Personal Website with Next.js and Firebase
+# Patrick Stephens - Personal Website
 
-A sophisticated personal website built with Next.js 15, TypeScript, Tailwind CSS, and Firebase, featuring a virtual bookshelf, blog platform, CV showcase, signals management, and multi-language support.
+![Website Screenshot](public/images/headers/welcome.jpg)
+
+A modern, responsive personal website built with Next.js, TypeScript, Tailwind CSS, and Firebase. This website showcases my professional experience, book collection, blog posts, and curated signals.
 
 ## ✨ Features
 
-- **🏗️ Responsive Two-Column Design**: Clean 25%/75% split layout that adapts beautifully to any device
-- **📚 Virtual Bookshelf**: Interactive bookshelf with books displayed by spine that can be sorted and filtered
-- **✏️ Blog Platform**: Markdown-based blog with featured image support and syntax highlighting
-- **📄 CV/Resume Section**: Elegant display of professional experience, skills, and education
+- **📱 Responsive Design**: Clean two-column layout that adapts beautifully to all devices
+- **📚 Interactive Bookshelf**: Virtual bookshelf displaying my reading collection
+- **✏️ Blog Platform**: Markdown-based blog with featured images and syntax highlighting
+- **📄 CV/Resume Display**: Professional experience, skills, and education in an elegant format
+- **📡 Signals**: Curated collection of newsletters and articles I recommend
 - **🌐 Multi-language Support**: Content localization for English, Spanish, German, Japanese, and Ukrainian
-- **🔒 Secure Admin Interface**: Firebase authentication for managing book collection and blog posts
-- **🚀 Optimized Performance**: Static site generation with incremental static regeneration
-- **🔥 Server-side API**: Next.js API routes with Firebase Admin SDK
+- **🔒 Admin Interface**: Firebase authentication for content management
+- **🚀 Optimized Build**: Static site generation with incremental regeneration
 
 ## 🛠️ Technology Stack
 
-- **Next.js**: React framework for static site generation and server-side rendering
-- **TypeScript**: Type safety and improved developer experience
-- **Tailwind CSS**: Utility-first styling for rapid development
-- **Firebase**: Authentication and Firestore database for dynamic content
-- **MDX**: Enhanced Markdown for blog content
+<div align="center">
+  <img src="https://img.shields.io/badge/Next.js-black?style=for-the-badge&logo=next.js&logoColor=white" alt="Next.js" />
+  <img src="https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
+  <img src="https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white" alt="Tailwind CSS" />
+  <img src="https://img.shields.io/badge/Firebase-FFCA28?style=for-the-badge&logo=firebase&logoColor=black" alt="Firebase" />
+  <img src="https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white" alt="Vercel" />
+</div>
 
-## 📋 Architecture Overview
+- **Next.js 15**: React framework for server-side rendering and static site generation
+- **TypeScript**: Type safety and improved developer experience
+- **Tailwind CSS**: Utility-first CSS framework for rapid UI development
+- **Firebase**: Authentication and Firestore database for dynamic content
+- **MDX**: Enhanced Markdown for blog content with component support
+
+## 🏛️ Architecture Overview
 
 ### Authentication Flow
 
-The authentication system uses a multi-layered approach:
+The website implements a multi-layered authentication approach:
 
-1. **Edge Middleware**: Protects admin routes at the edge (middleware.js)
-2. **Client-side Protection**: ProtectedRoute component verifies authentication
-3. **Server-side Verification**: API routes verify Firebase tokens
-4. **Session Management**: Tracks user activity and refreshes tokens
-5. **Automatic Timeout**: Logs out inactive users after 60 minutes
+```mermaid
+graph TD
+    A[User] -->|Access Admin Page| B[Edge Middleware]
+    B -->|Check Auth Cookie| C{Cookie Valid?}
+    C -->|No| D[Redirect to Login]
+    C -->|Yes| E[Client-side Auth Check]
+    E -->|Token Valid?| F[Render Admin UI]
+    E -->|Invalid| D
+    F -->|Make API Request| G[API Endpoint]
+    G -->|Verify Firebase Token| H{Token Valid?}
+    H -->|Yes| I[Perform Operation]
+    H -->|No| J[Return 401 Unauthorized]
+```
+
+1. **Edge Middleware**: Protects admin routes at the network edge
+2. **Client Protection**: ProtectedRoute component verifies authentication state
+3. **Server Verification**: API routes independently verify Firebase tokens
+4. **Automatic Session Management**: Token refresh and timeout handling
 
 ### API Pattern
 
-The application uses a "server-first, client-fallback" pattern:
+The application follows a "server-first, client-fallback" pattern:
 
-1. Server-side API routes in `/pages/api/` provide secure operations
-2. Client-side API modules in `/lib/api/` call server endpoints first
-3. If server endpoints fail, the system falls back to direct Firebase access
-4. Graceful degradation ensures functionality across environments
+```mermaid
+sequenceDiagram
+    Client->>+Server API: Request data
+    alt Server API Success
+        Server API->>Firestore: Fetch data
+        Firestore->>Server API: Return data
+        Server API->>-Client: Return data
+    else Server API Failure
+        Server API->>-Client: Return error
+        Client->>+Firebase Client: Direct Firestore request
+        Firebase Client->>Firestore: Fetch data
+        Firestore->>Firebase Client: Return data
+        Firebase Client->>-Client: Return data
+    end
+```
+
+This approach ensures:
+- Best performance in production environments with API routes
+- Fallback capability for static hosting environments
+- Consistent data access regardless of deployment context
 
 ## 🚀 Getting Started
 
@@ -55,7 +94,7 @@ The application uses a "server-first, client-fallback" pattern:
 1. **Clone the repository**
 
    ```bash
-   git clone https://github.com/yourusername/personal-website.git
+   git clone https://github.com/patsteph/personal-website.git
    cd personal-website
    ```
 
@@ -63,27 +102,13 @@ The application uses a "server-first, client-fallback" pattern:
 
    ```bash
    npm install
-   # or
-   yarn install
    ```
 
-3. **Create a Firebase project**
-   - Go to [Firebase Console](https://console.firebase.google.com/)
-   - Create a new project
-   - Add a web app to your project
-   - Enable Authentication (Email/Password)
-   - Create a Firestore database
-   - Generate a Firebase Admin SDK private key for server-side operations:
-     - Go to Project Settings > Service Accounts
-     - Click "Generate new private key"
-     - Save the JSON file securely
-
-4. **Set up environment variables**
-   - Copy the `.env.local.example` file to `.env.local`
-   - Fill in your Firebase configuration details
+3. **Set up environment variables**
+   Create a `.env.local` file with the following variables:
 
    ```
-   # Firebase Configuration (Client-side)
+   # Firebase Configuration
    NEXT_PUBLIC_FIREBASE_API_KEY=your-api-key
    NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
    NEXT_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
@@ -92,224 +117,97 @@ The application uses a "server-first, client-fallback" pattern:
    NEXT_PUBLIC_FIREBASE_APP_ID=your-app-id
    NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=your-measurement-id
 
-   # Firebase Admin SDK (Server-side)
+   # Firebase Admin SDK
    FIREBASE_PROJECT_ID=your-project-id
    FIREBASE_CLIENT_EMAIL=firebase-adminsdk-xxxx@your-project-id.iam.gserviceaccount.com
-   FIREBASE_PRIVATE_KEY=-----BEGIN PRIVATE KEY-----\nYour private key here\n-----END PRIVATE KEY-----
+   FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nYour private key here\n-----END PRIVATE KEY-----"
 
    # Contact Info
    NEXT_PUBLIC_CONTACT_EMAIL=your-email@example.com
-
-   # Base Path - empty for standard hosting
-   NEXT_PUBLIC_BASE_PATH=
    ```
 
-5. **Create an admin user in Firebase**
-   - Go to Authentication in Firebase Console
-   - Click on "Add user"
-   - Enter email and password
-   - Save these credentials to log in to the admin dashboard
+4. **Create an admin user in Firebase Authentication**
 
-6. **Run the development server**
+5. **Run the development server**
 
    ```bash
    npm run dev
-   # or
-   yarn dev
    ```
 
-7. **Open [http://localhost:3000](http://localhost:3000) to see your website**
+6. **Open [http://localhost:3000](http://localhost:3000) to see your website**
 
-## 📦 Project Structure
+## 📁 Project Structure
 
 ```
 personal-website/
 ├── components/            # React components
-│   ├── AppProviders.tsx   # Global providers (Auth, Translations)
-│   ├── ProtectedRoute.tsx # Route protection wrapper
 │   ├── admin/             # Admin interface components
-│   ├── blog/              # Blog-related components
-│   ├── books/             # Book-related components
-│   ├── contact/           # Contact page components
+│   ├── blog/              # Blog components
+│   ├── books/             # Book components
+│   ├── contact/           # Contact components
 │   ├── cv/                # CV/Resume components
 │   ├── layout/            # Layout components
+│   ├── signals/           # Signals components
 │   └── ui/                # Reusable UI components
-├── content/               # Static content
-│   ├── blog/              # Blog posts (Markdown)
-│   └── cv/                # CV data (JSON)
+├── content/               # Static content (blog posts, CV data)
 ├── lib/                   # Utility functions and services
 │   ├── api/               # API client modules
-│   │   ├── auth.ts        # Authentication API
-│   │   ├── blog.ts        # Blog API
-│   │   ├── books.ts       # Books API
-│   │   └── index.ts       # API exports
 │   ├── auth.tsx           # Authentication context
-│   ├── blog.ts            # Blog compatibility layer
-│   ├── books.ts           # Books compatibility layer
-│   ├── config.ts          # App configuration
 │   ├── firebase.ts        # Firebase client initialization
-│   ├── firebase-admin.ts  # Firebase Admin SDK
-│   └── translations.tsx   # i18n functionality
+│   └── firebase-admin.ts  # Firebase Admin SDK
 ├── middleware.js          # Edge middleware for route protection
 ├── pages/                 # Next.js pages
-│   ├── _app.tsx           # App entry with providers
-│   ├── _document.tsx      # Custom document component
 │   ├── admin/             # Admin pages (protected)
-│   ├── blog/              # Blog pages
 │   ├── api/               # API routes
-│   │   ├── auth.ts        # Authentication API
-│   │   ├── blog.ts        # Blog API
-│   │   └── books.ts       # Books API
+│   ├── blog/              # Blog pages
 │   └── ...                # Other pages
 ├── public/                # Static assets
-│   ├── images/            # Images
-│   └── runtime-config.js  # Runtime configuration
+│   └── images/            # Image files
 ├── styles/                # Global styles
 └── types/                 # TypeScript type definitions
 ```
 
-## 🌐 Deployment Options
+## 🔌 Main Features Explained
 
-### Vercel Deployment (Recommended)
+### Virtual Bookshelf
 
-This project is optimized for deployment on Vercel:
+The bookshelf feature displays books I'm reading with:
+- Visual book spines with accurate colors based on the cover
+- ISBN lookup to automatically fetch book metadata
+- Filterable by read status and genre
+- Full book details with my personal notes
 
-1. **Set up your environment variables in Vercel**:
-   - Copy all variables from your `.env.local` file to Vercel's environment variables
-   - Make sure to properly escape the Firebase private key
-   - Leave `NEXT_PUBLIC_BASE_PATH` empty
+### Blog Platform
 
-2. **Deploy using Vercel CLI or GitHub integration**:
-   
-   **Using Vercel Dashboard:**
-   - Connect your GitHub repository to Vercel
-   - Configure the framework preset to Next.js
-   - Add all environment variables
-   - Deploy
+The blog system combines markdown files and Firestore:
+- Markdown for static content
+- Firestore for dynamic posts
+- MDX support for React components in blog content
+- Code syntax highlighting
+- Reading time estimation
 
-   **Using Vercel CLI:**
-   ```bash
-   # Install Vercel CLI
-   npm install -g vercel
+### Signals
 
-   # Login to Vercel
-   vercel login
+The signals feature curates newsletters and articles I recommend:
+- Two content types: Newsletters and Articles
+- Filterable by type, featured status, and tags
+- Social media sharing
+- Admin interface for content management
 
-   # Initial Deployment (interactive, will ask questions)
-   vercel
+### Multi-language Support
 
-   # Subsequent Development Deployments (creates a preview deployment)
-   npm run deploy:vercel
-   # or directly
-   vercel
+The website supports multiple languages with:
+- Internationalized routes
+- Language selection in the footer
+- Translation files for UI elements
+- Content localization
 
-   # Production Deployment
-   npm run deploy:vercel:prod
-   # or directly
-   vercel --prod
-   
-   # Add Environment Variables
-   vercel env add NEXT_PUBLIC_FIREBASE_API_KEY
-   
-   # List Environment Variables
-   vercel env ls
-   
-   # Pull Environment Variables to Local .env.local
-   vercel env pull .env.local
-   
-   # Link Existing Project (if you deployed from the website first)
-   vercel link
-   ```
-
-3. **Post-Deployment Steps**:
-   - Set up custom domain if needed
-   - Verify all functionality works in production
-   - Test the authentication system
-   - Verify API routes are working correctly
-   - Check book and blog management
-
-### Netlify or Other Next.js-Compatible Hosting
-
-The setup is similar to Vercel with these differences:
-
-1. **Environment Variables**:
-   - Set up environment variables in your hosting platform
-   - Ensure Firebase private key has newlines correctly escaped
-
-2. **Build Commands**:
-   - Build command: `npm run build`
-   - Publish directory: `.next`
-
-3. **Node.js Version**:
-   - Ensure your hosting environment uses Node.js 18+
-
-## 📝 Adding Content
-
-### Blog Posts
-
-Add blog posts as Markdown files in the `content/blog` directory using the following format:
-
-```markdown
----
-title: "Your Blog Post Title"
-date: "2025-03-01"
-summary: "A brief summary of your blog post"
----
-
-Your blog post content goes here.
-
-## Heading 2
-
-### Heading 3
-
-And so on...
-```
-
-### CV Data
-
-Update your CV information in the `content/cv/cv-data.json` file:
-
-```json
-{
-  "about": "Your about text",
-  "experience": [
-    {
-      "title": "Job Title",
-      "company": "Company Name",
-      "location": "Location",
-      "period": "2020 - Present",
-      "description": "Job description"
-    }
-  ],
-  "skills": ["Skill 1", "Skill 2"],
-  "education": [
-    {
-      "degree": "Degree Name",
-      "institution": "Institution Name",
-      "location": "Location",
-      "year": "2015"
-    }
-  ]
-}
-```
-
-### Books
-
-Books are managed through the admin interface. To add a book:
-
-1. Log in to the admin interface at `/admin`
-2. Navigate to "Book Management"
-3. Click "Add New Book"
-4. Enter the ISBN of the book and click "Lookup"
-5. Add your reading status and notes
-6. Click "Add to Collection"
-
-## 📄 Security Considerations
+## 🔐 Security Considerations
 
 1. **Firebase Admin SDK Private Key**:
-   - Store this securely as an environment variable
-   - Never commit it to your repository
-   - Ensure it's properly escaped with `\n` for newlines
+   - Stored securely as an environment variable
+   - Never committed to the repository
+   - Properly escaped with `\n` for newlines
 
 2. **Protected Routes**:
    - Edge middleware provides first-layer protection
@@ -321,122 +219,26 @@ Books are managed through the admin interface. To add a book:
    - Token refresh every 10 minutes
    - Activity monitoring to keep sessions alive
 
-4. **Firebase Rules**:
-   - Set up proper Firestore security rules for your collections
+## 🚀 Deployment
 
-## 🔧 Troubleshooting
+This project is optimized for deployment on Vercel:
 
-### Deployment Issues
+1. Connect your GitHub repository to Vercel
+2. Configure environment variables in Vercel's dashboard
+3. Deploy with the Next.js framework preset
 
-1. **Firebase Admin SDK errors**:
-   - Check that `FIREBASE_PRIVATE_KEY` is correctly formatted with escaped newlines
-   - Verify the service account has the correct permissions
+For other hosting platforms, follow the standard Next.js deployment guidelines.
 
-2. **API route errors**:
-   - Check that the Firebase Admin SDK is initialized correctly
-   - Verify that API endpoints return proper status codes
-   - Check browser console for client-side errors
+## 📋 Future Enhancements
 
-3. **Authentication issues**:
-   - Verify Firebase configuration is correct
-   - Check that the admin user exists in Firebase Authentication
-   - Make sure cookies and localStorage are enabled
-
-### Admin Dashboard Issues
-
-1. **Missing admin dashboard features**:
-   - There are two parallel admin implementations:
-     - React-based admin (in `/pages/admin/`) - The modern implementation
-     - HTML-based admin (in `/public/admin-dashboard.html`) - Legacy implementation
-   - Problem: The admin link might be loading the legacy HTML version instead of the React version
-
-2. **Fix for "Signals Management not displaying"**:
-   - Navigate directly to React-based admin: `/admin` (not `/admin-dashboard.html`)
-   - If having issues with signals admin, use the fixed version: `/admin/signals-fixed`
-   - Clear browser cache and cookies or try a different browser
-   - Make sure you're not using the standalone HTML page which doesn't have Signals management
-
-3. **API 405 Method Not Allowed Errors**:
-   - If you encounter 405 errors with the signals API, use the signals-proxy endpoint:
-     - Navigate to `/admin/signals-fixed` instead of `/admin/signals`
-     - The fixed page uses a proxy API approach to avoid issues with hardcoded URLs
-   - Check the browser console for specific error details
-   - In development, the signals-dev.ts endpoint provides enhanced debugging output
-
-4. **Admin URL configuration**:
-   - The AdminButton component in the site footer should link to `/admin` not `/admin-dashboard.html`
-   - Check navigation links in `/components/ui/AdminButton.tsx`
-
-## 📋 Signals Feature Overview
-
-The Signals feature allows you to curate and share recommended newsletters and articles.
-
-### Features
-
-- Two content types: Newsletters and Articles
-- Filter by type, featured status, and tags
-- Full-text search across title, description, and metadata
-- Social media sharing (LinkedIn, Twitter, Bluesky)
-- Featured signal highlighting
-
-### Admin Management
-
-- List view with filtering and search
-- Add/edit newsletters with publisher, frequency, and subscription URL
-- Add/edit articles with author, source, and reading time
-- Tag management for categorization
-- Featured status toggle
-- Social media sharing options
-
-### Components Structure
-
-```
-/components/signals/
-├── ArticleList.tsx    # List view of articles
-├── NewsletterList.tsx # List view of newsletters  
-├── SignalCard.tsx     # Card component for signals
-├── SignalDetail.tsx   # Detail modal view
-└── index.tsx          # Exports all components
-
-/components/admin/
-└── SignalForm.tsx     # Admin form for signal management
-
-/pages/
-├── signals.tsx        # Public signals page
-├── admin/signals.tsx  # Admin management page (redirects to signals-fixed)
-└── admin/signals-fixed.tsx # Fixed signals admin page
-
-/lib/api/signals.ts    # API client for signals
-/pages/api/signals.ts  # Main API endpoint
-/pages/api/signals-proxy.ts # Proxy endpoint for signals API
-/pages/api/signals-dev.ts # Development-specific API endpoint
-```
-
-### Signals API Structure
-
-The signals feature uses a multi-layered API approach:
-
-1. **Main API Endpoint** (`/api/signals.ts`): Handles CRUD operations for signals
-2. **Proxy Endpoint** (`/api/signals-proxy.ts`): Provides a reliable alternative endpoint that uses relative URLs
-3. **Development API** (`/api/signals-dev.ts`): Enhanced logging for debugging during development
-4. **Fixed Admin Page** (`/admin/signals-fixed.tsx`): Uses the proxy endpoint to avoid URL-related issues
-
-## 🔧 GitHub to Standard Hosting Migration
-
-If you previously deployed on GitHub Pages:
-
-1. **Remove GitHub Pages specific settings**:
-   - Update `next.config.js` to remove `basePath` and `assetPrefix`
-   - Set `NEXT_PUBLIC_BASE_PATH` to an empty string
-   - Update any hardcoded '/personalsite' references
-
-2. **Add Server-side Functionality**:
-   - Ensure Firebase Admin SDK is properly configured
-   - Test API routes are functioning correctly
-   - Set up environment variables in your hosting platform
+- [ ] Add light/dark theme toggle
+- [ ] Implement dynamic image optimization
+- [ ] Add RSS feed for blog posts
+- [ ] Create PWA support for offline access
+- [ ] Add commenting system to blog posts
 
 ---
 
 <p align="center">
-  Made with ❤️ by [Your Name]
+  Made with ❤️ by Patrick Stephens
 </p>

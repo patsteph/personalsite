@@ -14,7 +14,6 @@ const initializeFirebase = () => {
   // Server-side rendering check 
   if (typeof window === 'undefined') {
     // On server, use environment variables if available or return
-    console.log("Server-side rendering detected, skipping Firebase initialization");
     return { app: null, auth: null, firestore: null };
   }
   
@@ -29,7 +28,6 @@ const initializeFirebase = () => {
     try {
       // Try SECURE_CONFIG first
       if (window.SECURE_CONFIG?.firebase?.apiKey) {
-        console.log("Using Firebase config from SECURE_CONFIG");
         config = {
           apiKey: window.SECURE_CONFIG.firebase.apiKey,
           authDomain: window.SECURE_CONFIG.firebase.authDomain,
@@ -42,7 +40,6 @@ const initializeFirebase = () => {
       } 
       // Then try runtimeConfig
       else if (window.runtimeConfig?.firebase?.apiKey) {
-        console.log("Using Firebase config from runtimeConfig");
         config = {
           apiKey: window.runtimeConfig.firebase.apiKey || "",
           authDomain: window.runtimeConfig.firebase.authDomain || "",
@@ -54,15 +51,11 @@ const initializeFirebase = () => {
         };
       }
       
-      // Log warning if no configuration is available
+      // Return if no configuration is available
       if (!config.apiKey) {
-        console.warn("No Firebase config available from environment or runtime configuration");
         // Return without initializing Firebase when no config is available
         return { app: null, auth: null, firestore: null };
       }
-      
-      // Log what we're using
-      console.log("Firebase initialization with projectId:", config.projectId || "unknown");
     } catch (error) {
       console.error("Error accessing browser globals:", error);
     }
@@ -71,12 +64,9 @@ const initializeFirebase = () => {
     if (config.projectId) {
       try {
         app = initializeApp(config);
-        console.log("Firebase initialized successfully");
       } catch (error) {
         console.error("Error initializing Firebase:", error);
       }
-    } else {
-      console.warn("Missing Firebase config, not initializing Firebase");
     }
   }
   
@@ -118,7 +108,7 @@ export function getBasePath(): string {
         return window.runtimeConfig.basePath;
       }
     } catch (error) {
-      console.warn('Error accessing runtimeConfig:', error);
+      // Silent fail
     }
   }
   
@@ -129,9 +119,6 @@ export function getBasePath(): string {
  * Get the authentication instance
  */
 export async function getAuthInstance(): Promise<Auth | null> {
-  if (!auth) {
-    console.warn('Firebase Auth is not initialized');
-  }
   return auth;
 }
 
@@ -139,9 +126,6 @@ export async function getAuthInstance(): Promise<Auth | null> {
  * Get the Firestore instance
  */
 export async function getFirestoreInstance(): Promise<Firestore | null> {
-  if (!firestore) {
-    console.warn('Firestore is not initialized');
-  }
   return firestore;
 }
 
