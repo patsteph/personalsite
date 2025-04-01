@@ -14,7 +14,7 @@ export default function ContactPage() {
       github: 'https://github.com/patsteph',
       linkedin: 'https://linkedin.com/in/patrickjstephens',
       twitter: 'https://twitter.com/StephensCisco',
-      bluesky: 'https://bsky.app/stephens.patrick.j/'
+      bluesky: 'https://bsky.app/profile/stephenspatrickj.bsky.social'
     }
   };
   
