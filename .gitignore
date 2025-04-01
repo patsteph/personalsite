@@ -61,5 +61,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# archived files
+# archived and deprecated files
 /to_archive/
+/.deprecated/

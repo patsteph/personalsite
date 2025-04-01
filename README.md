@@ -61,19 +61,15 @@ graph TD
 The application follows a "server-first, client-fallback" pattern:
 
 ```mermaid
-sequenceDiagram
-    Client->>+Server API: Request data
-    alt Server API Success
-        Server API->>Firestore: Fetch data
-        Firestore->>Server API: Return data
-        Server API->>-Client: Return data
-    else Server API Failure
-        Server API->>-Client: Return error
-        Client->>+Firebase Client: Direct Firestore request
-        Firebase Client->>Firestore: Fetch data
-        Firestore->>Firebase Client: Return data
-        Firebase Client->>-Client: Return data
-    end
+flowchart TD
+    A[Client] --> B[Server API]
+    B --> C{API Success?}
+    C -->|Yes| D[Fetch from Firestore]
+    D --> E[Return data to client]
+    C -->|No| F[Return error]
+    F --> G[Client fallback]
+    G --> H[Direct Firebase access]
+    H --> I[Return data to client]
 ```
 
 This approach ensures:

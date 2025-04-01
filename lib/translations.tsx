@@ -55,22 +55,34 @@ const TranslationContext = createContext<TranslationContextType>({
 // Get user's preferred language from browser or localStorage
 const getUserLanguage = (): string => {
   if (typeof window === 'undefined') {
+    console.log('Server-side rendering detected, using default language');
     return DEFAULT_LANGUAGE;
   }
   
   try {
     // Check localStorage first
     const storedLang = localStorage.getItem('language');
+    console.log('Language from localStorage:', storedLang);
+    
     if (storedLang && translations[storedLang]) {
+      console.log('Using language from localStorage:', storedLang);
       return storedLang;
     }
     
     // Check browser language
     const browserLang = navigator.language.split('-')[0];
-    return translations[browserLang] ? browserLang : DEFAULT_LANGUAGE;
+    console.log('Browser language detected:', browserLang);
+    
+    if (translations[browserLang]) {
+      console.log('Using browser language:', browserLang);
+      return browserLang;
+    }
+    
+    console.log('No matching language found, using default:', DEFAULT_LANGUAGE);
+    return DEFAULT_LANGUAGE;
   } catch (error) {
     // Return default language if localStorage or navigator is not available
-    console.warn('Error accessing browser features:', error);
+    console.error('Error accessing browser features:', error);
     return DEFAULT_LANGUAGE;
   }
 };
@@ -81,27 +93,61 @@ export const TranslationProvider: React.FC<{children: ReactNode}> = ({ children 
   
   // Initialize language on client side
   useEffect(() => {
-    setLanguage(getUserLanguage());
+    const userLang = getUserLanguage();
+    console.log('Initializing TranslationProvider with language:', userLang);
+    setLanguage(userLang);
+    
+    // Add a listener for storage events to sync language across tabs
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'language' && e.newValue && e.newValue !== language) {
+        console.log('Language changed in another tab:', e.newValue);
+        setLanguage(e.newValue);
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, []);
   
   // Change language function
   const changeLanguage = (newLanguage: string) => {
+    console.log('Changing language to:', newLanguage);
     if (translations[newLanguage]) {
       setLanguage(newLanguage);
       if (typeof window !== 'undefined') {
-        localStorage.setItem('language', newLanguage);
+        try {
+          localStorage.setItem('language', newLanguage);
+          console.log('Language saved to localStorage:', newLanguage);
+        } catch (error) {
+          console.error('Error saving language to localStorage:', error);
+        }
       }
+    } else {
+      console.warn('Translation not found for language:', newLanguage);
     }
   };
   
   // Translation function
   const t = (key: string, fallbackOrReplacements?: string | Record<string, string>, replacements?: Record<string, string>) => {
     // Get translation for current language, fallback to English
-    let translation = translations[language]?.[key] || translations[DEFAULT_LANGUAGE]?.[key];
+    let translation = translations[language]?.[key];
+    
+    // Log missing translations
+    if (!translation) {
+      if (language !== DEFAULT_LANGUAGE) {
+        translation = translations[DEFAULT_LANGUAGE]?.[key];
+        if (translation) {
+          console.log(`Translation for key "${key}" not found in "${language}", using default language`);
+        }
+      }
+    }
     
     // If no translation found, use fallback text or key itself
     if (!translation) {
       translation = typeof fallbackOrReplacements === 'string' ? fallbackOrReplacements : key;
+      console.warn(`No translation found for key: "${key}" in any language`);
     }
     
     // Handle replacements

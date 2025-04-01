@@ -47,7 +47,21 @@ export default function Layout({
   // Handle language change
   const handleLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newLanguage = e.target.value as LanguageCode;
+    console.log('Language selected in dropdown:', newLanguage);
     setLanguage(newLanguage);
+    
+    // Add immediate visual feedback for the user
+    if (e.target) {
+      e.target.blur(); // Remove focus
+      
+      // Flash the select element to indicate change
+      e.target.classList.add('bg-blue-100');
+      setTimeout(() => {
+        if (e.target) {
+          e.target.classList.remove('bg-blue-100');
+        }
+      }, 300);
+    }
   };
   
   return (
