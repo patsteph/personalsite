@@ -51,7 +51,7 @@ export default function Layout({
   };
   
   return (
-    <div className="min-h-screen bg-[#FAFAFA] text-gray-800">
+    <div className="min-h-screen bg-linen text-gray-800">
       <Head>
         <title>{`${pageTitle} | Patrick Stephens`}</title>
         <meta name="description" content={metaDescription} />
@@ -111,7 +111,7 @@ export default function Layout({
           </div>
           
           {/* Footer - Modified to include admin button */}
-          <footer className="bg-[#FAFAFA] p-4 flex justify-between items-center shadow-inner">
+          <footer className="bg-linen p-4 flex justify-between items-center shadow-inner">
             <div className="flex items-center gap-3">
               <div className="language-selector">
                 <select 

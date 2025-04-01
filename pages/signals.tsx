@@ -32,9 +32,58 @@ export default function SignalsPage({ newsletters, articles, error }: SignalsPag
         <section className="mb-12">
           <h2 className="text-2xl font-semibold mb-4">Newsletters</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* Simplified Rendering for Debugging */}
             {newsletters.map(newsletter => (
-              <p key={newsletter.id}>Newsletter: {newsletter.title}</p>
+              <div key={newsletter.id} className="signal-card-container">
+                <a 
+                  href={newsletter.url} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="block text-steel-blue hover:text-accent transition-colors"
+                >
+                  <div className="bg-white border border-gray-200 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300">
+                    <div className="p-4">
+                      <h3 className="text-lg font-semibold text-steel-blue mb-1 hover:underline">
+                        {newsletter.title}
+                      </h3>
+                      
+                      <div className="text-sm text-gray-600 mb-2">
+                        <div className="mb-1">
+                          <span className="font-medium">Publisher:</span> {newsletter.publisher} • 
+                          <span className="ml-1 capitalize">{newsletter.frequency}</span>
+                        </div>
+                      </div>
+                      
+                      <p className="text-gray-700 text-sm mb-3">
+                        {newsletter.description.length > 120 
+                          ? `${newsletter.description.substring(0, 120)}...` 
+                          : newsletter.description}
+                      </p>
+                      
+                      {newsletter.tags && newsletter.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {newsletter.tags.slice(0, 3).map(tag => (
+                            <span 
+                              key={tag} 
+                              className="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded-full"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="px-4 py-2 bg-gray-50 border-t border-gray-200 flex justify-between items-center">
+                      <span className="text-xs text-gray-500">
+                        Added {new Date(newsletter.dateAdded).toLocaleDateString('en-US', {year: 'numeric', month: 'short', day: 'numeric'})}
+                      </span>
+                      <span className="text-steel-blue text-sm hover:underline">
+                        View Newsletter →
+                      </span>
+                    </div>
+                  </div>
+                </a>
+              </div>
             ))}
           </div>
         </section>
@@ -42,9 +91,61 @@ export default function SignalsPage({ newsletters, articles, error }: SignalsPag
         <section>
           <h2 className="text-2xl font-semibold mb-4">Articles</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* Simplified Rendering for Debugging */}
             {articles.map(article => (
-              <p key={article.id}>Article: {article.title}</p>
+              <div key={article.id} className="signal-card-container">
+                <a 
+                  href={article.url} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="block text-steel-blue hover:text-accent transition-colors"
+                >
+                  <div className="bg-white border border-gray-200 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300">
+                    <div className="p-4">
+                      <h3 className="text-lg font-semibold text-steel-blue mb-1 hover:underline">
+                        {article.title}
+                      </h3>
+                      
+                      <div className="text-sm text-gray-600 mb-2">
+                        <div className="mb-1">
+                          <span className="font-medium">By:</span> {article.author} • 
+                          <span className="ml-1 font-medium">Source:</span> {article.source}
+                          {article.readingTime && (
+                            <span className="ml-1">• {article.readingTime} min read</span>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <p className="text-gray-700 text-sm mb-3">
+                        {article.description.length > 120 
+                          ? `${article.description.substring(0, 120)}...` 
+                          : article.description}
+                      </p>
+                      
+                      {article.tags && article.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {article.tags.slice(0, 3).map(tag => (
+                            <span 
+                              key={tag} 
+                              className="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded-full"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="px-4 py-2 bg-gray-50 border-t border-gray-200 flex justify-between items-center">
+                      <span className="text-xs text-gray-500">
+                        Added {new Date(article.dateAdded).toLocaleDateString('en-US', {year: 'numeric', month: 'short', day: 'numeric'})}
+                      </span>
+                      <span className="text-steel-blue text-sm hover:underline">
+                        View Article →
+                      </span>
+                    </div>
+                  </div>
+                </a>
+              </div>
             ))}
           </div>
         </section>
