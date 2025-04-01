@@ -157,8 +157,8 @@ export async function getSignalsServerSide(): Promise<Signal[]> {
             title: data.title || '',
             description: data.content || data.description || '', // Try both content and description fields
             url: data.sourceUrl || data.url || '', // Try both sourceUrl and url fields
-            imageUrl: data.imageUrl || data.image || undefined, // Try both imageUrl and image fields
-            dateAdded: dateAdded,
+            imageUrl: data.imageUrl || data.image || null, // Try both imageUrl and image fields, use null instead of undefined
+            dateAdded: dateAdded, // Already converted to ISO string above
             featured: typeof data.published === 'boolean' ? data.published : 
                      (typeof data.featured === 'boolean' ? data.featured : false), // Try both published and featured
             tags: data.tags || [],
@@ -286,6 +286,7 @@ export async function getBlogPostsServerSide(): Promise<BlogPost[]> {
           const isPublished = data.published !== undefined ? data.published : data.isPublished || false;
           
           // Map Firestore data to BlogPost type with serializable date values
+          // Ensure all fields are JSON serializable (no undefined values)
           return {
             id: doc.id,
             title: data.title || 'Untitled Post', // Provide default title
@@ -300,8 +301,8 @@ export async function getBlogPostsServerSide(): Promise<BlogPost[]> {
             // Optional fields from BlogPost type - provide defaults or handle undefined
             date: data.date || updatedAt.toISOString().split('T')[0], // Use specific date field or fallback
             author: data.author || 'Admin', // Default author
-            coverImage: data.coverImage || undefined,
-            readingTime: data.readingTime || undefined, // Default to undefined if not present
+            coverImage: data.coverImage || null, // Convert undefined to null for serialization
+            readingTime: data.readingTime || null, // Convert undefined to null for serialization
           } as BlogPost;
         });
         
