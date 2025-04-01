@@ -23,7 +23,7 @@ export default function HomePage({ recentPosts }: HomePageProps) {
         
         <div className="bg-white rounded-lg shadow p-3 mb-8">
           <p className="text-xl text-steel-blue leading-relaxed mb-2">
-            {t('welcome.intro', 'Hello! I\'m a Senior Engineering Manager with a passion for building high-performing teams.')}
+            {t('welcome.intro', 'Hello! I\'m a lifelong learner and technologist with a passion for building high-performance teams.')}
           </p>
           
           <p className="text-steel-blue leading-relaxed">
@@ -44,7 +44,7 @@ export default function HomePage({ recentPosts }: HomePageProps) {
               {t('nav.books', 'Books')}
             </h3>
             <p className="text-gray-700 mb-2 text-sm"> 
-              Books I'm reading and learning from.
+            📚🔑🧠
             </p>
             <Link 
               href="/books"
@@ -62,7 +62,7 @@ export default function HomePage({ recentPosts }: HomePageProps) {
               {t('nav.blog', 'Blog')}
             </h3>
             <p className="text-gray-700 mb-2 text-sm">
-              Thoughts on engineering leadership.
+              My thoughts on things.
             </p>
             <Link 
               href="/blog"
@@ -80,7 +80,7 @@ export default function HomePage({ recentPosts }: HomePageProps) {
               {t('nav.signals', 'Signals')}
             </h3>
             <p className="text-gray-700 mb-2 text-sm">
-              Articles and newsletters I recommend.
+              Articles and newsletters I read.
             </p>
             <Link 
               href="/signals"
@@ -98,7 +98,7 @@ export default function HomePage({ recentPosts }: HomePageProps) {
               {t('nav.cv', 'CV')}
             </h3>
             <p className="text-gray-700 mb-2 text-sm"> 
-              My professional journey.
+              My career journey.
             </p>
             <Link 
               href="/cv"

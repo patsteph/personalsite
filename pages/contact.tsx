@@ -12,9 +12,9 @@ export default function ContactPage() {
     location: 'Gretna, NE',
     socials: {
       github: 'https://github.com/patsteph',
-      linkedin: 'https://linkedin.com/in/patrickjstephens/',
+      linkedin: 'https://linkedin.com/in/patrickjstephens',
       twitter: 'https://twitter.com/StephensCisco',
-      bluesky: 'https://bsky.app/stephenspatrickj/'
+      bluesky: 'https://bsky.app/stephens.patrick.j/'
     }
   };
   
