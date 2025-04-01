@@ -56,8 +56,16 @@ export default function SignalsPage({ newsletters, articles, error }: SignalsPag
 export const getStaticProps: GetStaticProps = async () => {
   console.log('signals.tsx getStaticProps: Fetching signals...');
   try {
+    console.log('signals.tsx getStaticProps: Calling getSignalsServerSide...');
     const allSignals: Signal[] = await getSignalsServerSide(); // Fetch all signals
     console.log(`signals.tsx getStaticProps: Received ${allSignals.length} signals.`);
+
+    if (allSignals.length === 0) {
+      console.log('signals.tsx getStaticProps: WARNING - No signals received from getSignalsServerSide');
+    } else {
+      // Log the first signal for debugging
+      console.log('signals.tsx getStaticProps: First signal:', JSON.stringify(allSignals[0], null, 2));
+    }
 
     // Filter signals into newsletters and articles
     const newsletters: Newsletter[] = allSignals.filter(
@@ -73,7 +81,7 @@ export const getStaticProps: GetStaticProps = async () => {
         newsletters, // Pass the filtered newsletters
         articles,    // Pass the filtered articles
       },
-      revalidate: 60, // Revalidate every 60 seconds
+      revalidate: 10, // Reduced revalidation time for testing (e.g., every 10 seconds)
     };
   } catch (error) {
     console.error('signals.tsx getStaticProps: Error fetching signals:', error);
@@ -83,7 +91,7 @@ export const getStaticProps: GetStaticProps = async () => {
         articles: [],
         error: 'Failed to load signals'
       },
-      revalidate: 10, // Revalidate sooner if error occurred
+      revalidate: 5, // Revalidate very soon if error occurred
     };
   }
 };

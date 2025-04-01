@@ -38,8 +38,16 @@ export const getStaticProps: GetStaticProps<BlogPageProps> = async () => {
   console.log('blog/index.tsx getStaticProps: Fetching blog posts...');
   try {
     // Use the server-side function to get posts
+    console.log('blog/index.tsx getStaticProps: Calling getBlogPostsServerSide...');
     const posts = await getBlogPostsServerSide(); 
     console.log(`blog/index.tsx getStaticProps: Received ${posts.length} posts.`);
+    
+    if (posts.length === 0) {
+      console.log('blog/index.tsx getStaticProps: WARNING - No posts received from getBlogPostsServerSide');
+    } else {
+      // Log the first post for debugging
+      console.log('blog/index.tsx getStaticProps: First post:', JSON.stringify(posts[0], null, 2));
+    }
     
     // Filter for published posts only before passing to the page
     const publishedPosts = posts.filter(post => post.published);
@@ -49,16 +57,15 @@ export const getStaticProps: GetStaticProps<BlogPageProps> = async () => {
       props: {
         posts: publishedPosts, // Pass only published posts
       },
-      revalidate: 60, // Add revalidation (e.g., every 60 seconds)
+      revalidate: 10, // Reduced revalidation time for testing (e.g., every 10 seconds)
     };
   } catch (error) {
     console.error('blog/index.tsx getStaticProps: Error fetching posts:', error);
     return {
       props: {
         posts: [], // Return empty on error
-        // Consider adding an error prop to display on the page
       },
-      revalidate: 10, // Revalidate sooner after an error
+      revalidate: 5, // Revalidate very soon after an error
     };
   }
 };

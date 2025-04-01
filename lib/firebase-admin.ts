@@ -88,85 +88,155 @@ export async function getSignalsServerSide(): Promise<Signal[]> {
     console.error('firebase-admin (getSignals): FAILED to initialize Firestore Admin:', initError);
     throw new Error('Failed to initialize Firestore Admin for signals.');
   }
+  
   console.log('getSignalsServerSide: Attempting to fetch signals server-side...');
-  try {
-    const signalsCollection = db.collection('signals');
-    // Order by creation date descending, limit if necessary
-    const snapshot = await signalsCollection.orderBy('createdAt', 'desc').get();
-
-    // Log snapshot details
-    console.log(`firebase-admin (getSignals): Snapshot empty? ${snapshot.empty}, Size: ${snapshot.size}`);
-
-    if (snapshot.empty) {
-      console.log('getSignalsServerSide: No signals found in snapshot.');
-      return [];
-    }
-
-    console.log('firebase-admin (getSignals): Processing snapshot documents...');
-    const signals: Signal[] = snapshot.docs.map(doc => {
-      // Log raw doc data
-      console.log(`firebase-admin (getSignals): Processing doc ID: ${doc.id}, Raw data:`, JSON.stringify(doc.data()));
-
-      const data = doc.data();
-      const id = doc.id;
-      const type = data.type as 'newsletter' | 'article' | undefined;
-
-      // Convert Firestore Timestamps to serializable format (ISO string)
-      // Use appropriate date field or fallback to now
-      const dateAdded = data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : new Date().toISOString();
-      const publishDate = data.publishDate?.toDate ? data.publishDate.toDate().toISOString() : dateAdded; // For articles
-
-      const baseData: Omit<SignalBase, 'id' | 'type'> = {
-        title: data.title || '',
-        description: data.content || '', // Map content to description
-        url: data.sourceUrl || '', // Map sourceUrl to url
-        imageUrl: data.imageUrl || undefined, // Use undefined if not present
-        dateAdded: dateAdded,
-        featured: typeof data.published === 'boolean' ? data.published : false, // Map published to featured, default false
-        tags: data.tags || [],
-      };
-
-      if (type === 'newsletter') {
-        const newsletter: Newsletter = {
-          ...baseData,
-          id: id,
-          type: 'newsletter',
-          frequency: data.frequency || 'monthly', // Default frequency
-          publisher: data.source || '', // Map source to publisher
-          subscriptionUrl: data.subscriptionUrl || baseData.url, // Use specific field or fallback to base url
-          // sampleUrl: data.sampleUrl,
-          // affiliateCode: data.affiliateCode,
-        };
-        return newsletter;
-      } else if (type === 'article') {
-        const article: Article = {
-          ...baseData,
-          id: id,
-          type: 'article',
-          author: data.author || '', // Requires author field
-          source: data.source || '', // Use source field
-          publishDate: publishDate,
-          // readingTime: data.readingTime,
-          // affiliateCode: data.affiliateCode,
-        };
-        return article;
-      } else {
-        // Handle documents without a valid type or default to one if appropriate
-        // For now, we'll filter them out, but you might want a default
-        console.warn(`Document ${id} has invalid or missing type: ${type}. Skipping.`);
-        return null; // Mark for filtering
+  
+  // Try different possible collection names
+  const collectionNames = ['signals', 'signal', 'Signals'];
+  let signals: Signal[] = [];
+  
+  for (const collectionName of collectionNames) {
+    console.log(`firebase-admin: Trying to fetch from collection '${collectionName}'`);
+    try {
+      const signalsCollection = db.collection(collectionName);
+      
+      // Try different ordering fields (createdAt or dateAdded)
+      const orderByFields = ['createdAt', 'dateAdded', 'updatedAt'];
+      let snapshot = null;
+      
+      for (const orderByField of orderByFields) {
+        try {
+          console.log(`firebase-admin: Trying to order by '${orderByField}'`);
+          snapshot = await signalsCollection.orderBy(orderByField, 'desc').get();
+          if (!snapshot.empty) {
+            console.log(`firebase-admin: Successfully ordered by '${orderByField}'`);
+            break;
+          }
+        } catch (orderError) {
+          console.log(`firebase-admin: Error ordering by '${orderByField}':`, orderError instanceof Error ? orderError.message : String(orderError));
+          // Try the next ordering field
+        }
       }
-    }).filter((signal): signal is Signal => signal !== null); // Filter out nulls and assert type
+      
+      // If all ordering attempts failed, try without ordering
+      if (!snapshot) {
+        console.log(`firebase-admin: Trying to fetch without ordering`);
+        snapshot = await signalsCollection.get();
+      }
 
-    console.log(`firebase-admin: Fetched ${signals.length} signals.`);
-    // Log the structure JUST before returning for build logs
-    console.log('firebase-admin (getSignals): Returning signals data:', JSON.stringify(signals.slice(0, 2), null, 2)); // Log first 2 items
-    return signals;
-  } catch (error) {
-    console.error('getSignalsServerSide: Error fetching signals:', error);
-    // Return empty array on error to allow the page to build
-    return [];
+      // Log snapshot details
+      console.log(`firebase-admin (getSignals): Collection '${collectionName}' has ${snapshot.size} documents. Empty? ${snapshot.empty}`);
+      
+      if (!snapshot.empty) {
+        // Log the first document's raw data to see its structure
+        const firstDoc = snapshot.docs[0];
+        console.log(`firebase-admin: First document from '${collectionName}':`, 
+          JSON.stringify({
+            id: firstDoc.id,
+            data: firstDoc.data()
+          }, null, 2));
+
+        signals = snapshot.docs.map(doc => {
+          const data = doc.data();
+          const id = doc.id;
+          const type = data.type as 'newsletter' | 'article' | undefined;
+
+          // Convert Firestore Timestamps to serializable format (ISO string)
+          // Use appropriate date field or fallback to now
+          const dateAdded = data.createdAt?.toDate ? 
+                           data.createdAt.toDate().toISOString() : 
+                           (data.dateAdded?.toDate ? 
+                             data.dateAdded.toDate().toISOString() : 
+                             new Date().toISOString());
+                             
+          const publishDate = data.publishDate?.toDate ? 
+                             data.publishDate.toDate().toISOString() : 
+                             dateAdded; // For articles
+
+          const baseData: Omit<SignalBase, 'id' | 'type'> = {
+            title: data.title || '',
+            description: data.content || data.description || '', // Try both content and description fields
+            url: data.sourceUrl || data.url || '', // Try both sourceUrl and url fields
+            imageUrl: data.imageUrl || data.image || undefined, // Try both imageUrl and image fields
+            dateAdded: dateAdded,
+            featured: typeof data.published === 'boolean' ? data.published : 
+                     (typeof data.featured === 'boolean' ? data.featured : false), // Try both published and featured
+            tags: data.tags || [],
+          };
+
+          if (type === 'newsletter') {
+            const newsletter: Newsletter = {
+              ...baseData,
+              id: id,
+              type: 'newsletter',
+              frequency: data.frequency || 'monthly', // Default frequency
+              publisher: data.source || data.publisher || '', // Try both source and publisher
+              subscriptionUrl: data.subscriptionUrl || baseData.url, // Use specific field or fallback to base url
+            };
+            return newsletter;
+          } else if (type === 'article') {
+            const article: Article = {
+              ...baseData,
+              id: id,
+              type: 'article',
+              author: data.author || '', // Requires author field
+              source: data.source || data.publication || '', // Try both source and publication
+              publishDate: publishDate,
+            };
+            return article;
+          } else {
+            // If type is missing but we can determine it from other fields
+            if (data.frequency || data.publisher || data.subscriptionUrl) {
+              // Looks like a newsletter
+              console.log(`Document ${id} missing type but has newsletter fields. Treating as newsletter.`);
+              const newsletter: Newsletter = {
+                ...baseData,
+                id: id,
+                type: 'newsletter',
+                frequency: data.frequency || 'monthly',
+                publisher: data.source || data.publisher || '',
+                subscriptionUrl: data.subscriptionUrl || baseData.url,
+              };
+              return newsletter;
+            } else if (data.author || data.publication) {
+              // Looks like an article
+              console.log(`Document ${id} missing type but has article fields. Treating as article.`);
+              const article: Article = {
+                ...baseData,
+                id: id,
+                type: 'article',
+                author: data.author || '',
+                source: data.source || data.publication || '',
+                publishDate: publishDate,
+              };
+              return article;
+            } else {
+              // Can't determine type
+              console.warn(`Document ${id} has invalid or missing type: ${type}. Skipping.`);
+              return null; // Mark for filtering
+            }
+          }
+        }).filter((signal): signal is Signal => signal !== null); // Filter out nulls and assert type
+
+        console.log(`firebase-admin: Successfully fetched ${signals.length} signals from '${collectionName}'.`);
+        console.log('firebase-admin (getSignals): Sample signal data:', JSON.stringify(signals.slice(0, 1), null, 2));
+        
+        // Break the loop as we found data
+        break;
+      }
+    } catch (error) {
+      console.error(`firebase-admin: Error fetching from collection '${collectionName}':`, error);
+      // Continue to try the next collection
+    }
   }
+  
+  if (signals.length === 0) {
+    console.log('firebase-admin: No signals found in any collection.');
+  } else {
+    console.log(`firebase-admin: Returning ${signals.length} signals.`);
+  }
+  
+  return signals;
 }
 
 /**
@@ -183,53 +253,77 @@ export async function getBlogPostsServerSide(): Promise<BlogPost[]> {
     console.error('firebase-admin (getBlogPosts): FAILED to initialize Firestore Admin:', initError);
     throw new Error('Failed to initialize Firestore Admin for blog posts.');
   }
-  console.log('firebase-admin: getBlogPostsServerSide called');
-  // Use the correct collection name provided by the user
-  const blogCollection = db.collection('blog-posts'); 
   
-  try {
-    const snapshot = await blogCollection.orderBy('createdAt', 'desc').get();
-    
-    if (snapshot.empty) {
-      console.log('firebase-admin: No blog posts found.');
-      return [];
+  // Try both collection names to see which one contains data
+  const collectionNames = ['blog-posts', 'blogPosts', 'blogs', 'blog'];
+  let posts: BlogPost[] = [];
+  
+  for (const collectionName of collectionNames) {
+    console.log(`firebase-admin: Trying to fetch from collection '${collectionName}'`);
+    try {
+      const blogCollection = db.collection(collectionName);
+      const snapshot = await blogCollection.orderBy('createdAt', 'desc').get();
+      
+      console.log(`firebase-admin: Collection '${collectionName}' has ${snapshot.size} documents. Empty? ${snapshot.empty}`);
+      
+      if (!snapshot.empty) {
+        // Log the first document's raw data to see its structure
+        const firstDoc = snapshot.docs[0];
+        console.log(`firebase-admin: First document from '${collectionName}':`, 
+          JSON.stringify({
+            id: firstDoc.id,
+            data: firstDoc.data()
+          }, null, 2));
+        
+        posts = snapshot.docs.map(doc => {
+          const data = doc.data();
+          // Convert Firestore Timestamps to Date objects
+          const createdAt = data.createdAt?.toDate ? data.createdAt.toDate() : new Date();
+          const updatedAt = data.updatedAt?.toDate ? data.updatedAt.toDate() : createdAt;
+          const publishedAt = data.publishedAt?.toDate ? data.publishedAt.toDate() : null; 
+
+          // Check for published field - could be published or isPublished
+          const isPublished = data.published !== undefined ? data.published : data.isPublished || false;
+          
+          // Map Firestore data to BlogPost type with serializable date values
+          return {
+            id: doc.id,
+            title: data.title || 'Untitled Post', // Provide default title
+            slug: data.slug || '', // Ensure slug is present, default to empty if not
+            content: data.content || '', 
+            summary: data.summary || data.excerpt || '', // Use summary or excerpt, default to empty
+            tags: data.tags || [],
+            published: isPublished, // Use the determined published value
+            createdAt: createdAt.toISOString(), // Convert Date to ISO string for serialization
+            updatedAt: updatedAt.toISOString(), // Convert Date to ISO string for serialization
+            publishedAt: publishedAt ? publishedAt.toISOString() : null, // Convert Date to ISO string if not null
+            // Optional fields from BlogPost type - provide defaults or handle undefined
+            date: data.date || updatedAt.toISOString().split('T')[0], // Use specific date field or fallback
+            author: data.author || 'Admin', // Default author
+            coverImage: data.coverImage || undefined,
+            readingTime: data.readingTime || undefined, // Default to undefined if not present
+          } as BlogPost;
+        });
+        
+        console.log(`firebase-admin: Successfully fetched ${posts.length} blog posts from '${collectionName}'.`);
+        console.log('firebase-admin (getBlogPosts): Sample post data:', JSON.stringify(posts.slice(0, 1), null, 2));
+        
+        // Break the loop as we found data
+        break;
+      }
+    } catch (error) {
+      console.error(`firebase-admin: Error fetching from collection '${collectionName}':`, error);
+      // Continue to try the next collection
     }
-
-    const posts: BlogPost[] = snapshot.docs.map(doc => {
-      const data = doc.data();
-      // Convert Firestore Timestamps to Date objects
-      const createdAt = data.createdAt?.toDate ? data.createdAt.toDate() : new Date();
-      const updatedAt = data.updatedAt?.toDate ? data.updatedAt.toDate() : createdAt;
-      const publishedAt = data.publishedAt?.toDate ? data.publishedAt.toDate() : null; 
-
-      // Map Firestore data to BlogPost type
-      return {
-        id: doc.id,
-        title: data.title || 'Untitled Post', // Provide default title
-        slug: data.slug || '', // Ensure slug is present, default to empty if not
-        content: data.content || '', 
-        summary: data.summary || data.excerpt || '', // Use summary or excerpt, default to empty
-        tags: data.tags || [],
-        published: data.isPublished || false, // Map isPublished to published
-        createdAt: createdAt,
-        updatedAt: updatedAt,
-        publishedAt: publishedAt,
-        // Optional fields from BlogPost type - provide defaults or handle undefined
-        date: data.date || updatedAt.toISOString().split('T')[0], // Use specific date field or fallback
-        author: data.author || 'Admin', // Default author
-        coverImage: data.coverImage || undefined,
-        readingTime: data.readingTime || undefined, // Default to undefined if not present
-      } as BlogPost;
-    });
-
-    console.log(`firebase-admin: Fetched ${posts.length} blog posts.`);
-    // Log the structure JUST before returning for build logs
-    console.log('firebase-admin (getBlogPosts): Returning posts data:', JSON.stringify(posts.slice(0, 2), null, 2)); // Log first 2 items
-    return posts;
-  } catch (error) {
-    console.error('firebase-admin: Error fetching blog posts:', error);
-    throw new Error('Failed to fetch blog posts server-side.'); // Re-throw for getStaticProps error handling
   }
+  
+  if (posts.length === 0) {
+    console.log('firebase-admin: No blog posts found in any collection.');
+  } else {
+    console.log(`firebase-admin: Returning ${posts.length} blog posts.`);
+  }
+  
+  return posts;
 }
 
 // Optional: Keep original exports for backward compatibility if needed elsewhere, 
