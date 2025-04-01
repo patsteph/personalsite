@@ -1,45 +1,23 @@
 {
-  "common": {
-    "title": "Personal Website",
-    "navigation": {
-      "home": "Home",
-      "blog": "Blog",
-      "books": "Books",
-      "cv": "CV",
-      "contact": "Contact"
-    },
-    "buttons": {
-      "readMore": "Read More",
-      "submit": "Submit",
-      "cancel": "Cancel",
-      "save": "Save",
-      "delete": "Delete",
-      "edit": "Edit",
-      "back": "Back",
-      "next": "Next"
-    },
-    "footer": {
-      "copyright": "© 2023 All Rights Reserved",
-      "privacyPolicy": "Privacy Policy",
-      "termsOfService": "Terms of Service"
-    }
-  },
-  "home": {
-    "welcome": "Welcome to my website",
-    "intro": "I'm a software developer passionate about creating beautiful and functional web applications",
-    "latestPosts": "Latest Posts",
-    "featuredProjects": "Featured Projects"
+  "welcome": {
+    "title": "Welcome",
+    "intro": "Hello! I'm a Senior Engineering Manager with a passion for building high-performing teams.",
+    "explore": "Explore This Site",
+    "browse_books": "Browse Books",
+    "view_signals": "View Signals",
+    "view_cv": "View CV",
+    "contact_me": "Contact Me",
+    "recent_posts": "Recent Blog Posts",
+    "view_all_posts": "View All Posts"
   },
   "blog": {
     "title": "Blog",
-    "readTime": "{{time}} min read",
+    "readMore": "Read More",
     "publishedOn": "Published on {{date}}",
+    "readingTime": "{{time}} min read",
     "categories": "Categories",
     "tags": "Tags",
-    "relatedPosts": "Related Posts",
-    "comments": "Comments",
-    "noComments": "No comments yet",
-    "leaveComment": "Leave a comment"
+    "relatedPosts": "Related Posts"
   },
   "books": {
     "title": "My Book Collection",
@@ -49,92 +27,63 @@
       "reading": "Currently Reading",
       "toRead": "To Read"
     },
-    "bookDetails": {
-      "author": "Author",
-      "isbn": "ISBN",
-      "publishedDate": "Published",
-      "pages": "Pages",
-      "genre": "Genre",
-      "rating": "Rating"
-    },
-    "stats": {
-      "total": "Total Books",
-      "read": "Books Read",
-      "reading": "Currently Reading",
-      "toRead": "To Read"
-    }
+    "filter": "Filter Books",
+    "sortBy": "Sort By",
+    "details": "Book Details",
+    "myNotes": "My Notes"
   },
   "cv": {
     "title": "Curriculum Vitae",
-    "sections": {
-      "education": "Education",
-      "experience": "Professional Experience",
-      "skills": "Skills",
-      "projects": "Projects",
-      "certifications": "Certifications",
-      "languages": "Languages"
-    },
-    "download": "Download PDF"
+    "about": "About Me",
+    "experience": "Experience",
+    "education": "Education",
+    "skills": "Skills",
+    "languages": "Languages",
+    "certifications": "Certifications"
+  },
+  "signals": {
+    "title": "Signals",
+    "all": "All Signals",
+    "newsletters": "Newsletters",
+    "articles": "Articles",
+    "featured": "Featured",
+    "filter": "Filter Signals",
+    "readMore": "Read More",
+    "source": "Source",
+    "subscribe": "Subscribe"
   },
   "contact": {
-    "title": "Contact Me",
-    "form": {
-      "name": "Name",
-      "email": "Email",
-      "subject": "Subject",
-      "message": "Message",
-      "submit": "Send Message"
-    },
-    "success": "Your message has been sent successfully!",
-    "error": "There was an error sending your message. Please try again.",
-    "required": "This field is required",
-    "invalidEmail": "Please enter a valid email address"
+    "title": "Contact",
+    "email": "Email",
+    "business": "Business Inquiries",
+    "personal": "Personal Contact",
+    "location": "Location",
+    "connect": "Connect With Me",
+    "message": "Message"
+  },
+  "nav": {
+    "welcome": "Welcome",
+    "books": "Books",
+    "blog": "Blog",
+    "signals": "Signals",
+    "cv": "CV",
+    "contact": "Contact"
   },
   "admin": {
-    "login": {
-      "title": "Admin Login",
-      "email": "Email",
-      "password": "Password",
-      "submit": "Login",
-      "error": "Invalid email or password",
-      "forgotPassword": "Forgot Password?"
-    },
-    "dashboard": {
-      "title": "Admin Dashboard",
-      "welcome": "Welcome back",
-      "stats": "Website Statistics",
-      "manageContent": "Manage Content"
-    },
-    "books": {
-      "addBook": "Add Book",
-      "editBook": "Edit Book",
-      "deleteBook": "Delete Book",
-      "confirmDelete": "Are you sure you want to delete this book?",
-      "form": {
-        "title": "Title",
-        "author": "Author",
-        "isbn": "ISBN",
-        "publishedDate": "Published Date",
-        "pages": "Pages",
-        "genre": "Genre",
-        "status": "Status",
-        "rating": "Rating",
-        "coverImage": "Cover Image URL",
-        "description": "Description"
-      }
-    }
+    "login": "Admin",
+    "dashboard": "Dashboard",
+    "manageBooks": "Manage Books",
+    "manageBlog": "Manage Blog",
+    "manageSignals": "Manage Signals",
+    "logout": "Logout"
   },
-  "errors": {
-    "404": {
-      "title": "Page Not Found",
-      "message": "The page you are looking for does not exist",
-      "backToHome": "Back to Home"
-    },
-    "500": {
-      "title": "Server Error",
-      "message": "Something went wrong on our end",
-      "tryAgain": "Please try again"
-    }
+  "common": {
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "search": "Search"
   }
 }
-

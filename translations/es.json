@@ -1,140 +1,89 @@
 {
-  "common": {
-    "title": "[ES] Personal Website",
-    "navigation": {
-      "home": "[ES] Home",
-      "blog": "[ES] Blog",
-      "books": "[ES] Books",
-      "cv": "[ES] CV",
-      "contact": "[ES] Contact"
-    },
-    "buttons": {
-      "readMore": "[ES] Read More",
-      "submit": "[ES] Submit",
-      "cancel": "[ES] Cancel",
-      "save": "[ES] Save",
-      "delete": "[ES] Delete",
-      "edit": "[ES] Edit",
-      "back": "[ES] Back",
-      "next": "[ES] Next"
-    },
-    "footer": {
-      "copyright": "[ES] © 2023 All Rights Reserved",
-      "privacyPolicy": "[ES] Privacy Policy",
-      "termsOfService": "[ES] Terms of Service"
-    }
-  },
-  "home": {
-    "welcome": "[ES] Welcome to my website",
-    "intro": "[ES] I'm a software developer passionate about creating beautiful and functional web applications",
-    "latestPosts": "[ES] Latest Posts",
-    "featuredProjects": "[ES] Featured Projects"
+  "welcome": {
+    "title": "Bienvenido",
+    "intro": "¡Hola! Soy un Gerente de Ingeniería Senior con pasión por construir equipos de alto rendimiento.",
+    "explore": "Explora Este Sitio",
+    "browse_books": "Explorar Libros",
+    "view_signals": "Ver Señales",
+    "view_cv": "Ver CV",
+    "contact_me": "Contáctame",
+    "recent_posts": "Publicaciones Recientes",
+    "view_all_posts": "Ver Todas las Publicaciones"
   },
   "blog": {
-    "title": "[ES] Blog",
-    "readTime": "[ES] {{time}} min read",
-    "publishedOn": "[ES] Published on {{date}}",
-    "categories": "[ES] Categories",
-    "tags": "[ES] Tags",
-    "relatedPosts": "[ES] Related Posts",
-    "comments": "[ES] Comments",
-    "noComments": "[ES] No comments yet",
-    "leaveComment": "[ES] Leave a comment"
+    "title": "Blog",
+    "readMore": "Leer Más",
+    "publishedOn": "Publicado el {{date}}",
+    "readingTime": "{{time}} min de lectura",
+    "categories": "Categorías",
+    "tags": "Etiquetas",
+    "relatedPosts": "Publicaciones Relacionadas"
   },
   "books": {
-    "title": "[ES] My Book Collection",
-    "totalBooks": "[ES] Total Books: {{count}}",
+    "title": "Mi Colección de Libros",
+    "totalBooks": "Total de Libros: {{count}}",
     "status": {
-      "read": "[ES] Read",
-      "reading": "[ES] Currently Reading",
-      "toRead": "[ES] To Read"
+      "read": "Leído",
+      "reading": "Leyendo Actualmente",
+      "toRead": "Por Leer"
     },
-    "bookDetails": {
-      "author": "[ES] Author",
-      "isbn": "[ES] ISBN",
-      "publishedDate": "[ES] Published",
-      "pages": "[ES] Pages",
-      "genre": "[ES] Genre",
-      "rating": "[ES] Rating"
-    },
-    "stats": {
-      "total": "[ES] Total Books",
-      "read": "[ES] Books Read",
-      "reading": "[ES] Currently Reading",
-      "toRead": "[ES] To Read"
-    }
+    "filter": "Filtrar Libros",
+    "sortBy": "Ordenar Por",
+    "details": "Detalles del Libro",
+    "myNotes": "Mis Notas"
   },
   "cv": {
-    "title": "[ES] Curriculum Vitae",
-    "sections": {
-      "education": "[ES] Education",
-      "experience": "[ES] Professional Experience",
-      "skills": "[ES] Skills",
-      "projects": "[ES] Projects",
-      "certifications": "[ES] Certifications",
-      "languages": "[ES] Languages"
-    },
-    "download": "[ES] Download PDF"
+    "title": "Currículum Vitae",
+    "about": "Sobre Mí",
+    "experience": "Experiencia",
+    "education": "Educación",
+    "skills": "Habilidades",
+    "languages": "Idiomas",
+    "certifications": "Certificaciones"
+  },
+  "signals": {
+    "title": "Señales",
+    "all": "Todas las Señales",
+    "newsletters": "Boletines",
+    "articles": "Artículos",
+    "featured": "Destacados",
+    "filter": "Filtrar Señales",
+    "readMore": "Leer Más",
+    "source": "Fuente",
+    "subscribe": "Suscribirse"
   },
   "contact": {
-    "title": "[ES] Contact Me",
-    "form": {
-      "name": "[ES] Name",
-      "email": "[ES] Email",
-      "subject": "[ES] Subject",
-      "message": "[ES] Message",
-      "submit": "[ES] Send Message"
-    },
-    "success": "[ES] Your message has been sent successfully!",
-    "error": "[ES] There was an error sending your message. Please try again.",
-    "required": "[ES] This field is required",
-    "invalidEmail": "[ES] Please enter a valid email address"
+    "title": "Contacto",
+    "email": "Correo Electrónico",
+    "business": "Consultas de Negocios",
+    "personal": "Contacto Personal",
+    "location": "Ubicación",
+    "connect": "Conéctate Conmigo",
+    "message": "Mensaje"
+  },
+  "nav": {
+    "welcome": "Bienvenido",
+    "books": "Libros",
+    "blog": "Blog",
+    "signals": "Señales",
+    "cv": "CV",
+    "contact": "Contacto"
   },
   "admin": {
-    "login": {
-      "title": "[ES] Admin Login",
-      "email": "[ES] Email",
-      "password": "[ES] Password",
-      "submit": "[ES] Login",
-      "error": "[ES] Invalid email or password",
-      "forgotPassword": "[ES] Forgot Password?"
-    },
-    "dashboard": {
-      "title": "[ES] Admin Dashboard",
-      "welcome": "[ES] Welcome back",
-      "stats": "[ES] Website Statistics",
-      "manageContent": "[ES] Manage Content"
-    },
-    "books": {
-      "addBook": "[ES] Add Book",
-      "editBook": "[ES] Edit Book",
-      "deleteBook": "[ES] Delete Book",
-      "confirmDelete": "[ES] Are you sure you want to delete this book?",
-      "form": {
-        "title": "[ES] Title",
-        "author": "[ES] Author",
-        "isbn": "[ES] ISBN",
-        "publishedDate": "[ES] Published Date",
-        "pages": "[ES] Pages",
-        "genre": "[ES] Genre",
-        "status": "[ES] Status",
-        "rating": "[ES] Rating",
-        "coverImage": "[ES] Cover Image URL",
-        "description": "[ES] Description"
-      }
-    }
+    "login": "Admin",
+    "dashboard": "Panel de Control",
+    "manageBooks": "Gestionar Libros",
+    "manageBlog": "Gestionar Blog",
+    "manageSignals": "Gestionar Señales",
+    "logout": "Cerrar Sesión"
   },
-  "errors": {
-    "404": {
-      "title": "[ES] Page Not Found",
-      "message": "[ES] The page you are looking for does not exist",
-      "backToHome": "[ES] Back to Home"
-    },
-    "500": {
-      "title": "[ES] Server Error",
-      "message": "[ES] Something went wrong on our end",
-      "tryAgain": "[ES] Please try again"
-    }
+  "common": {
+    "loading": "Cargando...",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "add": "Añadir",
+    "search": "Buscar"
   }
 }
-

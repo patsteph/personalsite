@@ -1,140 +1,89 @@
 {
-  "common": {
-    "title": "[UK] Personal Website",
-    "navigation": {
-      "home": "[UK] Home",
-      "blog": "[UK] Blog",
-      "books": "[UK] Books",
-      "cv": "[UK] CV",
-      "contact": "[UK] Contact"
-    },
-    "buttons": {
-      "readMore": "[UK] Read More",
-      "submit": "[UK] Submit",
-      "cancel": "[UK] Cancel",
-      "save": "[UK] Save",
-      "delete": "[UK] Delete",
-      "edit": "[UK] Edit",
-      "back": "[UK] Back",
-      "next": "[UK] Next"
-    },
-    "footer": {
-      "copyright": "[UK] © 2023 All Rights Reserved",
-      "privacyPolicy": "[UK] Privacy Policy",
-      "termsOfService": "[UK] Terms of Service"
-    }
-  },
-  "home": {
-    "welcome": "[UK] Welcome to my website",
-    "intro": "[UK] I'm a software developer passionate about creating beautiful and functional web applications",
-    "latestPosts": "[UK] Latest Posts",
-    "featuredProjects": "[UK] Featured Projects"
+  "welcome": {
+    "title": "Ласкаво просимо",
+    "intro": "Привіт! Я старший інженерний менеджер, який захоплюється створенням високоефективних команд.",
+    "explore": "Дослідіть цей сайт",
+    "browse_books": "Перегляд книг",
+    "view_signals": "Переглянути сигнали",
+    "view_cv": "Переглянути резюме",
+    "contact_me": "Зв'язатися зі мною",
+    "recent_posts": "Останні публікації в блозі",
+    "view_all_posts": "Переглянути всі публікації"
   },
   "blog": {
-    "title": "[UK] Blog",
-    "readTime": "[UK] {{time}} min read",
-    "publishedOn": "[UK] Published on {{date}}",
-    "categories": "[UK] Categories",
-    "tags": "[UK] Tags",
-    "relatedPosts": "[UK] Related Posts",
-    "comments": "[UK] Comments",
-    "noComments": "[UK] No comments yet",
-    "leaveComment": "[UK] Leave a comment"
+    "title": "Блог",
+    "readMore": "Читати далі",
+    "publishedOn": "Опубліковано {{date}}",
+    "readingTime": "{{time}} хв. читання",
+    "categories": "Категорії",
+    "tags": "Теги",
+    "relatedPosts": "Пов'язані публікації"
   },
   "books": {
-    "title": "[UK] My Book Collection",
-    "totalBooks": "[UK] Total Books: {{count}}",
+    "title": "Моя колекція книг",
+    "totalBooks": "Загальна кількість книг: {{count}}",
     "status": {
-      "read": "[UK] Read",
-      "reading": "[UK] Currently Reading",
-      "toRead": "[UK] To Read"
+      "read": "Прочитано",
+      "reading": "Читаю зараз",
+      "toRead": "Планую прочитати"
     },
-    "bookDetails": {
-      "author": "[UK] Author",
-      "isbn": "[UK] ISBN",
-      "publishedDate": "[UK] Published",
-      "pages": "[UK] Pages",
-      "genre": "[UK] Genre",
-      "rating": "[UK] Rating"
-    },
-    "stats": {
-      "total": "[UK] Total Books",
-      "read": "[UK] Books Read",
-      "reading": "[UK] Currently Reading",
-      "toRead": "[UK] To Read"
-    }
+    "filter": "Фільтрувати книги",
+    "sortBy": "Сортувати за",
+    "details": "Деталі книги",
+    "myNotes": "Мої нотатки"
   },
   "cv": {
-    "title": "[UK] Curriculum Vitae",
-    "sections": {
-      "education": "[UK] Education",
-      "experience": "[UK] Professional Experience",
-      "skills": "[UK] Skills",
-      "projects": "[UK] Projects",
-      "certifications": "[UK] Certifications",
-      "languages": "[UK] Languages"
-    },
-    "download": "[UK] Download PDF"
+    "title": "Резюме",
+    "about": "Про мене",
+    "experience": "Досвід",
+    "education": "Освіта",
+    "skills": "Навички",
+    "languages": "Мови",
+    "certifications": "Сертифікати"
+  },
+  "signals": {
+    "title": "Сигнали",
+    "all": "Всі сигнали",
+    "newsletters": "Інформаційні бюлетені",
+    "articles": "Статті",
+    "featured": "Рекомендовані",
+    "filter": "Фільтрувати сигнали",
+    "readMore": "Читати далі",
+    "source": "Джерело",
+    "subscribe": "Підписатися"
   },
   "contact": {
-    "title": "[UK] Contact Me",
-    "form": {
-      "name": "[UK] Name",
-      "email": "[UK] Email",
-      "subject": "[UK] Subject",
-      "message": "[UK] Message",
-      "submit": "[UK] Send Message"
-    },
-    "success": "[UK] Your message has been sent successfully!",
-    "error": "[UK] There was an error sending your message. Please try again.",
-    "required": "[UK] This field is required",
-    "invalidEmail": "[UK] Please enter a valid email address"
+    "title": "Контакти",
+    "email": "Електронна пошта",
+    "business": "Бізнес-запити",
+    "personal": "Особистий контакт",
+    "location": "Розташування",
+    "connect": "Зв'язатися зі мною",
+    "message": "Повідомлення"
+  },
+  "nav": {
+    "welcome": "Головна",
+    "books": "Книги",
+    "blog": "Блог",
+    "signals": "Сигнали",
+    "cv": "Резюме",
+    "contact": "Контакти"
   },
   "admin": {
-    "login": {
-      "title": "[UK] Admin Login",
-      "email": "[UK] Email",
-      "password": "[UK] Password",
-      "submit": "[UK] Login",
-      "error": "[UK] Invalid email or password",
-      "forgotPassword": "[UK] Forgot Password?"
-    },
-    "dashboard": {
-      "title": "[UK] Admin Dashboard",
-      "welcome": "[UK] Welcome back",
-      "stats": "[UK] Website Statistics",
-      "manageContent": "[UK] Manage Content"
-    },
-    "books": {
-      "addBook": "[UK] Add Book",
-      "editBook": "[UK] Edit Book",
-      "deleteBook": "[UK] Delete Book",
-      "confirmDelete": "[UK] Are you sure you want to delete this book?",
-      "form": {
-        "title": "[UK] Title",
-        "author": "[UK] Author",
-        "isbn": "[UK] ISBN",
-        "publishedDate": "[UK] Published Date",
-        "pages": "[UK] Pages",
-        "genre": "[UK] Genre",
-        "status": "[UK] Status",
-        "rating": "[UK] Rating",
-        "coverImage": "[UK] Cover Image URL",
-        "description": "[UK] Description"
-      }
-    }
+    "login": "Адмін",
+    "dashboard": "Панель керування",
+    "manageBooks": "Керування книгами",
+    "manageBlog": "Керування блогом",
+    "manageSignals": "Керування сигналами",
+    "logout": "Вийти"
   },
-  "errors": {
-    "404": {
-      "title": "[UK] Page Not Found",
-      "message": "[UK] The page you are looking for does not exist",
-      "backToHome": "[UK] Back to Home"
-    },
-    "500": {
-      "title": "[UK] Server Error",
-      "message": "[UK] Something went wrong on our end",
-      "tryAgain": "[UK] Please try again"
-    }
+  "common": {
+    "loading": "Завантаження...",
+    "save": "Зберегти",
+    "cancel": "Скасувати",
+    "delete": "Видалити",
+    "edit": "Редагувати",
+    "add": "Додати",
+    "search": "Пошук"
   }
 }
-
