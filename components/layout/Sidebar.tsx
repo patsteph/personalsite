@@ -22,10 +22,10 @@ export default function Sidebar({ currentSection }: SidebarProps) {
   // Navigation items
   const navItems: { section: PageSection; label: string; href: string }[] = [
     { section: 'welcome', label: t('nav.welcome', 'Welcome'), href: '/' },
-    { section: 'blog', label: t('nav.blog', 'Blog'), href: '/blog' },
-    { section: 'cv', label: t('nav.cv', 'CV'), href: '/cv' },
     { section: 'books', label: t('nav.books', 'Books'), href: '/books' },
+    { section: 'blog', label: t('nav.blog', 'Blog'), href: '/blog' },
     { section: 'signals', label: t('nav.signals', 'Signals'), href: '/signals' },
+    { section: 'cv', label: t('nav.cv', 'CV'), href: '/cv' },
     { section: 'contact', label: t('nav.contact', 'Contact'), href: '/contact' },
   ];
   

@@ -110,11 +110,17 @@ export default function SignalCard({ signal, onViewDetails }: SignalCardProps) {
       {/* Card Footer */}
       <div className="px-4 py-2 bg-gray-50 border-t border-gray-200 flex justify-between items-center">
         <span className="text-xs text-gray-500">
-          Added {new Date(signal.dateAdded).toLocaleDateString()}
+          Added {new Date(signal.dateAdded).toLocaleDateString('en-US', {year: 'numeric', month: 'short', day: 'numeric'})}
         </span>
-        <button className="text-steel-blue text-sm hover:underline">
+        <a 
+          href={signal.url} 
+          target="_blank" 
+          rel="noopener noreferrer" 
+          className="text-steel-blue text-sm hover:underline hover:text-accent transition-colors"
+          onClick={(e) => e.stopPropagation()}
+        >
           View {isNewsletter(signal) ? 'Newsletter' : 'Article'} →
-        </button>
+        </a>
       </div>
     </div>
   );

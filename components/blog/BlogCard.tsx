@@ -25,12 +25,12 @@ export default function BlogCard({ post, expanded = false, onToggle }: BlogCardP
     `}>
       {/* Blog header (always visible) */}
       <div 
-        className={`p-6 cursor-pointer ${onToggle ? 'cursor-pointer' : ''}`}
+        className={`p-4 cursor-pointer ${onToggle ? 'cursor-pointer' : ''}`}
         onClick={onToggle}
       >
         <div className="flex justify-between items-start">
           <div>
-            <h2 className="text-xl md:text-2xl font-bold text-accent mb-2">
+            <h2 className="text-lg md:text-xl font-bold text-accent mb-1">
               {post.title}
             </h2>
             <div className="flex items-center text-sm text-gray-600 mb-3">
@@ -62,10 +62,10 @@ export default function BlogCard({ post, expanded = false, onToggle }: BlogCardP
           <div dangerouslySetInnerHTML={{ __html: post.content }} />
         </div>
       ) : (
-        <div className="px-6 pb-6">
+        <div className="px-4 pb-4">
           <Link 
             href={`/blog/${post.slug}`}
-            className="inline-block text-steel-blue hover:text-accent font-medium transition-colors"
+            className="inline-block text-steel-blue hover:text-accent font-medium transition-colors text-sm"
           >
             {t('blog.readMore', 'Read More')} →
           </Link>

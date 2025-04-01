@@ -38,53 +38,17 @@ export default function HomePage({ recentPosts }: HomePageProps) {
           {t('welcome.explore', 'Explore This Site')}
         </h2>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
           <div className="bg-white rounded-lg shadow p-3 hover:shadow-md transition-shadow">
-            <h3 className="text-xl font-semibold text-steel-blue mb-2">
-              {t('nav.blog', 'Blog')}
-            </h3>
-            <p className="text-gray-700 mb-2">
-              Thoughts on engineering leadership, technology, and team building. 
-            </p>
-            <Link 
-              href="/blog"
-              className="text-steel-blue hover:text-accent font-medium inline-flex items-center transition-colors"
-            >
-              {t('blog.readMore', 'Read More')}
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </Link>
-          </div>
-          
-          <div className="bg-white rounded-lg shadow p-3 hover:shadow-md transition-shadow">
-            <h3 className="text-xl font-semibold text-steel-blue mb-2">
-              {t('nav.cv', 'CV')}
-            </h3>
-            <p className="text-gray-700 mb-2"> 
-              See the path that led me to where I am today.
-            </p>
-            <Link 
-              href="/cv"
-              className="text-steel-blue hover:text-accent font-medium inline-flex items-center transition-colors"
-            >
-              {t('welcome.view_cv', 'View CV')}
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </Link>
-          </div>
-          
-          <div className="bg-white rounded-lg shadow p-3 hover:shadow-md transition-shadow">
-            <h3 className="text-xl font-semibold text-steel-blue mb-2">
+            <h3 className="text-lg font-semibold text-steel-blue mb-1">
               {t('nav.books', 'Books')}
             </h3>
-            <p className="text-gray-700 mb-2"> 
-              I'm an avid reader and believe that continuous learning is essential for growth.
+            <p className="text-gray-700 mb-2 text-sm"> 
+              Books I'm reading and learning from.
             </p>
             <Link 
               href="/books"
-              className="text-steel-blue hover:text-accent font-medium inline-flex items-center transition-colors"
+              className="text-steel-blue hover:text-accent font-medium inline-flex items-center transition-colors text-sm"
             >
               {t('welcome.browse_books', 'Browse Books')}
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -94,15 +58,69 @@ export default function HomePage({ recentPosts }: HomePageProps) {
           </div>
           
           <div className="bg-white rounded-lg shadow p-3 hover:shadow-md transition-shadow">
-            <h3 className="text-xl font-semibold text-steel-blue mb-2">
+            <h3 className="text-lg font-semibold text-steel-blue mb-1">
+              {t('nav.blog', 'Blog')}
+            </h3>
+            <p className="text-gray-700 mb-2 text-sm">
+              Thoughts on engineering leadership.
+            </p>
+            <Link 
+              href="/blog"
+              className="text-steel-blue hover:text-accent font-medium inline-flex items-center transition-colors text-sm"
+            >
+              {t('blog.readMore', 'Read More')}
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
+          </div>
+          
+          <div className="bg-white rounded-lg shadow p-3 hover:shadow-md transition-shadow">
+            <h3 className="text-lg font-semibold text-steel-blue mb-1">
+              {t('nav.signals', 'Signals')}
+            </h3>
+            <p className="text-gray-700 mb-2 text-sm">
+              Articles and newsletters I recommend.
+            </p>
+            <Link 
+              href="/signals"
+              className="text-steel-blue hover:text-accent font-medium inline-flex items-center transition-colors text-sm"
+            >
+              {t('welcome.view_signals', 'View Signals')}
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
+          </div>
+          
+          <div className="bg-white rounded-lg shadow p-3 hover:shadow-md transition-shadow">
+            <h3 className="text-lg font-semibold text-steel-blue mb-1">
+              {t('nav.cv', 'CV')}
+            </h3>
+            <p className="text-gray-700 mb-2 text-sm"> 
+              My professional journey.
+            </p>
+            <Link 
+              href="/cv"
+              className="text-steel-blue hover:text-accent font-medium inline-flex items-center transition-colors text-sm"
+            >
+              {t('welcome.view_cv', 'View CV')}
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
+          </div>
+          
+          <div className="bg-white rounded-lg shadow p-3 hover:shadow-md transition-shadow">
+            <h3 className="text-lg font-semibold text-steel-blue mb-1">
               {t('nav.contact', 'Contact')}
             </h3>
-            <p className="text-gray-700 mb-2">
-              Get in touch for collaborations, speaking opportunities, or just to connect. 
+            <p className="text-gray-700 mb-2 text-sm">
+              Connect with me.
             </p>
             <Link 
               href="/contact"
-              className="text-steel-blue hover:text-accent font-medium inline-flex items-center transition-colors"
+              className="text-steel-blue hover:text-accent font-medium inline-flex items-center transition-colors text-sm"
             >
               {t('welcome.contact_me', 'Contact Me')}
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
