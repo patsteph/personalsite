@@ -484,6 +484,7 @@ export default function SimpleBookGrid({ initialBooks }: SimpleBookGridProps) {
   // Filter and search controls
   const [statusFilter, setStatusFilter] = useState('all');
   const [genreFilter, setGenreFilter] = useState('all');
+  const [ratingFilter, setRatingFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   
   // Extra safety checks for filtering books
@@ -527,7 +528,7 @@ export default function SimpleBookGrid({ initialBooks }: SimpleBookGridProps) {
     return Array.from(genreSet).sort();
   }, [validBooks]);
   
-  // Apply filters (status, genre, and search query)
+  // Apply filters (status, genre, rating, and search query)
   const filteredBooks = validBooks.filter(book => {
     // Apply status filter
     const statusMatch = statusFilter === 'all' || book.status === statusFilter;
@@ -537,6 +538,14 @@ export default function SimpleBookGrid({ initialBooks }: SimpleBookGridProps) {
       (Array.isArray(book.categories) && book.categories.some(
         category => category === genreFilter
       ));
+    
+    // Apply rating filter
+    let ratingMatch = true;
+    if (ratingFilter !== 'all') {
+      const rating = book.userRating || book.averageRating || 0;
+      const ratingVal = parseInt(ratingFilter, 10);
+      ratingMatch = rating >= ratingVal && rating < (ratingVal + 1);
+    }
     
     // Apply search filter if query exists
     let searchMatch = true;
@@ -564,7 +573,7 @@ export default function SimpleBookGrid({ initialBooks }: SimpleBookGridProps) {
     }
     
     // Book must match all filters
-    return statusMatch && genreMatch && searchMatch;
+    return statusMatch && genreMatch && ratingMatch && searchMatch;
   });
   
   return (
@@ -597,44 +606,72 @@ export default function SimpleBookGrid({ initialBooks }: SimpleBookGridProps) {
         </div>
       </div>
       
-      {/* Filter controls - now with two rows: Status and Genre */}
+      {/* Filter controls with three rows: Status, Rating, and Genre */}
       <div className="mb-8 space-y-4">
-        {/* Status filter */}
-        <div>
-          <h3 className="text-sm text-gray-600 font-semibold mb-2">Reading Status</h3>
-          <div className="flex flex-wrap gap-2">
-            <button 
-              onClick={() => setStatusFilter('all')}
-              className={`px-4 py-2 rounded-lg text-sm font-medium ${
-                statusFilter === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-              }`}
-            >
-              All Books
-            </button>
-            <button 
-              onClick={() => setStatusFilter('read')}
-              className={`px-4 py-2 rounded-lg text-sm font-medium ${
-                statusFilter === 'read' ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-              }`}
-            >
-              Read
-            </button>
-            <button 
-              onClick={() => setStatusFilter('reading')}
-              className={`px-4 py-2 rounded-lg text-sm font-medium ${
-                statusFilter === 'reading' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-              }`}
-            >
-              Currently Reading
-            </button>
-            <button 
-              onClick={() => setStatusFilter('toRead')}
-              className={`px-4 py-2 rounded-lg text-sm font-medium ${
-                statusFilter === 'toRead' ? 'bg-yellow-600 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-              }`}
-            >
-              Want to Read
-            </button>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Status filter */}
+          <div>
+            <h3 className="text-sm text-gray-600 font-semibold mb-2">Reading Status</h3>
+            <div className="flex flex-wrap gap-2">
+              <button 
+                onClick={() => setStatusFilter('all')}
+                className={`px-3 py-1 rounded text-xs font-medium ${
+                  statusFilter === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                }`}
+              >
+                All Books
+              </button>
+              <button 
+                onClick={() => setStatusFilter('read')}
+                className={`px-3 py-1 rounded text-xs font-medium ${
+                  statusFilter === 'read' ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                }`}
+              >
+                Read
+              </button>
+              <button 
+                onClick={() => setStatusFilter('reading')}
+                className={`px-3 py-1 rounded text-xs font-medium ${
+                  statusFilter === 'reading' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                }`}
+              >
+                Reading
+              </button>
+              <button 
+                onClick={() => setStatusFilter('toRead')}
+                className={`px-3 py-1 rounded text-xs font-medium ${
+                  statusFilter === 'toRead' ? 'bg-yellow-600 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                }`}
+              >
+                Want to Read
+              </button>
+            </div>
+          </div>
+          
+          {/* Rating filter */}
+          <div>
+            <h3 className="text-sm text-gray-600 font-semibold mb-2">Rating</h3>
+            <div className="flex flex-wrap gap-2">
+              <button 
+                onClick={() => setRatingFilter('all')}
+                className={`px-3 py-1 rounded text-xs font-medium ${
+                  ratingFilter === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                }`}
+              >
+                All Ratings
+              </button>
+              {[5, 4, 3, 2, 1].map(rating => (
+                <button 
+                  key={rating}
+                  onClick={() => setRatingFilter(rating.toString())}
+                  className={`px-3 py-1 rounded text-xs font-medium ${
+                    ratingFilter === rating.toString() ? 'bg-yellow-500 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                  }`}
+                >
+                  {rating} Star{rating !== 1 && 's'}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
         
@@ -646,7 +683,7 @@ export default function SimpleBookGrid({ initialBooks }: SimpleBookGridProps) {
               <button 
                 key={genre}
                 onClick={() => setGenreFilter(genre)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                className={`px-3 py-1 rounded text-xs font-medium ${
                   genreFilter === genre ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
                 }`}
               >

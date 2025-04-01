@@ -67,7 +67,7 @@ export default function BooksPage({ initialBooks, initialStats }: BooksPageProps
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
         <div className="bg-white rounded-lg shadow p-2 text-center">
           <div className="text-3xl font-bold text-steel-blue">{stats.total}</div>
-          <div className="text-sm text-gray-600">{t('books.totalBooks', 'Total Books')}</div>
+          <div className="text-sm text-gray-600">Total Books</div>
         </div>
         <div className="bg-white rounded-lg shadow p-2 text-center">
           <div className="text-3xl font-bold text-green-600">{stats.read}</div>
