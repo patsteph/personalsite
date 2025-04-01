@@ -1,0 +1,89 @@
+{
+  "welcome": {
+    "title": "Willkommen",
+    "intro": "Hallo! Ich bin ein Senior Engineering Manager mit einer Leidenschaft für den Aufbau leistungsstarker Teams.",
+    "explore": "Entdecken Sie diese Website",
+    "browse_books": "Bücher durchsuchen",
+    "view_signals": "Signale anzeigen",
+    "view_cv": "Lebenslauf anzeigen",
+    "contact_me": "Kontaktieren Sie mich",
+    "recent_posts": "Aktuelle Blogbeiträge",
+    "view_all_posts": "Alle Beiträge anzeigen"
+  },
+  "blog": {
+    "title": "Blog",
+    "readMore": "Weiterlesen",
+    "publishedOn": "Veröffentlicht am {{date}}",
+    "readingTime": "{{time}} Min. Lesezeit",
+    "categories": "Kategorien",
+    "tags": "Tags",
+    "relatedPosts": "Verwandte Beiträge"
+  },
+  "books": {
+    "title": "Meine Buchsammlung",
+    "totalBooks": "Gesamtanzahl Bücher: {{count}}",
+    "status": {
+      "read": "Gelesen",
+      "reading": "Aktuell gelesen",
+      "toRead": "Zu lesen"
+    },
+    "filter": "Bücher filtern",
+    "sortBy": "Sortieren nach",
+    "details": "Buchdetails",
+    "myNotes": "Meine Notizen"
+  },
+  "cv": {
+    "title": "Lebenslauf",
+    "about": "Über mich",
+    "experience": "Berufserfahrung",
+    "education": "Ausbildung",
+    "skills": "Fähigkeiten",
+    "languages": "Sprachen",
+    "certifications": "Zertifizierungen"
+  },
+  "signals": {
+    "title": "Signale",
+    "all": "Alle Signale",
+    "newsletters": "Newsletter",
+    "articles": "Artikel",
+    "featured": "Empfohlen",
+    "filter": "Signale filtern",
+    "readMore": "Weiterlesen",
+    "source": "Quelle",
+    "subscribe": "Abonnieren"
+  },
+  "contact": {
+    "title": "Kontakt",
+    "email": "E-Mail",
+    "business": "Geschäftliche Anfragen",
+    "personal": "Persönlicher Kontakt",
+    "location": "Standort",
+    "connect": "Verbinden Sie sich mit mir",
+    "message": "Nachricht"
+  },
+  "nav": {
+    "welcome": "Willkommen",
+    "books": "Bücher",
+    "blog": "Blog",
+    "signals": "Signale",
+    "cv": "Lebenslauf",
+    "contact": "Kontakt"
+  },
+  "admin": {
+    "login": "Admin",
+    "dashboard": "Dashboard",
+    "manageBooks": "Bücher verwalten",
+    "manageBlog": "Blog verwalten",
+    "manageSignals": "Signale verwalten",
+    "logout": "Abmelden"
+  },
+  "common": {
+    "loading": "Wird geladen...",
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "delete": "Löschen",
+    "edit": "Bearbeiten",
+    "add": "Hinzufügen",
+    "search": "Suchen"
+  }
+}

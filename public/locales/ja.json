@@ -1,0 +1,89 @@
+{
+  "welcome": {
+    "title": "ようこそ",
+    "intro": "こんにちは！高性能チームを構築することに情熱を持つシニアエンジニアリングマネージャーです。",
+    "explore": "このサイトを探索する",
+    "browse_books": "書籍を閲覧する",
+    "view_signals": "シグナルを見る",
+    "view_cv": "履歴書を見る",
+    "contact_me": "お問い合わせ",
+    "recent_posts": "最近のブログ投稿",
+    "view_all_posts": "すべての投稿を見る"
+  },
+  "blog": {
+    "title": "ブログ",
+    "readMore": "続きを読む",
+    "publishedOn": "{{date}}に公開",
+    "readingTime": "読む時間：{{time}}分",
+    "categories": "カテゴリー",
+    "tags": "タグ",
+    "relatedPosts": "関連記事"
+  },
+  "books": {
+    "title": "私の書籍コレクション",
+    "totalBooks": "合計書籍数：{{count}}",
+    "status": {
+      "read": "読了",
+      "reading": "現在読書中",
+      "toRead": "読書予定"
+    },
+    "filter": "書籍をフィルター",
+    "sortBy": "並べ替え",
+    "details": "書籍の詳細",
+    "myNotes": "私のメモ"
+  },
+  "cv": {
+    "title": "履歴書",
+    "about": "自己紹介",
+    "experience": "職歴",
+    "education": "学歴",
+    "skills": "スキル",
+    "languages": "言語",
+    "certifications": "資格"
+  },
+  "signals": {
+    "title": "シグナル",
+    "all": "すべてのシグナル",
+    "newsletters": "ニュースレター",
+    "articles": "記事",
+    "featured": "おすすめ",
+    "filter": "シグナルをフィルター",
+    "readMore": "続きを読む",
+    "source": "ソース",
+    "subscribe": "購読する"
+  },
+  "contact": {
+    "title": "お問い合わせ",
+    "email": "メール",
+    "business": "ビジネスのお問い合わせ",
+    "personal": "個人的なお問い合わせ",
+    "location": "所在地",
+    "connect": "つながる",
+    "message": "メッセージ"
+  },
+  "nav": {
+    "welcome": "ようこそ",
+    "books": "書籍",
+    "blog": "ブログ",
+    "signals": "シグナル",
+    "cv": "履歴書",
+    "contact": "お問い合わせ"
+  },
+  "admin": {
+    "login": "管理者",
+    "dashboard": "ダッシュボード",
+    "manageBooks": "書籍管理",
+    "manageBlog": "ブログ管理",
+    "manageSignals": "シグナル管理",
+    "logout": "ログアウト"
+  },
+  "common": {
+    "loading": "読み込み中...",
+    "save": "保存",
+    "cancel": "キャンセル",
+    "delete": "削除",
+    "edit": "編集",
+    "add": "追加",
+    "search": "検索"
+  }
+}

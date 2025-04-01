@@ -124,27 +124,54 @@ export default function Layout({
             {children}
           </div>
           
-          {/* Footer - Modified to include admin button */}
+          {/* Footer with language selection and admin button */}
           <footer className="bg-linen p-4 flex justify-between items-center shadow-inner">
-            <div className="flex items-center gap-3">
-              <div className="language-selector">
-                <select 
-                  value={language}
-                  onChange={handleLanguageChange}
-                  className="px-3 py-2 rounded border border-gray-300 bg-white text-gray-700 shadow-sm hover:border-blue-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none transition-all duration-200"
-                >
-                  {Object.entries(LANGUAGES).map(([code, name]) => (
-                    <option key={code} value={code}>
-                      {name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              
-              {/* Admin button */}
-              <div aria-label="Admin Access">
-                <AdminButton />
-              </div>
+            {/* Admin button moved to far left */}
+            <div aria-label="Admin Access">
+              <AdminButton />
+            </div>
+            
+            {/* Language selection as horizontal text links */}
+            <div className="flex items-center justify-center space-x-3 flex-grow px-4">
+              <button 
+                onClick={() => setLanguage('en')}
+                className={`text-sm hover:text-accent transition-colors ${language === 'en' ? 'font-bold text-accent' : 'text-gray-700'}`}
+                title="English"
+              >
+                Language
+              </button>
+              <span className="text-gray-400">•</span>
+              <button 
+                onClick={() => setLanguage('es')}
+                className={`text-sm hover:text-accent transition-colors ${language === 'es' ? 'font-bold text-accent' : 'text-gray-700'}`}
+                title="Spanish"
+              >
+                Idioma
+              </button>
+              <span className="text-gray-400">•</span>
+              <button 
+                onClick={() => setLanguage('de')}
+                className={`text-sm hover:text-accent transition-colors ${language === 'de' ? 'font-bold text-accent' : 'text-gray-700'}`}
+                title="German"
+              >
+                Sprache
+              </button>
+              <span className="text-gray-400">•</span>
+              <button 
+                onClick={() => setLanguage('ja')}
+                className={`text-sm hover:text-accent transition-colors ${language === 'ja' ? 'font-bold text-accent' : 'text-gray-700'}`}
+                title="Japanese"
+              >
+                言語
+              </button>
+              <span className="text-gray-400">•</span>
+              <button 
+                onClick={() => setLanguage('uk')}
+                className={`text-sm hover:text-accent transition-colors ${language === 'uk' ? 'font-bold text-accent' : 'text-gray-700'}`}
+                title="Ukrainian"
+              >
+                Мова
+              </button>
             </div>
             
             <div className="copyright text-sm text-gray-600">

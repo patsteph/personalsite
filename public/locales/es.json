@@ -1,0 +1,89 @@
+{
+  "welcome": {
+    "title": "Bienvenido",
+    "intro": "¡Hola! Soy un Gerente de Ingeniería Senior con pasión por construir equipos de alto rendimiento.",
+    "explore": "Explora Este Sitio",
+    "browse_books": "Explorar Libros",
+    "view_signals": "Ver Señales",
+    "view_cv": "Ver CV",
+    "contact_me": "Contáctame",
+    "recent_posts": "Publicaciones Recientes",
+    "view_all_posts": "Ver Todas las Publicaciones"
+  },
+  "blog": {
+    "title": "Blog",
+    "readMore": "Leer Más",
+    "publishedOn": "Publicado el {{date}}",
+    "readingTime": "{{time}} min de lectura",
+    "categories": "Categorías",
+    "tags": "Etiquetas",
+    "relatedPosts": "Publicaciones Relacionadas"
+  },
+  "books": {
+    "title": "Mi Colección de Libros",
+    "totalBooks": "Total de Libros: {{count}}",
+    "status": {
+      "read": "Leído",
+      "reading": "Leyendo Actualmente",
+      "toRead": "Por Leer"
+    },
+    "filter": "Filtrar Libros",
+    "sortBy": "Ordenar Por",
+    "details": "Detalles del Libro",
+    "myNotes": "Mis Notas"
+  },
+  "cv": {
+    "title": "Currículum Vitae",
+    "about": "Sobre Mí",
+    "experience": "Experiencia",
+    "education": "Educación",
+    "skills": "Habilidades",
+    "languages": "Idiomas",
+    "certifications": "Certificaciones"
+  },
+  "signals": {
+    "title": "Señales",
+    "all": "Todas las Señales",
+    "newsletters": "Boletines",
+    "articles": "Artículos",
+    "featured": "Destacados",
+    "filter": "Filtrar Señales",
+    "readMore": "Leer Más",
+    "source": "Fuente",
+    "subscribe": "Suscribirse"
+  },
+  "contact": {
+    "title": "Contacto",
+    "email": "Correo Electrónico",
+    "business": "Consultas de Negocios",
+    "personal": "Contacto Personal",
+    "location": "Ubicación",
+    "connect": "Conéctate Conmigo",
+    "message": "Mensaje"
+  },
+  "nav": {
+    "welcome": "Bienvenido",
+    "books": "Libros",
+    "blog": "Blog",
+    "signals": "Señales",
+    "cv": "CV",
+    "contact": "Contacto"
+  },
+  "admin": {
+    "login": "Admin",
+    "dashboard": "Panel de Control",
+    "manageBooks": "Gestionar Libros",
+    "manageBlog": "Gestionar Blog",
+    "manageSignals": "Gestionar Señales",
+    "logout": "Cerrar Sesión"
+  },
+  "common": {
+    "loading": "Cargando...",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "add": "Añadir",
+    "search": "Buscar"
+  }
+}

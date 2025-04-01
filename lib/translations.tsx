@@ -32,6 +32,20 @@ const translations: Record<string, any> = {
   uk,
 };
 
+// Function to dynamically fetch translations if import method fails
+const fetchTranslation = async (lang: string): Promise<any> => {
+  try {
+    const response = await fetch(`/locales/${lang}.json`);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch ${lang} translation`);
+    }
+    return await response.json();
+  } catch (error) {
+    console.error(`Error fetching ${lang} translation:`, error);
+    return null;
+  }
+};
+
 // Default language
 const DEFAULT_LANGUAGE = 'en';
 
@@ -91,11 +105,31 @@ const getUserLanguage = (): string => {
 export const TranslationProvider: React.FC<{children: ReactNode}> = ({ children }) => {
   const [language, setLanguage] = useState<string>(DEFAULT_LANGUAGE);
   
-  // Initialize language on client side
+  // Initialize language on client side and load translations if needed
   useEffect(() => {
     const userLang = getUserLanguage();
     console.log('Initializing TranslationProvider with language:', userLang);
     setLanguage(userLang);
+    
+    // Try to load translations dynamically if they're not properly loaded
+    const tryLoadingTranslations = async () => {
+      // Check if current translations have empty objects
+      const langs = Object.keys(LANGUAGES);
+      
+      for (const lang of langs) {
+        // If the translation object is empty or has no keys, try to fetch it
+        if (!translations[lang] || Object.keys(translations[lang]).length === 0) {
+          console.log(`Trying to load ${lang} translations dynamically`);
+          const fetchedTranslation = await fetchTranslation(lang);
+          if (fetchedTranslation) {
+            translations[lang] = fetchedTranslation;
+            console.log(`Successfully loaded ${lang} translations`);
+          }
+        }
+      }
+    };
+    
+    tryLoadingTranslations();
     
     // Add a listener for storage events to sync language across tabs
     const handleStorageChange = (e: StorageEvent) => {
@@ -131,13 +165,21 @@ export const TranslationProvider: React.FC<{children: ReactNode}> = ({ children 
   
   // Translation function
   const t = (key: string, fallbackOrReplacements?: string | Record<string, string>, replacements?: Record<string, string>) => {
+    // Safely access nested keys
+    const getNestedValue = (obj: any, path: string) => {
+      const keys = path.split('.');
+      return keys.reduce((acc, curr) => (acc && acc[curr] !== undefined) ? acc[curr] : undefined, obj);
+    };
+    
     // Get translation for current language, fallback to English
-    let translation = translations[language]?.[key];
+    const currentTranslations = translations[language] || {};
+    let translation = getNestedValue(currentTranslations, key);
     
     // Log missing translations
     if (!translation) {
       if (language !== DEFAULT_LANGUAGE) {
-        translation = translations[DEFAULT_LANGUAGE]?.[key];
+        const defaultTranslations = translations[DEFAULT_LANGUAGE] || {};
+        translation = getNestedValue(defaultTranslations, key);
         if (translation) {
           console.log(`Translation for key "${key}" not found in "${language}", using default language`);
         }
@@ -147,18 +189,21 @@ export const TranslationProvider: React.FC<{children: ReactNode}> = ({ children 
     // If no translation found, use fallback text or key itself
     if (!translation) {
       translation = typeof fallbackOrReplacements === 'string' ? fallbackOrReplacements : key;
-      console.warn(`No translation found for key: "${key}" in any language`);
+      // Only log in development to avoid console spam
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn(`No translation found for key: "${key}" in any language`);
+      }
     }
     
     // Handle replacements
     const replacementsObj = typeof fallbackOrReplacements === 'object' ? fallbackOrReplacements : replacements;
-    if (replacementsObj) {
+    if (replacementsObj && typeof translation === 'string') {
       Object.entries(replacementsObj).forEach(([k, v]) => {
-        translation = translation.replace(new RegExp(`{{${k}}}`, 'g'), v);
+        translation = translation.replace(new RegExp(`{{${k}}}`, 'g'), v || '');
       });
     }
     
-    return translation;
+    return translation || key;
   };
   
   return (
