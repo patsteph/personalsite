@@ -24,6 +24,7 @@
   "dependencies": {
     "@headlessui/react": "^2.2.0",
     "@heroicons/react": "^2.2.0",
+    "@octokit/rest": "^20.1.0",
     "cors": "^2.8.5",
     "date-fns": "^4.1.0",
     "firebase": "^11.4.0",
@@ -33,15 +34,20 @@
     "next-mdx-remote": "^5.0.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "react-firebase-hooks": "^5.1.1"
+    "react-firebase-hooks": "^5.1.1",
+    "remark": "^14.0.2",
+    "remark-html": "^15.0.2"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
+    "@octokit/types": "^13.10.0",
     "@tailwindcss/postcss": "^4",
     "@types/cors": "^2.8.17",
+    "@types/mdast": "^4.0.4",
     "@types/node": "^20.17.23",
     "@types/react": "^19.0.10",
     "@types/react-dom": "^19.0.4",
+    "@types/unist": "^3.0.3",
     "autoprefixer": "^10.4.14",
     "critters": "^0.0.23",
     "dotenv": "^16.4.7",

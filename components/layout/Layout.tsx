@@ -65,7 +65,7 @@ export default function Layout({
   };
   
   return (
-    <div className="min-h-screen bg-linen text-gray-800">
+    <div className="min-h-screen bg-linen text-gray-800 theme-transition">
       <Head>
         <title>{`${pageTitle} | Patrick Stephens`}</title>
         <meta name="description" content={metaDescription} />

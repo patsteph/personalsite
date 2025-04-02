@@ -7,11 +7,69 @@
   --color-steel-blue: #4682B4;
   --color-accent: #2a4d69;
   --color-light-accent: #d6e1e8;
+  --color-dark-bg: #1a1a2e;
+  --color-dark-surface: #16213e;
+  --color-dark-accent: #0f3460;
+  --color-dark-text: #e1e1e6;
+  --color-dark-muted: #a0a0a9;
 }
 
 body {
   background-color: var(--color-linen);
   color: var(--color-steel-blue);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Dark mode styles */
+.dark body {
+  background-color: var(--color-dark-bg);
+  color: var(--color-dark-text);
+}
+
+.dark .bg-linen {
+  background-color: var(--color-dark-surface);
+}
+
+.dark .text-steel-blue {
+  color: var(--color-dark-text);
+}
+
+.dark .text-gray-800 {
+  color: var(--color-dark-text);
+}
+
+.dark .text-gray-700 {
+  color: var(--color-dark-muted);
+}
+
+.dark .text-gray-600 {
+  color: var(--color-dark-muted);
+}
+
+.dark .text-accent {
+  color: var(--color-light-accent);
+}
+
+.dark .border-steel-blue {
+  border-color: var(--color-dark-accent);
+}
+
+.dark .hover\:bg-steel-blue:hover {
+  background-color: var(--color-dark-accent);
+}
+
+.dark .bg-white, .dark .bg-opacity-100 {
+  background-color: var(--color-dark-surface);
+}
+
+/* Additional dark mode adjustments for better contrast */
+.dark .hover\:text-accent:hover {
+  color: var(--color-light-accent);
+}
+
+/* Theme transition effect */
+.theme-transition {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
 
 /* Custom animations */
