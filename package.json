@@ -34,9 +34,7 @@
     "next-mdx-remote": "^5.0.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "react-firebase-hooks": "^5.1.1",
-    "remark": "^14.0.2",
-    "remark-html": "^15.0.2"
+    "react-firebase-hooks": "^5.1.1"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
