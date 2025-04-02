@@ -5,51 +5,31 @@ import { BlogPost } from '@/types/blog';
 import Link from 'next/link';
 import { useTranslation } from '@/lib/translations';
 import { format } from 'date-fns';
-import { getSiteContent, SiteContent } from '@/lib/site-content';
 
 // Props type definition
 type HomePageProps = {
   recentPosts: BlogPost[];
-  siteContent: SiteContent | null;
 };
 
-export default function HomePage({ recentPosts, siteContent }: HomePageProps) {
+export default function HomePage({ recentPosts }: HomePageProps) {
   const { t } = useTranslation();
-  
-  // Use site content title if available, fallback to translation
-  const title = siteContent?.title || t('welcome.title', 'Welcome');
-  const subtitle = siteContent?.subtitle || '';
 
   return (
-    <Layout section="welcome" title={title}>
+    <Layout section="welcome">
       <section className="mb-12">
-        <h1 className="text-3xl md:text-4xl font-bold text-accent mb-2">
-          {title}
+        <h1 className="text-3xl md:text-4xl font-bold text-accent mb-6">
+          {t('welcome.title', 'Welcome')}
         </h1>
-        {subtitle && (
-          <h2 className="text-xl text-steel-blue mb-4">
-            {subtitle}
-          </h2>
-        )}
         
         <div className="bg-white rounded-lg shadow p-3 mb-8">
-          {siteContent ? (
-            <div 
-              className="prose prose-steel-blue max-w-none"
-              dangerouslySetInnerHTML={{ __html: siteContent.contentHtml }}
-            />
-          ) : (
-            <>
-              <p className="text-xl text-steel-blue leading-relaxed mb-2">
-                {t('welcome.intro', 'Hello! I\'m a lifelong learner and technologist with a passion for building high-performance teams.')}
-              </p>
-              
-              <p className="text-steel-blue leading-relaxed">
-                With over 20 years in the technology industry, my approach combines technical excellence with people-centered leadership. 
-                I am committed to creating environments that empower people to thrive in their work.
-              </p>
-            </>
-          )}
+          <p className="text-xl text-steel-blue leading-relaxed mb-2">
+            {t('welcome.intro', 'Hello! I\'m a lifelong learner and technologist with a passion for building high-performance teams.')}
+          </p>
+          
+          <p className="text-steel-blue leading-relaxed">
+            With over 20 years in the technology industry, my approach combines technical excellence with people-centered leadership. 
+            I am committed to creating environments that empower people to thrive in their work.
+          </p>
         </div>
       </section>
       
@@ -202,28 +182,20 @@ export default function HomePage({ recentPosts, siteContent }: HomePageProps) {
 // Fetch data at build time
 export const getStaticProps: GetStaticProps<HomePageProps> = async () => {
   try {
-    // Get recent blog posts and site content in parallel
-    const [recentPosts, siteContent] = await Promise.all([
-      getRecentPosts(3),
-      getSiteContent('welcome')
-    ]);
+    // Get recent blog posts
+    const recentPosts = await getRecentPosts(3);
     
     return {
       props: {
         recentPosts,
-        siteContent,
       },
-      // Revalidate the page every hour to get updated content
-      revalidate: 3600,
     };
   } catch (error) {
-    console.error('Error fetching page data:', error);
+    console.error('Error fetching recent posts:', error);
     return {
       props: {
         recentPosts: [],
-        siteContent: null,
       },
-      revalidate: 3600,
     };
   }
 };
