@@ -44,46 +44,40 @@ export default function BlogCard({ post, expanded: propExpanded = false, onToggl
       ${!isExpanded ? 'hover:bg-gray-50' : ''}
       relative
     `}>
-      {/* Invisible overlay to make entire card clickable */}
-      <div 
-        className="absolute inset-0 cursor-pointer z-10" 
-        onClick={toggleExpanded}
-      />
-      {/* Blog header (always visible) */}
-      <div 
-        className={`p-4 relative ${!isExpanded ? 'hover:bg-gray-50 cursor-pointer' : 'bg-gray-50'}`}
-        onClick={isExpanded ? undefined : toggleExpanded}
-      >
-        <div className="flex justify-between items-start">
-          <div>
-            <h2 className="text-lg md:text-xl font-bold text-accent mb-1">
-              {post.title}
-            </h2>
-            <div className="flex items-center text-sm text-gray-600 mb-3">
-              <span>Published on {formattedDate}</span>
-              <span className="mx-2">•</span>
-              <span>{post.readingTime} {t('blog.minuteRead', 'min read')}</span>
-            </div>
-            <p className="text-steel-blue italic">
-              {post.summary}
-            </p>
+      {/* Blog content (visible when expanded or on blog post page) */}
+      {/* Blog header and summary */}
+      <div className="px-6 pt-6">
+        <div className="flex flex-col">
+          <h2 className="text-xl font-bold mb-2">{post.title}</h2>
+          <div className="flex items-center text-gray-500 text-sm mb-3">
+            <span>{formattedDate}</span>
+            <span className="mx-2">•</span>
+            <span>{post.readingTime} {t('blog.minuteRead', 'min read')}</span>
           </div>
+          <p className="text-steel-blue italic">
+            {post.summary}
+          </p>
         </div>
       </div>
       
       {/* Blog content (visible when expanded or on blog post page) */}
       {isExpanded ? (
-        <div className="px-6 pb-6 blog-content border-t border-gray-100 mt-2">
-          <div dangerouslySetInnerHTML={{ __html: post.content }} />
-        </div>
-        <div className="px-4 pb-4 relative z-20 flex justify-start">
-          <span
-            onClick={(e) => toggleExpanded(e)}
-            className="text-gray-400 hover:text-gray-600 transition-colors italic text-sm cursor-pointer"
-          >
-            {t('blog.collapse', 'Collapse')}
-          </span>
-        </div>
+        <>
+          <div className="px-6 pb-6 blog-content border-t border-gray-100 mt-2">
+            <div dangerouslySetInnerHTML={{ __html: post.content }} />
+          </div>
+          <div className="px-4 pb-4 relative z-20 flex justify-start">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setInternalExpanded(false);
+              }}
+              className="text-sm text-gray-500 italic hover:text-gray-700 transition"
+            >
+              {t('blog.collapse')}
+            </button>
+          </div>
+        </>
       ) : (
         <div className="px-4 pb-4 relative z-20 flex justify-start">
           <span
@@ -93,7 +87,7 @@ export default function BlogCard({ post, expanded: propExpanded = false, onToggl
             {t('blog.expand', 'Expand')}
           </span>
         </div>
-      )}
+      )
     </article>
   );
 }
