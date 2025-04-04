@@ -81,36 +81,62 @@ export default function BlogPostPage({ post }: BlogPostPageProps) {
 export const getStaticPaths: GetStaticPaths = async () => {
   const slugs = await getAllPostSlugs();
   
+  console.log('[slug].tsx getStaticPaths: Generating paths for slugs:', slugs);
+  
   return {
     paths: slugs.map(slug => ({
       params: { slug },
     })),
-    // Enable incremental static regeneration for new blog posts
-    fallback: true,
+    // Enable fallback to server-side rendering for new blog posts
+    fallback: 'blocking',
   };
 };
 
 // Fetch data for a specific blog post
 export const getStaticProps: GetStaticProps<BlogPostPageProps> = async ({ params }) => {
-  const slug = params?.slug as string;
-  const post = await getPostBySlug(slug);
-  
-  // If post not found, return 404
-  if (!post) {
+  try {
+    const slug = params?.slug as string;
+    console.log(`[slug].tsx getStaticProps: Fetching data for slug "${slug}"`);
+    
+    const post = await getPostBySlug(slug);
+    
+    // If post not found, return 404
+    if (!post) {
+      console.warn(`[slug].tsx getStaticProps: No post found for slug "${slug}"`);
+      return {
+        notFound: true,
+        revalidate: 30, // Try again after 30 seconds
+      };
+    }
+    
+    console.log(`[slug].tsx getStaticProps: Post found for slug "${slug}", serializing content`);
+    
+    // Serialize the MDX content
+    let mdxContent;
+    try {
+      mdxContent = await serialize(post.content || '');
+    } catch (mdxError) {
+      console.error(`[slug].tsx getStaticProps: Error serializing MDX content for slug "${slug}":`, mdxError);
+      // Provide a fallback MDX content
+      mdxContent = await serialize('**Error rendering content**');
+    }
+    
+    console.log(`[slug].tsx getStaticProps: Successfully prepared post data for slug "${slug}"`);
+    
+    return {
+      props: {
+        post: {
+          ...post,
+          mdxContent,
+        },
+      },
+      revalidate: 60, // Revalidate after 60 seconds
+    };
+  } catch (error) {
+    console.error('[slug].tsx getStaticProps: Unexpected error:', error);
     return {
       notFound: true,
+      revalidate: 30, // Try again after 30 seconds
     };
   }
-  
-  // Serialize the MDX content
-  const mdxContent = await serialize(post.content || '');
-  
-  return {
-    props: {
-      post: {
-        ...post,
-        mdxContent,
-      },
-    },
-  };
 };

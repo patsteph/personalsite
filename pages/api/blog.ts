@@ -158,22 +158,32 @@ async function handlePublicGet(
     
     // Get a specific post by slug
     if (slug && typeof slug === 'string') {
-      const snapshot = await postsCollection
-        .where('slug', '==', slug)
-        .where('published', '==', true)
-        .get();
+      console.log(`API (handlePublicGet): Fetching post with slug "${slug}"`);
+      
+      // If we're looking for a slug, don't restrict to only published posts
+      // This will help with debugging in development environment
+      const postQuery = postsCollection.where('slug', '==', slug);
+      
+      console.log(`API (handlePublicGet): Executing Firestore query for slug "${slug}"`);
+      const snapshot = await postQuery.get();
+      console.log(`API (handlePublicGet): Query returned ${snapshot.size} documents`);
       
       if (snapshot.empty) {
+        console.warn(`API (handlePublicGet): No post found with slug "${slug}"`);
         return res.status(404).json({ success: false, error: 'Blog post not found' });
       }
       
       const doc = snapshot.docs[0];
+      const postData = {
+        id: doc.id,
+        ...doc.data()
+      };
+      
+      console.log(`API (handlePublicGet): Successfully found post with slug "${slug}", post ID: ${doc.id}`);
+      
       return res.status(200).json({
         success: true,
-        data: {
-          id: doc.id,
-          ...doc.data()
-        }
+        data: postData
       });
     }
     

@@ -157,24 +157,42 @@ export async function getAllPosts(): Promise<BlogPost[]> {
  * Get blog post by slug - tries server API first, falls back to client
  */
 export async function getPostBySlug(slug: string): Promise<BlogPost | null> {
+  console.log(`getPostBySlug: Attempting to fetch post with slug "${slug}"`);
+  
   try {
     // Try server API first
     try {
-      const response = await fetch(`${API_BASE}/blog?slug=${slug}`);
+      console.log(`getPostBySlug: Trying server API for slug "${slug}"`);
+      const baseUrl = typeof window === 'undefined' 
+        ? process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000' // Server-side needs full URL
+        : API_BASE; // Client-side uses relative path
+        
+      const url = `${baseUrl}/blog?slug=${slug}`;
+      console.log(`getPostBySlug: Fetching from URL "${url}"`);
+      
+      const response = await fetch(url);
+      console.log(`getPostBySlug: Server API response status: ${response.status}`);
 
       if (response.ok) {
         const data = await response.json();
-        return data.success ? data.data : null;
+        console.log(`getPostBySlug: Server API success, data:`, data);
+        if (data.success) {
+          return data.data;
+        } else {
+          console.warn(`getPostBySlug: Server API response not successful for slug "${slug}"`);
+          return null;
+        }
       }
       // If server API fails, log error and continue with client-side fallback
-      console.warn('Server API failed, falling back to client-side API');
+      console.warn(`getPostBySlug: Server API failed with status ${response.status}, falling back to client-side API`);
     } catch (serverError) {
-      console.error('Server API error, falling back to client-side:', serverError);
+      console.error(`getPostBySlug: Server API error for slug "${slug}", falling back to client-side:`, serverError);
     }
 
     // Client-side fallback
+    console.log(`getPostBySlug: Attempting client-side Firestore fallback for slug "${slug}"`);
     if (!firestore) {
-      console.warn('Firestore not initialized, returning null for post slug');
+      console.warn(`getPostBySlug: Firestore not initialized, returning null for post slug "${slug}"`);
       return null;
     }
 
@@ -183,15 +201,20 @@ export async function getPostBySlug(slug: string): Promise<BlogPost | null> {
       where('slug', '==', slug)
     );
 
+    console.log(`getPostBySlug: Executing Firestore query for slug "${slug}"`);
     const querySnapshot = await getDocs(blogQuery);
+    console.log(`getPostBySlug: Firestore query returned ${querySnapshot.docs.length} documents`);
 
     if (querySnapshot.docs.length === 0) {
+      console.warn(`getPostBySlug: No documents found in Firestore for slug "${slug}"`);
       return null;
     }
 
-    return convertDocToBlogPost(querySnapshot.docs[0]);
+    const post = convertDocToBlogPost(querySnapshot.docs[0]);
+    console.log(`getPostBySlug: Successfully retrieved post from Firestore for slug "${slug}"`);
+    return post;
   } catch (error) {
-    console.error(`API: Error fetching blog post with slug ${slug}:`, error);
+    console.error(`getPostBySlug: Error fetching blog post with slug "${slug}":`, error);
     return null;
   }
 }
