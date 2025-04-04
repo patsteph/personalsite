@@ -60,7 +60,7 @@ export default function BlogCard({ post, expanded: propExpanded = false, onToggl
               {post.title}
             </h2>
             <div className="flex items-center text-sm text-gray-600 mb-3">
-              <span>{t('blog.publishedOn', 'Published on')} {formattedDate}</span>
+              <span>Published on {formattedDate}</span>
               <span className="mx-2">•</span>
               <span>{post.readingTime} {t('blog.minuteRead', 'min read')}</span>
             </div>

@@ -2,19 +2,21 @@ import React from 'react';
 import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
 import { getAuth, Auth, connectAuthEmulator } from 'firebase/auth';
 import { getFirestore, Firestore, connectFirestoreEmulator } from 'firebase/firestore';
+import { getStorage, FirebaseStorage } from 'firebase/storage';
 import { firebaseConfig } from './config';
 
 // Initialize Firebase using a function to allow for different initialization paths
 let app: FirebaseApp | null = null;
 let auth: Auth | null = null;
 let firestore: Firestore | null = null;
+let storage: FirebaseStorage | null = null;
 
 // Initialize Firebase with environment variables or runtime config
 const initializeFirebase = () => {
   // Server-side rendering check 
   if (typeof window === 'undefined') {
     // On server, use environment variables if available or return
-    return { app: null, auth: null, firestore: null };
+    return { app: null, auth: null, firestore: null, storage: null };
   }
   
   // Don't re-initialize if already done
@@ -54,7 +56,7 @@ const initializeFirebase = () => {
       // Return if no configuration is available
       if (!config.apiKey) {
         // Return without initializing Firebase when no config is available
-        return { app: null, auth: null, firestore: null };
+        return { app: null, auth: null, firestore: null, storage: null };
       }
     } catch (error) {
       console.error("Error accessing browser globals:", error);
@@ -74,6 +76,7 @@ const initializeFirebase = () => {
   if (app) {
     auth = getAuth(app);
     firestore = getFirestore(app);
+    storage = getStorage(app);
     
     // Connect to emulators in development mode
     if (process.env.NODE_ENV === 'development') {
@@ -86,14 +89,14 @@ const initializeFirebase = () => {
     }
   }
   
-  return { app, auth, firestore };
+  return { app, auth, firestore, storage };
 };
 
 // Initialize Firebase on load
-const { app: initializedApp, auth: initializedAuth, firestore: initializedFirestore } = initializeFirebase();
+const { app: initializedApp, auth: initializedAuth, firestore: initializedFirestore, storage: initializedStorage } = initializeFirebase();
 
 // Export the initialized instances
-export { initializedApp as app, initializedAuth as auth, initializedFirestore as firestore };
+export { initializedApp as app, initializedAuth as auth, initializedFirestore as firestore, initializedStorage as storage };
 
 // Promise that resolves when Firebase is ready
 export const firebaseReady = Promise.resolve();
@@ -127,6 +130,13 @@ export async function getAuthInstance(): Promise<Auth | null> {
  */
 export async function getFirestoreInstance(): Promise<Firestore | null> {
   return firestore;
+}
+
+/**
+ * Get the Firebase Storage instance
+ */
+export async function getStorageInstance(): Promise<FirebaseStorage | null> {
+  return storage;
 }
 
 /**

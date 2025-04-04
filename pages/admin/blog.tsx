@@ -143,10 +143,10 @@ export default function AdminBlogPage() {
     return matchesSearch && matchesPublished;
   });
   
-  // Sort posts by creation date (newest first)
+  // Sort posts by update date (newest first)
   const sortedPosts = [...filteredPosts].sort((a, b) => {
-    const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-    const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    const dateA = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
+    const dateB = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
     return dateB - dateA;
   });
   

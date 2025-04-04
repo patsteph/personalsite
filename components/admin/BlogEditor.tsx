@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { BlogPost } from '@/types/blog';
 import dynamic from 'next/dynamic';
-
+import { uploadImageWithThumbnail } from '@/lib/api/storage';
 // Dynamically import the rich text editor to avoid SSR issues
 const SimpleMDEditor = dynamic(() => import('./SimpleMDEditor'), {
   ssr: false,
@@ -36,6 +36,8 @@ export default function BlogEditor({ initialPost, onSave }: BlogEditorProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [tagsInput, setTagsInput] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadSuccess, setUploadSuccess] = useState(false);
   
   // Set tags input when initial post is loaded
   useEffect(() => {
@@ -155,18 +157,36 @@ export default function BlogEditor({ initialPost, onSave }: BlogEditorProps) {
   };
   
   // Handle cover image upload
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     
-    // Here you would typically upload the image to your storage
-    // and get back a URL to store in the post object
+    // Reset states
+    setIsUploading(true);
+    setUploadSuccess(false);
+    setErrors((prev) => ({ ...prev, coverImage: '' }));
     
-    // For now, we'll just simulate this with a fake URL
-    // In a real implementation, you'd integrate with Firebase Storage
-    // or another file storage service
-    
-    alert('In a production app, this would upload the image to storage. For now, please enter an image URL directly.');
+    try {
+      // Upload the image and create a thumbnail
+      const { thumbnailURL } = await uploadImageWithThumbnail(file, 'blog-images', 'blog-thumbnails');
+      
+      // Update the post with the new image URL
+      setPost(prev => ({ ...prev, coverImage: thumbnailURL }));
+      setUploadSuccess(true);
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => {
+        setUploadSuccess(false);
+      }, 3000);
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      setErrors(prev => ({ 
+        ...prev, 
+        coverImage: 'Failed to upload image. Please try again or enter a URL directly.'
+      }));
+    } finally {
+      setIsUploading(false);
+    }
   };
   
   return (
@@ -284,17 +304,57 @@ export default function BlogEditor({ initialPost, onSave }: BlogEditorProps) {
             value={post.coverImage || ''}
             onChange={handleChange}
             placeholder="https://example.com/image.jpg"
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className={`w-full px-4 py-2 border ${
+              errors.coverImage ? 'border-red-500' : 'border-gray-300'
+            } rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500`}
           />
           <p className="mt-1 text-xs text-gray-500">
             Enter a direct URL to an image, or upload one:
           </p>
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handleImageUpload}
-            className="mt-2"
-          />
+          
+          <div className="mt-2 flex items-center">
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleImageUpload}
+              disabled={isUploading}
+              className={`${isUploading ? 'opacity-50 cursor-not-allowed' : ''}`}
+            />
+            
+            {isUploading && (
+              <div className="ml-3 flex items-center text-sm text-gray-600">
+                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Uploading image...
+              </div>
+            )}
+            
+            {uploadSuccess && (
+              <div className="ml-3 text-sm text-green-600 flex items-center">
+                <svg className="h-4 w-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+                Image uploaded successfully!
+              </div>
+            )}
+          </div>
+          
+          {errors.coverImage && (
+            <p className="mt-1 text-sm text-red-500">{errors.coverImage}</p>
+          )}
+          
+          {post.coverImage && (
+            <div className="mt-3">
+              <p className="text-xs text-gray-500 mb-1">Current cover image:</p>
+              <img 
+                src={post.coverImage} 
+                alt="Cover preview" 
+                className="h-24 w-auto object-cover rounded border border-gray-300" 
+              />
+            </div>
+          )}
         </div>
         
         {/* Tags */}
