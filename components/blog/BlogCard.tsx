@@ -68,10 +68,7 @@ export default function BlogCard({ post, expanded: propExpanded = false, onToggl
           </div>
           <div className="px-4 pb-4 relative z-20 flex justify-start">
             <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setInternalExpanded(false);
-              }}
+              onClick={toggleExpanded}
               className="text-sm text-gray-500 italic hover:text-gray-700 transition"
             >
               {t('blog.collapse')}
