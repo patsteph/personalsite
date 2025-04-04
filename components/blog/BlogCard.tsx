@@ -44,11 +44,11 @@ export default function BlogCard({ post, expanded: propExpanded = false, onToggl
       ${!isExpanded ? 'hover:bg-gray-50' : ''}
       relative
     `}>
-      {!isExpanded && (
-        <div className="absolute inset-0 cursor-pointer z-10" onClick={toggleExpanded}>
-          {/* Invisible overlay to make entire card clickable */}
-        </div>
-      )}
+      {/* Invisible overlay to make entire card clickable */}
+      <div 
+        className="absolute inset-0 cursor-pointer z-10" 
+        onClick={toggleExpanded}
+      />
       {/* Blog header (always visible) */}
       <div 
         className={`p-4 relative ${!isExpanded ? 'hover:bg-gray-50 cursor-pointer' : 'bg-gray-50'}`}
@@ -75,7 +75,7 @@ export default function BlogCard({ post, expanded: propExpanded = false, onToggl
       {isExpanded ? (
         <div className="px-6 pb-6 blog-content border-t border-gray-100 mt-2">
           <div dangerouslySetInnerHTML={{ __html: post.content }} />
-          <div className="mt-6 flex justify-end">
+          <div className="mt-6 flex justify-start">
             <span
               onClick={(e) => toggleExpanded(e)}
               className="text-gray-400 hover:text-gray-600 transition-colors italic text-sm cursor-pointer"

@@ -3,7 +3,7 @@ import { BlogPost } from '@/types/blog';
 import dynamic from 'next/dynamic';
 
 // Dynamically import the rich text editor to avoid SSR issues
-const TextEditor = dynamic(() => import('./TextEditor'), {
+const SimpleMDEditor = dynamic(() => import('./SimpleMDEditor'), {
   ssr: false,
   loading: () => <div className="h-64 w-full bg-gray-100 animate-pulse rounded"></div>
 });
@@ -332,7 +332,7 @@ export default function BlogEditor({ initialPost, onSave }: BlogEditorProps) {
           <label htmlFor="content" className="block text-sm font-medium text-gray-700 mb-1">
             Content <span className="text-red-500">*</span>
           </label>
-          <TextEditor 
+          <SimpleMDEditor 
             initialContent={post.content} 
             onChange={handleContentChange}
           />

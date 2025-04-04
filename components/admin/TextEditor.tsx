@@ -55,6 +55,25 @@ export default function TextEditor({ initialContent, onChange }: TextEditorProps
             direction: ltr;
             text-align: left;
           }
+          .markdown-heading {
+            font-weight: bold;
+            margin: 1em 0 0.5em;
+          }
+          h1.markdown-heading {
+            font-size: 1.8em;
+            margin-top: 0.67em;
+            margin-bottom: 0.67em;
+          }
+          h2.markdown-heading {
+            font-size: 1.5em;
+            margin-top: 0.83em;
+            margin-bottom: 0.83em;
+          }
+          h3.markdown-heading {
+            font-size: 1.17em;
+            margin-top: 1em;
+            margin-bottom: 1em;
+          }
         `;
         document.head.appendChild(style);
       }
@@ -80,15 +99,46 @@ export default function TextEditor({ initialContent, onChange }: TextEditorProps
   }, [initialContent, enforceLTR, isInitialized]);
   
   // Additionally enforce LTR direction after component has mounted
+  // Close the heading dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const dropdown = document.getElementById('heading-dropdown');
+      if (dropdown && !dropdown.classList.contains('hidden')) {
+        // Check if the click was outside the dropdown and its trigger button
+        const target = event.target as Node;
+        if (!dropdown.contains(target) && 
+            !(target as HTMLElement).closest('button[title="Heading"]')) {
+          dropdown.classList.add('hidden');
+        }
+      }
+    };
+
+    // Add event listener to handle clicks outside the dropdown
+    document.addEventListener('mousedown', handleClickOutside);
+    
+    // Clean up the event listener when the component unmounts
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
   useEffect(() => {
     if (editorRef.current && isInitialized) {
       const observer = new MutationObserver((mutations) => {
-        // When DOM changes, ensure all elements are LTR
+        // When DOM changes, ensure all elements are LTR and properly formatted
         mutations.forEach(mutation => {
           if (mutation.type === 'childList') {
             mutation.addedNodes.forEach(node => {
               if (node instanceof HTMLElement) {
                 enforceLTR(node);
+                
+                // Add appropriate classes to heading elements
+                if (node.tagName === 'H1' || node.tagName === 'H2' || node.tagName === 'H3') {
+                  node.classList.add('markdown-heading');
+                  if (node.tagName === 'H1') node.classList.add('text-2xl');
+                  if (node.tagName === 'H2') node.classList.add('text-xl');
+                  if (node.tagName === 'H3') node.classList.add('text-lg');
+                }
               }
             });
           }
@@ -125,11 +175,23 @@ export default function TextEditor({ initialContent, onChange }: TextEditorProps
     }
   };
   
-  // Handle input changes
+  // Handle input changes with improved formatting preservation
   const handleInput = () => {
     if (editorRef.current) {
       // Enforce LTR on the entire editor
       enforceLTR(editorRef.current);
+      
+      // Ensure proper tag structure for Markdown compatibility
+      const allElements = editorRef.current.querySelectorAll('*');
+      allElements.forEach(el => {
+        // Add appropriate classes to heading elements
+        if (el.tagName === 'H1' || el.tagName === 'H2' || el.tagName === 'H3') {
+          el.classList.add('markdown-heading');
+          if (el.tagName === 'H1') el.classList.add('text-2xl');
+          if (el.tagName === 'H2') el.classList.add('text-xl');
+          if (el.tagName === 'H3') el.classList.add('text-lg');
+        }
+      });
       
       // Get content and update state
       const content = editorRef.current.innerHTML;
@@ -139,8 +201,60 @@ export default function TextEditor({ initialContent, onChange }: TextEditorProps
   };
   
   // Execute commands on the document
+  // Execute commands on the document with improved handling for various formats
   const execCommand = (command: string, value: string | null = null) => {
-    document.execCommand(command, false, value || undefined);
+    // Special handling for heading formats to ensure proper Markdown formatting
+    if (command === 'formatBlock' && value) {
+      const selection = window.getSelection();
+      if (!selection || selection.rangeCount === 0) {
+        // If no selection, create a new range at the cursor position
+        if (editorRef.current) {
+          editorRef.current.focus();
+        }
+      }
+      
+      try {
+        // First, ensure we're not already in a heading or other block element
+        document.execCommand('removeFormat', false);
+        
+        // Cross-browser handling for heading formatting
+        if (value === '<h1>' || value === '<h2>' || value === '<h3>') {
+          // For modern browsers
+          document.execCommand(command, false, value);
+          
+          // Add specific classes to enhance appearance
+          setTimeout(() => {
+            if (editorRef.current) {
+              const headings = editorRef.current.querySelectorAll(value.replace(/[<>]/g, ''));
+              headings.forEach(heading => {
+                heading.classList.add('markdown-heading');
+                if (value === '<h1>') {
+                  heading.classList.add('text-2xl');
+                } else if (value === '<h2>') {
+                  heading.classList.add('text-xl');
+                } else if (value === '<h3>') {
+                  heading.classList.add('text-lg');
+                }
+              });
+            }
+          }, 10);
+        } else {
+          // For regular blocks like paragraphs
+          document.execCommand(command, false, value);
+        }
+        
+        // Ensure proper styling is maintained
+        setTimeout(() => {
+          if (editorRef.current) {
+            enforceLTR(editorRef.current);
+            handleInput();
+          }
+        }, 0);
+      }
+    } else {
+      // Standard command execution for other formatting options
+      document.execCommand(command, false, value || undefined);
+    }
     
     // Refocus editor after command execution
     if (editorRef.current) {
@@ -206,14 +320,57 @@ export default function TextEditor({ initialContent, onChange }: TextEditorProps
         
         <div className="h-6 w-px bg-gray-300 mx-1"></div>
         
-        <button
-          type="button"
-          onClick={() => execCommand('formatBlock', '<h2>')}
-          className="p-1 hover:bg-gray-200 rounded"
-          title="Heading"
-        >
-          <span className="font-bold">H</span>
-        </button>
+        {/* Heading Dropdown with click-based activation */}
+        <div className="relative inline-block">
+          <button
+            type="button"
+            onClick={() => {
+              const dropdown = document.getElementById('heading-dropdown');
+              if (dropdown) {
+                dropdown.classList.toggle('hidden');
+              }
+            }}
+            className="p-1 hover:bg-gray-200 rounded flex items-center"
+            title="Heading"
+          >
+            <span className="font-bold">H</span>
+            <span className="text-xs ml-1">▼</span>
+          </button>
+          
+          {/* Dropdown for heading levels - now with click-based display */}
+          <div 
+            id="heading-dropdown"
+            className="absolute left-0 mt-1 w-32 bg-white shadow-lg rounded-md hidden z-10 border border-gray-200"
+          >
+            <button 
+              onClick={() => {
+                execCommand('formatBlock', '<h1>');
+                document.getElementById('heading-dropdown')?.classList.add('hidden');
+              }} 
+              className="w-full text-left px-3 py-2 hover:bg-gray-100 font-bold text-xl"
+            >
+              Heading 1
+            </button>
+            <button 
+              onClick={() => {
+                execCommand('formatBlock', '<h2>');
+                document.getElementById('heading-dropdown')?.classList.add('hidden');
+              }} 
+              className="w-full text-left px-3 py-2 hover:bg-gray-100 font-bold text-lg"
+            >
+              Heading 2
+            </button>
+            <button 
+              onClick={() => {
+                execCommand('formatBlock', '<h3>');
+                document.getElementById('heading-dropdown')?.classList.add('hidden');
+              }} 
+              className="w-full text-left px-3 py-2 hover:bg-gray-100 font-bold text-base"
+            >
+              Heading 3
+            </button>
+          </div>
+        </div>
         
         <button
           type="button"
