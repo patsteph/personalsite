@@ -10,6 +10,12 @@ interface SimpleMDEditorProps {
   onChange: (content: string) => void;
 }
 
+interface MenuButtonProps {
+  title: string;
+  action: () => void;
+  isActive?: (() => boolean) | null;
+}
+
 const SimpleMDEditor: React.FC<SimpleMDEditorProps> = ({ initialContent, onChange }) => {
   const editor = useEditor({
     extensions: [
@@ -41,7 +47,7 @@ const SimpleMDEditor: React.FC<SimpleMDEditorProps> = ({ initialContent, onChang
     return <div>Loading editor...</div>;
   }
 
-  const MenuButton = ({ title, action, isActive = null }) => (
+  const MenuButton: React.FC<MenuButtonProps> = ({ title, action, isActive = null }) => (
     <button
       type="button"
       onClick={action}
