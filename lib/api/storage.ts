@@ -20,6 +20,10 @@ export const generateUniqueFilename = (file: File): string => {
  */
 export const uploadImage = async (file: File, path: string = 'images'): Promise<string> => {
   try {
+    if (!storage) {
+      throw new Error('Firebase storage is not initialized');
+    }
+    
     const uniqueFilename = generateUniqueFilename(file);
     const storageRef = ref(storage, `${path}/${uniqueFilename}`);
     
@@ -50,6 +54,10 @@ export const createAndUploadThumbnail = async (
   maxHeight: number = 300,
   path: string = 'thumbnails'
 ): Promise<string> => {
+  if (!storage) {
+    throw new Error('Firebase storage is not initialized');
+  }
+  
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     
@@ -142,6 +150,9 @@ export const uploadImageWithThumbnail = async (
   thumbnailPath: string = 'thumbnails'
 ): Promise<{ imageURL: string; thumbnailURL: string }> => {
   try {
+    if (!storage) {
+      throw new Error('Firebase storage is not initialized');
+    }
     // Upload the original image
     const imageURL = await uploadImage(file, imagePath);
     

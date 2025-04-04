@@ -75,14 +75,14 @@ export default function BlogCard({ post, expanded: propExpanded = false, onToggl
       {isExpanded ? (
         <div className="px-6 pb-6 blog-content border-t border-gray-100 mt-2">
           <div dangerouslySetInnerHTML={{ __html: post.content }} />
-          <div className="mt-6 flex justify-start">
-            <span
-              onClick={(e) => toggleExpanded(e)}
-              className="text-gray-400 hover:text-gray-600 transition-colors italic text-sm cursor-pointer"
-            >
-              {t('blog.collapse', 'Collapse')}
-            </span>
-          </div>
+        </div>
+        <div className="px-4 pb-4 relative z-20 flex justify-start">
+          <span
+            onClick={(e) => toggleExpanded(e)}
+            className="text-gray-400 hover:text-gray-600 transition-colors italic text-sm cursor-pointer"
+          >
+            {t('blog.collapse', 'Collapse')}
+          </span>
         </div>
       ) : (
         <div className="px-4 pb-4 relative z-20 flex justify-start">
