@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { BlogPost } from '@/types/blog';
 import { format } from 'date-fns';
@@ -9,6 +9,11 @@ type BlogListProps = {
 
 export default function BlogList({ posts }: BlogListProps) {
   const [expandedPost, setExpandedPost] = useState<string | null>(null);
+  
+  useEffect(() => {
+    // Log the posts that we're rendering
+    console.log('BlogList: Rendering with posts:', posts);
+  }, [posts]);
   
   // Toggle expanded state for a post
   const togglePost = (slug: string) => {
@@ -39,7 +44,7 @@ export default function BlogList({ posts }: BlogListProps) {
                   <div className="flex items-center text-sm text-gray-600 mb-3">
                     <span>Published on {format(new Date(post.date || new Date().toISOString()), 'MMMM d, yyyy')}</span>
                     <span className="mx-2">•</span>
-                    <span>{post.readingTime} min read</span>
+                    <span>{post.readingTime || 5} min read</span>
                   </div>
                   <p className="text-steel-blue italic">
                     {post.summary}
@@ -63,6 +68,7 @@ export default function BlogList({ posts }: BlogListProps) {
                 <Link 
                   href={`/blog/${post.slug}`}
                   className="inline-block text-steel-blue hover:text-accent font-medium transition-colors"
+                  onClick={() => console.log(`BlogList: Clicked on post with slug "${post.slug}"`)}
                 >
                   Read More →
                 </Link>

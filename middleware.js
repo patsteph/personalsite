@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server';
 
-// Middleware function to protect routes and handle admin redirects
+// Middleware function to protect routes and handle redirects
 export async function middleware(req) {
   const { pathname } = req.nextUrl;
+  
+  console.log(`Middleware running for path: ${pathname}`);
   
   // Redirect legacy admin HTML pages to the React-based admin
   if (pathname === '/admin-login.html') {
@@ -27,6 +29,19 @@ export async function middleware(req) {
     }
   }
   
+  // Special handling for blog posts to ensure they work even with prebuild issues
+  if (pathname.startsWith('/blog/') && pathname !== '/blog') {
+    // Extract the slug from the pathname
+    const slug = pathname.replace('/blog/', '');
+    console.log(`Middleware: Processing blog post request for slug "${slug}"`);
+    
+    // If there's a 404 being returned for the data URL, force a rewrite to SSR
+    if (pathname.includes('_next/data') && pathname.includes('.json')) {
+      console.log(`Middleware: Handling data request for blog post slug "${slug}"`);
+      return NextResponse.rewrite(new URL(`/blog/${slug}`, req.url));
+    }
+  }
+  
   return NextResponse.next();
 }
 
@@ -35,6 +50,8 @@ export const config = {
   matcher: [
     '/admin/:path*', 
     '/admin-login.html', 
-    '/admin-dashboard.html'
+    '/admin-dashboard.html',
+    '/blog/:slug*',
+    '/_next/data/:build/blog/:slug.json'
   ],
 };

@@ -122,9 +122,9 @@ const nextConfig = {
     };
   },
   
-  // Customize the build ID for more consistent builds
+  // Use a static build ID to prevent 404s on dynamic routes
   generateBuildId: async () => {
-    return 'build-' + new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    return 'stable-build';
   },
   
   // Compression
