@@ -87,7 +87,7 @@ export default function BlogCard({ post, expanded: propExpanded = false, onToggl
             {t('blog.expand', 'Expand')}
           </span>
         </div>
-      )
+      )}
     </article>
   );
 }
