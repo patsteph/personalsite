@@ -157,47 +157,31 @@ export async function getAllPosts(): Promise<BlogPost[]> {
  * Get blog post by slug - tries server API first, falls back to client
  */
 export async function getPostBySlug(slug: string): Promise<BlogPost | null> {
-  console.log(`getPostBySlug: Attempting to fetch post with slug "${slug}"`);
-  
   try {
     // Try server API first
     try {
-      console.log(`getPostBySlug: Trying server API for slug "${slug}"`);
       const baseUrl = typeof window === 'undefined' 
         ? process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000' // Server-side needs full URL
         : API_BASE; // Client-side uses relative path
         
       const url = `${baseUrl}/blog?slug=${slug}`;
-      console.log(`getPostBySlug: Fetching from URL "${url}"`);
-      
       const response = await fetch(url);
-      console.log(`getPostBySlug: Server API response status: ${response.status}`);
 
       if (response.ok) {
         const data = await response.json();
-        console.log(`getPostBySlug: Server API success, data:`, data);
         if (data.success) {
           return data.data;
-        } else {
-          console.warn(`getPostBySlug: Server API response not successful for slug "${slug}"`);
-          return null;
         }
       }
-      // If server API fails, log error and continue with client-side fallback
-      console.warn(`getPostBySlug: Server API failed with status ${response.status}, falling back to client-side API`);
     } catch (serverError) {
-      console.error(`getPostBySlug: Server API error for slug "${slug}", falling back to client-side:`, serverError);
+      console.error(`Server API error for slug "${slug}", falling back to client-side:`, serverError);
     }
 
     // Client-side fallback
-    console.log(`getPostBySlug: Attempting client-side Firestore fallback for slug "${slug}"`);
     if (!firestore) {
-      console.warn(`getPostBySlug: Firestore not initialized, returning null for post slug "${slug}"`);
       return null;
     }
 
-    console.log(`getPostBySlug: Executing Firestore query for slug "${slug}"`);
-    
     // Try with exact slug match first
     let blogQuery = query(
       collection(firestore as Firestore, COLLECTION_NAME),
@@ -205,81 +189,34 @@ export async function getPostBySlug(slug: string): Promise<BlogPost | null> {
     );
     
     let querySnapshot = await getDocs(blogQuery);
-    console.log(`getPostBySlug: Firestore exact query returned ${querySnapshot.docs.length} documents`);
 
-    // If no results, try the hardcoded alternate slugs we know about
+    // If no results, try alternative known slug
     if (querySnapshot.docs.length === 0) {
-      console.warn(`getPostBySlug: No documents found in Firestore for exact slug "${slug}", trying known alternatives`);
-      
-      // Try with known alternate slugs based on the log data
       const alternativeSlugs = [
         'building-my-personal-site-a-journey-from-not-a-programmer-to-web-developer-sort-of-',
         'this-site'
       ];
       
-      // Try each alternative if it's not the original slug
       for (const altSlug of alternativeSlugs) {
         if (altSlug === slug) continue; // Skip if same as original
         
-        console.log(`getPostBySlug: Trying alternative slug "${altSlug}"`);
         blogQuery = query(
           collection(firestore as Firestore, COLLECTION_NAME),
           where('slug', '==', altSlug)
         );
         
         querySnapshot = await getDocs(blogQuery);
-        if (querySnapshot.docs.length > 0) {
-          console.log(`getPostBySlug: Found document with alternative slug "${altSlug}"`);
-          break; // Found a match, stop searching
-        }
-      }
-    }
-    
-    // If still no results, try getting all documents and finding closest match
-    if (querySnapshot.docs.length === 0) {
-      console.warn(`getPostBySlug: No documents found for any known slugs, fetching all posts to find closest match`);
-      
-      // Get all blog posts
-      blogQuery = query(
-        collection(firestore as Firestore, COLLECTION_NAME)
-      );
-      
-      querySnapshot = await getDocs(blogQuery);
-      console.log(`getPostBySlug: Fetched ${querySnapshot.docs.length} total documents`);
-      
-      // Find the post with the closest matching slug
-      const allPosts = querySnapshot.docs.map(doc => {
-        const data = doc.data();
-        return { doc, slug: data.slug || '' };
-      });
-      
-      console.log(`getPostBySlug: Available slugs:`, allPosts.map(p => p.slug));
-      
-      // Try to find a post with a similar slug
-      const matchingPost = allPosts.find(post => 
-        post.slug.includes(slug) || 
-        slug.includes(post.slug)
-      );
-      
-      if (matchingPost) {
-        console.log(`getPostBySlug: Found document with similar slug "${matchingPost.slug}"`);
-        querySnapshot = { docs: [matchingPost.doc] } as any;
-      } else {
-        console.warn(`getPostBySlug: No documents found with similar slug to "${slug}"`);
-        return null;
+        if (querySnapshot.docs.length > 0) break;
       }
     }
     
     if (querySnapshot.docs.length === 0) {
-      console.warn(`getPostBySlug: No documents found in Firestore after trying all alternatives for slug "${slug}"`);
       return null;
     }
 
-    const post = convertDocToBlogPost(querySnapshot.docs[0]);
-    console.log(`getPostBySlug: Successfully retrieved post from Firestore for slug "${slug}"`);
-    return post;
+    return convertDocToBlogPost(querySnapshot.docs[0]);
   } catch (error) {
-    console.error(`getPostBySlug: Error fetching blog post with slug "${slug}":`, error);
+    console.error(`Error fetching blog post with slug "${slug}":`, error);
     return null;
   }
 }

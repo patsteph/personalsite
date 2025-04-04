@@ -13,6 +13,8 @@
   "blog": {
     "title": "Blog",
     "readMore": "Read More",
+    "expand": "Expand",
+    "collapse": "Collapse",
     "publishedOn": "Published on {{date}}",
     "readingTime": "{{time}} min read",
     "categories": "Categories",

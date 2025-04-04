@@ -12,9 +12,6 @@ type BlogPageProps = {
 
 export default function BlogPage({ posts }: BlogPageProps) {
   const { t } = useTranslation();
-  
-  // Log received props in the browser console
-  console.log('BlogPage Props:', { posts });
 
   return (
     <Layout section="blog">
@@ -35,37 +32,25 @@ export default function BlogPage({ posts }: BlogPageProps) {
 
 // Fetch data at build time
 export const getStaticProps: GetStaticProps<BlogPageProps> = async () => {
-  console.log('blog/index.tsx getStaticProps: Fetching blog posts...');
   try {
-    // Use the server-side function to get posts
-    console.log('blog/index.tsx getStaticProps: Calling getBlogPostsServerSide...');
     const posts = await getBlogPostsServerSide(); 
-    console.log(`blog/index.tsx getStaticProps: Received ${posts.length} posts.`);
-    
-    if (posts.length === 0) {
-      console.log('blog/index.tsx getStaticProps: WARNING - No posts received from getBlogPostsServerSide');
-    } else {
-      // Log the first post for debugging
-      console.log('blog/index.tsx getStaticProps: First post:', JSON.stringify(posts[0], null, 2));
-    }
     
     // Filter for published posts only before passing to the page
     const publishedPosts = posts.filter(post => post.published);
-    console.log(`blog/index.tsx getStaticProps: Filtered to ${publishedPosts.length} published posts.`);
 
     return {
       props: {
         posts: publishedPosts, // Pass only published posts
       },
-      revalidate: 10, // Reduced revalidation time for testing (e.g., every 10 seconds)
+      revalidate: 60, // Revalidate every minute
     };
   } catch (error) {
-    console.error('blog/index.tsx getStaticProps: Error fetching posts:', error);
+    console.error('Error fetching blog posts:', error);
     return {
       props: {
         posts: [], // Return empty on error
       },
-      revalidate: 5, // Revalidate very soon after an error
+      revalidate: 30, // Revalidate after 30 seconds on error
     };
   }
 };
