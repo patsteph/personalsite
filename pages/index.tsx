@@ -62,7 +62,7 @@ export default function HomePage({ recentPosts }: HomePageProps) {
               {t('nav.blog', 'Blog')}
             </h3>
             <p className="text-gray-700 mb-2 text-sm">
-              My thoughts on things.
+             My thoughts on things 🤔💭
             </p>
             <Link 
               href="/blog"
@@ -80,7 +80,7 @@ export default function HomePage({ recentPosts }: HomePageProps) {
               {t('nav.signals', 'Signals')}
             </h3>
             <p className="text-gray-700 mb-2 text-sm">
-              Articles and newsletters I read.
+             Articles and newsletters. 📚📰
             </p>
             <Link 
               href="/signals"
@@ -98,7 +98,7 @@ export default function HomePage({ recentPosts }: HomePageProps) {
               {t('nav.cv', 'CV')}
             </h3>
             <p className="text-gray-700 mb-2 text-sm"> 
-              My career journey.
+             My career journey. 🚀
             </p>
             <Link 
               href="/cv"
@@ -116,7 +116,7 @@ export default function HomePage({ recentPosts }: HomePageProps) {
               {t('nav.contact', 'Contact')}
             </h3>
             <p className="text-gray-700 mb-2 text-sm">
-              Connect with me.
+             💬 with me. 
             </p>
             <Link 
               href="/contact"

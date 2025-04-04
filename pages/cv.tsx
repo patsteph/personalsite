@@ -10,6 +10,7 @@ import { CVData } from '@/types/cv';
 import { useTranslation } from '@/lib/translations';
 import { useState } from 'react';
 import { logAnalyticsEvent } from '@/lib/analytics';
+import Image from 'next/image';
 
 // Props type definition
 type CVPageProps = {
@@ -97,10 +98,16 @@ export default function CVPage({ cvData }: CVPageProps) {
               <h2 className="text-xl font-bold text-accent mb-2">My Professional Journey</h2>
               
               <div className="relative py-4">
-                {/* Timeline imagery will be loaded here */}
-                <div className="w-full h-[350px] bg-gray-100 rounded-lg flex flex-col items-center justify-center mb-2">
-                  <p className="text-gray-500 text-sm">Career timeline image will be displayed here</p>
-                  <p className="text-xs text-gray-400 mt-1">Upload an image to public/images/career-timeline.jpg</p>
+                {/* Timeline imagery */}
+                <div className="w-full h-[350px] bg-gray-100 rounded-lg overflow-hidden mb-2">
+                  <Image 
+                    src="/images/career-timeline.jpg" 
+                    alt="Career Timeline" 
+                    width={800}
+                    height={350}
+                    className="w-full h-full object-contain"
+                    priority
+                  />
                 </div>
                 
                 <div className="text-center mt-2">
