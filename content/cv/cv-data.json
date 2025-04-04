@@ -22,6 +22,34 @@
         "location": "Omaha, NE",
         "period": "2012 - 2017",
         "description": "Advising customers on innovative collaboration solutions, I bridged business needs with technical capabilities to drive seamless adoption. Working closely with stakeholders, I provided strategic guidance, solution design, and technical expertise to optimize collaboration experiences and deliver measurable business outcomes."
+      },
+      {
+        "title": "Systems Engineer",
+        "company": "Cisco",
+        "location": "Omaha, NE",
+        "period": "2008 - 2012",
+        "description": "Designed enterprise-scale Cisco networking, security, and collaboration solutions, aligning technology with business objectives to drive digital transformation and operational efficiency."
+      },
+      {
+        "title": "Network Engineer",
+        "company": "First National Bank of Omaha",
+        "location": "Omaha, NE",
+        "period": "2005 - 2008",
+        "description": "Led enterprise network modernization, upgrading data centers, WAN, and remote branches with advanced routing and switching, while driving the deployment of Cisco Call Manager for seamless collaboration."
+      },
+      {
+        "title": "Network Engineer",
+        "company": "Northern Natural Gas",
+        "location": "Omaha, NE",
+        "period": "2002 - 2005",
+        "description": "Executed data center migration from Texas to Omaha, deploying load balancing, firewalls, and redesigned WAN services for remote sites, while implementing enterprise wireless, Cisco Call Manager, and Unity for seamless connectivity."
+      },
+      {
+        "title": "LAN Tier II",
+        "company": "West Corporation",
+        "location": "Omaha, NE",
+        "period": "1998 - 2003",
+        "description": "Provided Tier II LAN support by monitoring enterprise systems and resolving issues across Active Directory, Windows Server, Linux, and desktop environments for both internal and external stakeholders."
       }
     ],
     
@@ -29,7 +57,7 @@
       "Technical Leadership",
       "Cross-functional Collaboration",
       "Strategic Business Alignment",
-      "Customer-Centirc Selling",
+      "Customer-Centric Selling",
       "Stakeholder & Relationship Management",
       "Data-Driven Decision Making",
       "Change Management & Adaptability",

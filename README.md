@@ -168,9 +168,9 @@ personal-website/
 ### Virtual Bookshelf
 
 The bookshelf feature displays books I'm reading with:
-- Visual book spines with accurate colors based on the cover
+- Book cover displays in a card 
 - ISBN lookup to automatically fetch book metadata
-- Filterable by read status and genre
+- Filterable by read status, genre, and my rating
 - Full book details with my personal notes
 
 ### Blog Platform
@@ -227,7 +227,7 @@ For other hosting platforms, follow the standard Next.js deployment guidelines.
 
 ## 📋 Future Enhancements
 
-- [ ] Add light/dark theme toggle
+- [X] Add light/dark theme toggle
 - [ ] Implement dynamic image optimization
 - [ ] Add RSS feed for blog posts
 - [ ] Create PWA support for offline access
