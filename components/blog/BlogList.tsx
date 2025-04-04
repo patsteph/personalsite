@@ -66,9 +66,9 @@ export default function BlogList({ posts }: BlogListProps) {
             ) : (
               <div className="px-6 pb-6">
                 <Link 
-                  href={`/blog/${post.slug}`}
+                  href={`/blog/${post.id || post.slug}`}
                   className="inline-block text-steel-blue hover:text-accent font-medium transition-colors"
-                  onClick={() => console.log(`BlogList: Clicked on post with slug "${post.slug}"`)}
+                  onClick={() => console.log(`BlogList: Clicked on post with ID "${post.id}" and slug "${post.slug}"`)}
                 >
                   Read More →
                 </Link>

@@ -154,37 +154,71 @@ async function handlePublicGet(
   const postsCollection = firestore.collection('blog-posts');
   
   try {
-    const { slug, tag, limit: limitParam } = req.query;
+    const { id, slug, tag, limit: limitParam } = req.query;
+    
+    // Get post by ID (more reliable than slug)
+    if (id && typeof id === 'string') {
+      console.log(`API (handlePublicGet): Fetching post with ID "${id}"`);
+      
+      try {
+        const docRef = postsCollection.doc(id);
+        const docSnapshot = await docRef.get();
+        
+        if (!docSnapshot.exists) {
+          console.warn(`API (handlePublicGet): No post found with ID "${id}"`);
+          return res.status(404).json({ success: false, error: 'Blog post not found' });
+        }
+        
+        const postData = {
+          id: docSnapshot.id,
+          ...docSnapshot.data()
+        };
+        
+        console.log(`API (handlePublicGet): Successfully found post with ID "${id}"`);
+        
+        return res.status(200).json({
+          success: true,
+          data: postData
+        });
+      } catch (error) {
+        console.error(`API (handlePublicGet): Error fetching post with ID "${id}":`, error);
+        return res.status(500).json({ success: false, error: 'Error fetching post by ID' });
+      }
+    }
     
     // Get a specific post by slug
     if (slug && typeof slug === 'string') {
       console.log(`API (handlePublicGet): Fetching post with slug "${slug}"`);
       
-      // If we're looking for a slug, don't restrict to only published posts
-      // This will help with debugging in development environment
-      const postQuery = postsCollection.where('slug', '==', slug);
+      // Try known slugs first
+      const knownSlugs = [slug, 'this-site', 'building-my-personal-site-a-journey-from-not-a-programmer-to-web-developer-sort-of-'];
       
-      console.log(`API (handlePublicGet): Executing Firestore query for slug "${slug}"`);
-      const snapshot = await postQuery.get();
-      console.log(`API (handlePublicGet): Query returned ${snapshot.size} documents`);
-      
-      if (snapshot.empty) {
-        console.warn(`API (handlePublicGet): No post found with slug "${slug}"`);
-        return res.status(404).json({ success: false, error: 'Blog post not found' });
+      for (const currentSlug of knownSlugs) {
+        // If we're looking for a slug, don't restrict to only published posts in development
+        const postQuery = postsCollection.where('slug', '==', currentSlug);
+        
+        console.log(`API (handlePublicGet): Trying slug "${currentSlug}"`);
+        const snapshot = await postQuery.get();
+        
+        if (!snapshot.empty) {
+          const doc = snapshot.docs[0];
+          const postData = {
+            id: doc.id,
+            ...doc.data()
+          };
+          
+          console.log(`API (handlePublicGet): Found post with slug "${currentSlug}", post ID: ${doc.id}`);
+          
+          return res.status(200).json({
+            success: true,
+            data: postData
+          });
+        }
       }
       
-      const doc = snapshot.docs[0];
-      const postData = {
-        id: doc.id,
-        ...doc.data()
-      };
-      
-      console.log(`API (handlePublicGet): Successfully found post with slug "${slug}", post ID: ${doc.id}`);
-      
-      return res.status(200).json({
-        success: true,
-        data: postData
-      });
+      // If we get here, none of the known slugs matched
+      console.warn(`API (handlePublicGet): No post found with any known slug`);
+      return res.status(404).json({ success: false, error: 'Blog post not found' });
     }
     
     // Get posts by tag

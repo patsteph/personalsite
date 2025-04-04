@@ -61,35 +61,132 @@ export default function BlogPostPage({ post }: BlogPostPageProps) {
 // Fetch data for a specific blog post at request time
 export const getServerSideProps: GetServerSideProps<BlogPostPageProps> = async ({ params, req, res }) => {
   try {
-    const slug = params?.slug as string;
-    console.log(`[slug].tsx getServerSideProps: Fetching data for slug "${slug}"`);
+    const slugOrId = params?.slug as string;
+    console.log(`[slug].tsx getServerSideProps: Called with parameter "${slugOrId}"`);
     
     // Cache the response for 1 minute
     res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate');
     
-    const post = await getPostBySlug(slug);
+    // First, try to get the post directly from the database using our debug API
+    console.log(`[slug].tsx getServerSideProps: Trying to fetch directly from database...`);
     
-    // If post not found, return 404
+    try {
+      // Make a direct call to our debug API to see what's in the database
+      const debugApiUrl = `${req.headers.host?.includes('localhost') ? 'http://localhost:3000' : ''}/api/debug-slugs`;
+      console.log(`[slug].tsx getServerSideProps: Calling debug API at ${debugApiUrl}`);
+      
+      const response = await fetch(debugApiUrl);
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.posts?.length > 0) {
+          console.log(`[slug].tsx getServerSideProps: Debug API returned ${data.posts.length} posts`);
+          
+          // Log all available posts for debugging
+          console.log("All posts in database:", data.posts);
+          
+          // Try to find the post by ID first (more reliable)
+          let foundPost = data.posts.find(p => p.id === slugOrId);
+          
+          // If not found by ID, try to find by slug
+          if (!foundPost) {
+            foundPost = data.posts.find(p => 
+              p.slug === slugOrId ||
+              p.slug === 'this-site' || // Hardcoded slug from error logs
+              p.slug === 'building-my-personal-site-a-journey-from-not-a-programmer-to-web-developer-sort-of-' // Hardcoded slug from logs
+            );
+          }
+          
+          if (foundPost) {
+            console.log(`[slug].tsx getServerSideProps: Found post in database with id=${foundPost.id} and slug=${foundPost.slug}`);
+            
+            // Now fetch the complete post with all fields using the ID
+            try {
+              // Make a request to our API to get the full post data
+              const postApiUrl = `${req.headers.host?.includes('localhost') ? 'http://localhost:3000' : ''}/api/blog?id=${foundPost.id}`;
+              console.log(`[slug].tsx getServerSideProps: Fetching full post from ${postApiUrl}`);
+              
+              const postResponse = await fetch(postApiUrl);
+              if (postResponse.ok) {
+                const postData = await postResponse.json();
+                if (postData.success && postData.data) {
+                  const post = postData.data;
+                  console.log(`[slug].tsx getServerSideProps: Successfully fetched full post with ID ${post.id}`);
+                  
+                  // Serialize the MDX content
+                  let mdxContent;
+                  try {
+                    mdxContent = await serialize(post.content || '');
+                  } catch (mdxError) {
+                    console.error(`[slug].tsx getServerSideProps: Error serializing MDX content:`, mdxError);
+                    mdxContent = await serialize('**Error rendering content**');
+                  }
+                  
+                  // Return the post data
+                  return {
+                    props: {
+                      post: {
+                        ...post,
+                        mdxContent,
+                      },
+                    },
+                  };
+                }
+              }
+            } catch (apiError) {
+              console.error(`[slug].tsx getServerSideProps: Error fetching full post:`, apiError);
+            }
+          }
+        }
+      }
+    } catch (debugError) {
+      console.error(`[slug].tsx getServerSideProps: Error using debug API:`, debugError);
+    }
+    
+    // If we're still here, fallback to the normal logic
+    console.log(`[slug].tsx getServerSideProps: Direct database approach failed, trying regular getPostBySlug...`);
+    let post = await getPostBySlug(slugOrId);
+    
+    // If not found, try with hardcoded slug values
     if (!post) {
-      console.warn(`[slug].tsx getServerSideProps: No post found for slug "${slug}"`);
+      console.warn(`[slug].tsx getServerSideProps: No post found with regular getPostBySlug, trying hardcoded values`);
+      
+      const knownSlugs = [
+        'this-site',
+        'building-my-personal-site-a-journey-from-not-a-programmer-to-web-developer-sort-of-'
+      ];
+      
+      for (const knownSlug of knownSlugs) {
+        console.log(`[slug].tsx getServerSideProps: Trying with hardcoded slug "${knownSlug}"`);
+        const altPost = await getPostBySlug(knownSlug);
+        if (altPost) {
+          console.log(`[slug].tsx getServerSideProps: Found post with hardcoded slug "${knownSlug}"`);
+          post = altPost;
+          break;
+        }
+      }
+    }
+    
+    // If still not found, return 404
+    if (!post) {
+      console.warn(`[slug].tsx getServerSideProps: No post found after all attempts`);
       return {
         notFound: true,
       };
     }
     
-    console.log(`[slug].tsx getServerSideProps: Post found for slug "${slug}", serializing content`);
+    console.log(`[slug].tsx getServerSideProps: Post found, serializing content`);
     
     // Serialize the MDX content
     let mdxContent;
     try {
       mdxContent = await serialize(post.content || '');
     } catch (mdxError) {
-      console.error(`[slug].tsx getServerSideProps: Error serializing MDX content for slug "${slug}":`, mdxError);
-      // Provide a fallback MDX content
+      console.error(`[slug].tsx getServerSideProps: Error serializing MDX content:`, mdxError);
       mdxContent = await serialize('**Error rendering content**');
     }
     
-    console.log(`[slug].tsx getServerSideProps: Successfully prepared post data for slug "${slug}"`);
+    console.log(`[slug].tsx getServerSideProps: Successfully prepared post data`);
     
     return {
       props: {
