@@ -44,47 +44,62 @@ export default function BlogCard({ post, expanded: propExpanded = false, onToggl
       ${!isExpanded ? 'hover:bg-gray-50' : ''}
       relative
     `}>
-      {/* Blog content (visible when expanded or on blog post page) */}
-      {/* Blog header and summary */}
-      <div className="px-6 pt-6">
-        <div className="flex flex-col">
-          <h2 className="text-xl font-bold mb-2">{post.title}</h2>
-          <div className="flex items-center text-gray-500 text-sm mb-3">
-            <span>{formattedDate}</span>
-            <span className="mx-2">•</span>
-            <span>{post.readingTime} {t('blog.minuteRead', 'min read')}</span>
+      <div className="flex flex-col md:flex-row">
+        {/* Thumbnail image (if available) */}
+        {post.coverImage && (
+          <div className="md:w-1/4 flex-shrink-0">
+            <div className="h-full w-full relative overflow-hidden bg-gray-100">
+              <img 
+                src={post.coverImage} 
+                alt={post.title}
+                className="h-full w-full object-cover" 
+                style={{ aspectRatio: '16/9' }}
+              />
+            </div>
           </div>
-          <p className="text-steel-blue italic">
-            {post.summary}
-          </p>
+        )}
+        
+        {/* Blog header and summary */}
+        <div className={`flex-1 px-6 pt-6 ${post.coverImage ? 'md:pl-6' : ''}`}>
+          <div className="flex flex-col">
+            <h2 className="text-xl font-bold mb-2">{post.title}</h2>
+            <div className="flex items-center text-gray-500 text-sm mb-3">
+              <span>{formattedDate}</span>
+              <span className="mx-2">•</span>
+              <span>{post.readingTime} {t('blog.minuteRead', 'min read')}</span>
+            </div>
+            <p className="text-steel-blue italic">
+              {post.summary}
+            </p>
+          </div>
+          
+          {/* Blog content (visible when expanded or on blog post page) */}
+          {isExpanded ? (
+            <>
+              <div className="py-6 blog-content border-t border-gray-100 mt-2">
+                <div dangerouslySetInnerHTML={{ __html: post.content }} />
+              </div>
+              <div className="pb-4 relative z-20 flex justify-start">
+                <button
+                  onClick={toggleExpanded}
+                  className="text-sm text-gray-500 italic hover:text-gray-700 transition"
+                >
+                  {t('blog.collapse')}
+                </button>
+              </div>
+            </>
+          ) : (
+            <div className="pb-4 pt-2 relative z-20 flex justify-start">
+              <span
+                onClick={toggleExpanded}
+                className="italic text-gray-400 hover:text-gray-600 transition-colors text-sm cursor-pointer"
+              >
+                {t('blog.expand', 'Expand')}
+              </span>
+            </div>
+          )}
         </div>
       </div>
-      
-      {/* Blog content (visible when expanded or on blog post page) */}
-      {isExpanded ? (
-        <>
-          <div className="px-6 pb-6 blog-content border-t border-gray-100 mt-2">
-            <div dangerouslySetInnerHTML={{ __html: post.content }} />
-          </div>
-          <div className="px-4 pb-4 relative z-20 flex justify-start">
-            <button
-              onClick={toggleExpanded}
-              className="text-sm text-gray-500 italic hover:text-gray-700 transition"
-            >
-              {t('blog.collapse')}
-            </button>
-          </div>
-        </>
-      ) : (
-        <div className="px-4 pb-4 relative z-20 flex justify-start">
-          <span
-            onClick={toggleExpanded}
-            className="italic text-gray-400 hover:text-gray-600 transition-colors text-sm cursor-pointer"
-          >
-            {t('blog.expand', 'Expand')}
-          </span>
-        </div>
-      )}
     </article>
   );
 }

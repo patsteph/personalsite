@@ -4,12 +4,13 @@ import { MDXRemote, MDXRemoteSerializeResult } from 'next-mdx-remote';
 import { serialize } from 'next-mdx-remote/serialize';
 import Layout from '@/components/layout/Layout';
 import { getPostBySlug } from '../../lib/blog';
-import { BlogPost } from '../../types/blog';
+import { BlogPost, ReactionType } from '../../types/blog';
 import Head from 'next/head';
 import rehypeHighlight from 'rehype-highlight';
 import rehypeSlug from 'rehype-slug';
 import rehypeAutolinkHeadings from 'rehype-autolink-headings';
 import remarkGfm from 'remark-gfm';
+import BlogReactions from '@/components/blog/BlogReactions';
 
 // Define the props type for the blog post page
 interface BlogPostPageProps {
@@ -41,6 +42,12 @@ const BlogPostPage: React.FC<BlogPostPageProps> = ({ post, serializedContent, er
     );
   }
 
+  // Handle reaction events
+  const handleReaction = async (type: ReactionType) => {
+    console.log(`User reacted with ${type} to post ${post.id}`);
+    // Add any additional analytics or tracking here
+  };
+
   return (
     <Layout section="blog">
       <Head>
@@ -54,6 +61,19 @@ const BlogPostPage: React.FC<BlogPostPageProps> = ({ post, serializedContent, er
             {post.date ? new Date(post.date).toLocaleDateString() : 'No date available'}
           </div>
           <MDXRemote {...serializedContent} />
+          
+          {/* Add reactions component */}
+          <BlogReactions 
+            postId={post.id || ''} 
+            slug={post.slug}
+            initialReactions={post.reactions || {
+              thumbsUp: 0,
+              celebrate: 0,
+              brain: 0,
+              meh: 0
+            }}
+            onReact={handleReaction}
+          />
         </article>
       </div>
     </Layout>

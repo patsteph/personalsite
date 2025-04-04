@@ -166,12 +166,38 @@ export default function BlogEditor({ initialPost, onSave }: BlogEditorProps) {
     setUploadSuccess(false);
     setErrors((prev) => ({ ...prev, coverImage: '' }));
     
+    console.log('Starting image upload for file:', file.name, 'size:', file.size, 'type:', file.type);
+    
     try {
+      // Validate file type
+      const validImageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+      if (!validImageTypes.includes(file.type)) {
+        throw new Error(`Invalid file type. Supported types: ${validImageTypes.join(', ')}`);
+      }
+      
+      // Validate file size (5MB max)
+      const maxSizeInBytes = 5 * 1024 * 1024; // 5MB
+      if (file.size > maxSizeInBytes) {
+        throw new Error('File size exceeds 5MB limit');
+      }
+      
+      console.log('Image validation passed, uploading...');
+      
       // Upload the image and create a thumbnail
-      const { thumbnailURL } = await uploadImageWithThumbnail(file, 'blog-images', 'blog-thumbnails');
+      const result = await uploadImageWithThumbnail(file, 'blog-images', 'blog-thumbnails');
+      console.log('Upload successful, received:', result);
+      
+      // Verify we got back the expected data
+      if (!result || !result.thumbnailURL) {
+        throw new Error('Invalid response from image upload service');
+      }
       
       // Update the post with the new image URL
-      setPost(prev => ({ ...prev, coverImage: thumbnailURL }));
+      setPost(prev => {
+        console.log('Setting post coverImage to:', result.thumbnailURL);
+        return { ...prev, coverImage: result.thumbnailURL };
+      });
+      
       setUploadSuccess(true);
       
       // Clear success message after 3 seconds
@@ -180,9 +206,13 @@ export default function BlogEditor({ initialPost, onSave }: BlogEditorProps) {
       }, 3000);
     } catch (error) {
       console.error('Error uploading image:', error);
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : 'Failed to upload image. Please try again or enter a URL directly.';
+      
       setErrors(prev => ({ 
         ...prev, 
-        coverImage: 'Failed to upload image. Please try again or enter a URL directly.'
+        coverImage: errorMessage
       }));
     } finally {
       setIsUploading(false);

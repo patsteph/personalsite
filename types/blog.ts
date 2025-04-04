@@ -1,3 +1,12 @@
+export type ReactionType = 'thumbsUp' | 'celebrate' | 'brain' | 'meh';
+
+export interface Reactions {
+  thumbsUp: number;
+  celebrate: number;
+  brain: number;
+  meh: number;
+}
+
 export type BlogPost = {
   id?: string;
   slug: string;
@@ -13,4 +22,5 @@ export type BlogPost = {
   createdAt?: Date;
   updatedAt?: Date;
   readingTime?: number;
+  reactions?: Reactions;
 }

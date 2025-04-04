@@ -81,8 +81,16 @@ const initializeFirebase = () => {
     // Connect to emulators in development mode
     if (process.env.NODE_ENV === 'development') {
       try {
+        // Connect to auth and firestore emulators
         connectAuthEmulator(auth, 'http://localhost:9099');
         connectFirestoreEmulator(firestore, 'localhost', 8080);
+        
+        // Connect to storage emulator if available
+        if (storage) {
+          const { connectStorageEmulator } = require('firebase/storage');
+          connectStorageEmulator(storage, 'localhost', 9199);
+          console.log('Connected to Firebase Storage emulator on localhost:9199');
+        }
       } catch (error) {
         console.error('Failed to connect to Firebase emulators:', error);
       }
