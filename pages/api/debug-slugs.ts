@@ -1,10 +1,22 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { firestore } from '@/lib/firebase-admin';
 
+interface Post {
+  id: string;
+  slug: string;
+  title: string;
+}
+
+type DebugResponse = {
+  success: boolean;
+  posts?: Post[];
+  error?: string;
+}
+
 // A simple API that returns all blog post slugs for debugging
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse
+  res: NextApiResponse<DebugResponse>
 ) {
   try {
     // Get all blog posts

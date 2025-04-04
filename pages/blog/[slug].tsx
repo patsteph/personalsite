@@ -85,12 +85,19 @@ export const getServerSideProps: GetServerSideProps<BlogPostPageProps> = async (
           // Log all available posts for debugging
           console.log("All posts in database:", data.posts);
           
+          // Define post interface for type safety
+          interface DbPost {
+            id: string;
+            slug: string;
+            title: string;
+          }
+          
           // Try to find the post by ID first (more reliable)
-          let foundPost = data.posts.find(p => p.id === slugOrId);
+          let foundPost = data.posts.find((p: DbPost) => p.id === slugOrId);
           
           // If not found by ID, try to find by slug
           if (!foundPost) {
-            foundPost = data.posts.find(p => 
+            foundPost = data.posts.find((p: DbPost) => 
               p.slug === slugOrId ||
               p.slug === 'this-site' || // Hardcoded slug from error logs
               p.slug === 'building-my-personal-site-a-journey-from-not-a-programmer-to-web-developer-sort-of-' // Hardcoded slug from logs
