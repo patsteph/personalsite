@@ -228,10 +228,10 @@ For other hosting platforms, follow the standard Next.js deployment guidelines.
 ## 📋 Future Enhancements
 
 - [X] Add light/dark theme toggle
-- [\] Implement dynamic image optimization
+- [X] Implement dynamic image optimization
 - [ ] Add RSS feed for blog posts
 - [ ] Create PWA support for offline access
-- [\] Add commenting system to blog posts
+- [X] Add commenting system to blog posts
 
 ---
 
