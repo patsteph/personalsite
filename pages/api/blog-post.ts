@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { firestore } from '@/lib/firebase-admin';
+import * as admin from 'firebase-admin';
 import { ReactionType } from '@/types/blog';
 
 type PostResponse = {
@@ -53,7 +54,7 @@ export default async function handler(
 
       // Update the reaction count using atomic increment
       await docRef.update({
-        [`reactions.${reaction}`]: firestore.FieldValue.increment(1)
+        [`reactions.${reaction}`]: admin.firestore.FieldValue.increment(1)
       });
 
       return res.status(200).json({ 
