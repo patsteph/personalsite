@@ -46,7 +46,7 @@ export default function BlogCard({ post, expanded: propExpanded = false, onToggl
         ${!isExpanded ? 'hover:bg-gray-50' : ''}
         relative cursor-pointer
       `}
-      onClick={!isExpanded ? toggleExpanded : undefined}>
+      onClick={toggleExpanded}>
       <div className="flex flex-col md:flex-row">
         {/* Thumbnail image (if available) */}
         {post.coverImage && (

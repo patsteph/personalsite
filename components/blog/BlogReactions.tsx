@@ -118,22 +118,22 @@ export default function BlogReactions({ postId, slug, initialReactions = default
   }, [slug]);
 
   return (
-    <div className="my-8 border-t border-gray-200 pt-6">
-      <h3 className="text-lg font-medium text-gray-700 mb-3">What did you think?</h3>
-      <div className="flex flex-wrap gap-3">
+    <div className="my-6 border-t border-gray-200 pt-4">
+      <h3 className="text-base font-medium text-gray-700 mb-2">What did you think?</h3>
+      <div className="flex flex-wrap gap-2">
         {Object.entries(reactionEmojis).map(([type, emoji]) => (
           <button
             key={type}
             onClick={() => handleReaction(type as ReactionType)}
             disabled={userReacted[type as ReactionType]}
-            className={`flex flex-col items-center px-4 py-2 rounded-md transition-colors ${
+            className={`flex flex-col items-center px-2 py-1 rounded-md transition-colors ${
               userReacted[type as ReactionType]
                 ? 'bg-blue-50 text-blue-600 border border-blue-200'
                 : 'bg-gray-50 hover:bg-gray-100 border border-gray-200'
             }`}
             aria-label={`React with ${reactionLabels[type as ReactionType]}`}
           >
-            <span className="text-2xl mb-1">{emoji}</span>
+            <span className="text-lg mb-0.5">{emoji}</span>
             <span className="text-xs font-medium">
               {reactionLabels[type as ReactionType]}
               {reactions[type as ReactionType] > 0 && ` (${reactions[type as ReactionType]})`}
