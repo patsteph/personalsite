@@ -64,3 +64,5 @@ next-env.d.ts
 # archived and deprecated files
 /to_archive/
 /.deprecated/
+scripts/analyze-project.js
+scripts/cleanup.sh
