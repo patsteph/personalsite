@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { format } from 'date-fns';
 import { useTranslation } from '@/lib/translations';
 import { useState } from 'react';
+import BlogReactions from './BlogReactions';
 
 type BlogCardProps = {
   post: BlogPost;
@@ -38,17 +39,19 @@ export default function BlogCard({ post, expanded: propExpanded = false, onToggl
   const formattedDate = format(dateToFormat, 'MMMM d, yyyy');
   
   return (
-    <article className={`
-      bg-white rounded-lg overflow-hidden shadow-sm transition-all duration-300
-      ${isExpanded ? 'shadow-md' : 'hover:shadow-md'}
-      ${!isExpanded ? 'hover:bg-gray-50' : ''}
-      relative
-    `}>
+    <article 
+      className={`
+        bg-white rounded-lg overflow-hidden shadow-sm transition-all duration-300
+        ${isExpanded ? 'shadow-md' : 'hover:shadow-md'}
+        ${!isExpanded ? 'hover:bg-gray-50' : ''}
+        relative cursor-pointer
+      `}
+      onClick={!isExpanded ? toggleExpanded : undefined}>
       <div className="flex flex-col md:flex-row">
         {/* Thumbnail image (if available) */}
         {post.coverImage && (
           <div className="md:w-1/4 flex-shrink-0">
-            <div className="h-full w-full relative overflow-hidden bg-gray-100">
+            <div className="h-48 w-full relative overflow-hidden bg-gray-100">
               <img 
                 src={post.coverImage} 
                 alt={post.title}
@@ -78,6 +81,22 @@ export default function BlogCard({ post, expanded: propExpanded = false, onToggl
             <>
               <div className="py-6 blog-content border-t border-gray-100 mt-2">
                 <div dangerouslySetInnerHTML={{ __html: post.content }} />
+                
+                {/* Add BlogReactions component */}
+                {post.id && (
+                  <div className="mt-6">
+                    <BlogReactions
+                      postId={post.id}
+                      slug={post.slug}
+                      initialReactions={post.reactions || {
+                        thumbsUp: 0,
+                        celebrate: 0,
+                        brain: 0,
+                        meh: 0
+                      }}
+                    />
+                  </div>
+                )}
               </div>
               <div className="pb-4 relative z-20 flex justify-start">
                 <button
@@ -91,7 +110,10 @@ export default function BlogCard({ post, expanded: propExpanded = false, onToggl
           ) : (
             <div className="pb-4 pt-2 relative z-20 flex justify-start">
               <span
-                onClick={toggleExpanded}
+                onClick={(e) => {
+                  e.stopPropagation(); // Prevent double triggering
+                  toggleExpanded(e);
+                }}
                 className="italic text-gray-400 hover:text-gray-600 transition-colors text-sm cursor-pointer"
               >
                 {t('blog.expand', 'Expand')}
