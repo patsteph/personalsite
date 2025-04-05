@@ -231,7 +231,7 @@ For other hosting platforms, follow the standard Next.js deployment guidelines.
 - [\] Implement dynamic image optimization
 - [ ] Add RSS feed for blog posts
 - [ ] Create PWA support for offline access
-- [ ] Add commenting system to blog posts
+- [\] Add commenting system to blog posts
 
 ---
 
