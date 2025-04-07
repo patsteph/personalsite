@@ -1,5 +1,5 @@
 // pages/admin/index.tsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import dynamic from 'next/dynamic';
 import Layout from '@/components/layout/Layout';
@@ -8,10 +8,16 @@ import { useAuth } from '@/lib/auth';
 import { useTranslation } from '@/lib/translations';
 import { getBasePath } from '@/lib/firebase';
 
-// Dynamically import the BookForm component to reduce initial load size
+// Dynamically import components to reduce initial load size
 const BookForm = dynamic(() => import('@/components/admin/BookForm'), {
   loading: () => <div className="p-6 text-center">Loading book management tools...</div>,
   ssr: false // Admin section doesn't need server-side rendering
+});
+
+// Dynamically import FeedbackAnalytics component
+const FeedbackAnalytics = dynamic(() => import('@/components/FeedbackAnalytics'), {
+  loading: () => <div className="p-6 text-center">Loading feedback analytics...</div>,
+  ssr: false
 });
 
 export default function AdminPage() {
@@ -19,6 +25,7 @@ export default function AdminPage() {
   const { signOut } = useAuth();
   const { t } = useTranslation();
   const [isSuccess, setIsSuccess] = useState(false);
+  const [activeTab, setActiveTab] = useState('main'); // 'main' or 'feedback'
   
   const handleSignOut = async () => {
     await signOut();
@@ -34,6 +41,26 @@ export default function AdminPage() {
     router.push(path);
   };
   
+  // Load any analytics scripts for the admin dashboard
+  useEffect(() => {
+    // Check if the script is already loaded
+    if (typeof document !== 'undefined' && !document.getElementById('admin-analytics-script')) {
+      const script = document.createElement('script');
+      script.id = 'admin-analytics-script';
+      script.src = '/admin-dashboard-analytics.js';
+      script.async = true;
+      document.body.appendChild(script);
+      
+      return () => {
+        // Clean up on unmount
+        if (document.getElementById('admin-analytics-script')) {
+          document.body.removeChild(script);
+        }
+      };
+    }
+    return () => {}; // Return empty cleanup function for SSR
+  }, []);
+  
   return (
     <ProtectedRoute>
       <Layout section="admin">
@@ -42,12 +69,20 @@ export default function AdminPage() {
             <h1 className="text-3xl font-bold text-accent">
               {t('admin.dashboard', 'Admin Dashboard')}
             </h1>
-            <button
-              onClick={handleSignOut}
-              className="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded transition-colors"
-            >
-              {t('admin.signOut', 'Sign Out')}
-            </button>
+            <div className="flex space-x-4">
+              <button
+                onClick={() => setActiveTab(activeTab === 'main' ? 'feedback' : 'main')}
+                className="bg-steel-blue hover:bg-accent text-white font-medium py-2 px-4 rounded transition-colors"
+              >
+                {activeTab === 'main' ? 'Show Feedback Analytics' : 'Show Admin Dashboard'}
+              </button>
+              <button
+                onClick={handleSignOut}
+                className="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded transition-colors"
+              >
+                {t('admin.signOut', 'Sign Out')}
+              </button>
+            </div>
           </div>
           
           {isSuccess && (
@@ -56,8 +91,11 @@ export default function AdminPage() {
             </div>
           )}
           
-          {/* Admin Navigation Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 mb-8">
+          {activeTab === 'feedback' ? (
+            <FeedbackAnalytics />
+          ) : (
+            /* Admin Navigation Cards */
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 mb-8">
             {/* Books Management Card */}
             <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
               <div className="h-40 bg-steel-blue bg-opacity-20 flex items-center justify-center">
@@ -115,7 +153,27 @@ export default function AdminPage() {
               </div>
             </div>
             
+            {/* Feedback Analytics Card */}
+            <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+              <div className="h-40 bg-emerald-600 bg-opacity-20 flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-12 h-12 text-emerald-600">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 14.25v2.25m3-4.5v4.5m3-6.75v6.75m3-9v9M6 20.25h12A2.25 2.25 0 0020.25 18V6A2.25 2.25 0 0018 3.75H6A2.25 2.25 0 003.75 6v12A2.25 2.25 0 006 20.25z" />
+                </svg>
+              </div>
+              <div className="p-6">
+                <h2 className="text-xl font-bold text-emerald-600 mb-2">Feedback Analytics</h2>
+                <p className="text-gray-600 mb-4">View and analyze user feedback.</p>
+                <button 
+                  onClick={() => setActiveTab('feedback')}
+                  className="w-full py-2 bg-emerald-600 text-white rounded hover:bg-opacity-90 transition-colors"
+                >
+                  View Feedback
+                </button>
+              </div>
+            </div>
+            
           </div>
+          )}
           
         </div>
       </Layout>
