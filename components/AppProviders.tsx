@@ -2,6 +2,10 @@
 import { ReactNode, useEffect, useState, createContext, useContext } from 'react';
 import { AuthProvider } from '@/lib/auth';
 import { TranslationProvider } from '@/lib/translations';
+import dynamic from 'next/dynamic';
+
+// Dynamically import the FeedbackWidget with no SSR to avoid hydration issues
+const FeedbackWidget = dynamic(() => import('./FeedbackWidget'), { ssr: false });
 
 // Theme context interface
 interface ThemeContextType {
@@ -69,6 +73,7 @@ export default function AppProviders({ children }: AppProvidersProps) {
       <AuthProvider>
         <TranslationProvider>
           {children}
+          <FeedbackWidget />
         </TranslationProvider>
       </AuthProvider>
     </ThemeContext.Provider>

@@ -22,6 +22,7 @@
     "deploy:netlify": "netlify deploy"
   },
   "dependencies": {
+    "@google-cloud/language": "^7.0.1",
     "@headlessui/react": "^2.2.0",
     "@heroicons/react": "^2.2.0",
     "@tiptap/extension-code-block": "^2.11.7",
@@ -43,6 +44,8 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-firebase-hooks": "^5.1.1",
+    "react-icons": "^5.5.0",
+    "recharts": "^2.15.2",
     "rehype-autolink-headings": "^7.1.0",
     "rehype-highlight": "^7.0.2",
     "rehype-slug": "^6.0.0",
