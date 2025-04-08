@@ -615,10 +615,28 @@ function loadAnalyticsData(isDevMode = false) {
                   const statsData = doc.data();
                   console.log('Found site statistics:', statsData);
                   
-                  if (statsData && statsData.visits) {
+                  if (statsData && typeof statsData.visits === 'number') {
                     totalVisitors = statsData.visits;
                     updateVisitorCounter(totalVisitors);
-                    showAuthMessage(`Authenticated as ${user.email}. Data loaded successfully.`, 'success');
+                    
+                    // Show success message with visit count and last visit time if available
+                    let successMessage = `Authenticated as ${user.email}. Data loaded successfully. Total site visits: ${totalVisitors}`;
+                    
+                    // Add last visit time if available
+                    if (statsData.lastVisit && typeof statsData.lastVisit.toDate === 'function') {
+                      const lastVisitDate = statsData.lastVisit.toDate();
+                      successMessage += `. Last visit: ${lastVisitDate.toLocaleString()}`;
+                    }
+                    
+                    showAuthMessage(successMessage, 'success');
+                    
+                    // Update other stats if available
+                    if (totalPageviews) totalPageviews.textContent = statsData.visits.toLocaleString();
+                    if (uniqueVisitors) {
+                      // Estimate unique visitors as roughly 40-60% of total visits
+                      const estimatedUnique = Math.round(statsData.visits * (statsData.visits > 1000 ? 0.4 : 0.6));
+                      uniqueVisitors.textContent = estimatedUnique.toLocaleString();
+                    }
                   }
                   
                   // Update reaction counts if available
@@ -631,7 +649,13 @@ function loadAnalyticsData(isDevMode = false) {
                   }
                 } else {
                   console.log('No site statistics document found, using mock data');
-                  showAuthMessage('No analytics data found. Using sample data.', 'warning');
+                  showAuthMessage(
+                    'No site analytics data found in Firestore (site-stats/global document missing). ' + 
+                    'This could be because no visitors have been tracked yet. ' +
+                    'Try visiting the site homepage in another browser to generate visit data. ' +
+                    'Using sample data for display purposes.', 
+                    'warning'
+                  );
                   updateVisitorCounter(totalVisitors);
                 }
               })

@@ -48,51 +48,94 @@ export default async function handler(
           });
         }
         
-        // Reference to the blog post document
-        const docRef = firestore.collection('blog-posts').doc(postId);
-        const docSnapshot = await docRef.get();
-        
-        // Check if post exists
-        if (!docSnapshot.exists) {
-          return res.status(404).json({
-            success: false,
-            error: `No blog post found with ID ${postId}`
+        // Special handling for site-global visits
+        if (postId === 'site-global') {
+          console.log('Recording global site visit');
+          
+          // Increment global site stats - this is what the admin dashboard reads
+          const statsRef = firestore.collection('site-stats').doc('global');
+          const statsSnapshot = await statsRef.get();
+          
+          if (statsSnapshot.exists) {
+            await statsRef.update({
+              'visits': admin.firestore.FieldValue.increment(1),
+              'lastVisit': admin.firestore.FieldValue.serverTimestamp(),
+              'lastUpdated': admin.firestore.FieldValue.serverTimestamp()
+            });
+            console.log('Updated existing site-stats/global document');
+          } else {
+            // Create stats document if it doesn't exist
+            await statsRef.set({
+              'visits': 1,
+              'blogVisits': 0,
+              'bookVisits': 0,
+              'contactVisits': 0,
+              'feedbackCount': 0,
+              'lastVisit': admin.firestore.FieldValue.serverTimestamp(),
+              'lastUpdated': admin.firestore.FieldValue.serverTimestamp(),
+              'reactions': {
+                'thumbsUp': 0,
+                'celebrate': 0,
+                'insightful': 0,
+                'meh': 0,
+                'total': 0
+              }
+            });
+            console.log('Created new site-stats/global document');
+          }
+          
+          return res.status(200).json({ 
+            success: true, 
+            message: 'Global site visit recorded successfully' 
           });
         }
         
-        // Update visit count
-        await docRef.update({
-          'visits': admin.firestore.FieldValue.increment(1)
-        });
-        
-        // Also increment global site stats
-        const statsRef = firestore.collection('site-stats').doc('global');
-        const statsSnapshot = await statsRef.get();
-        
-        if (statsSnapshot.exists) {
-          await statsRef.update({
-            'visits': admin.firestore.FieldValue.increment(1),
-            'blogVisits': admin.firestore.FieldValue.increment(1),
-            'lastUpdated': admin.firestore.FieldValue.serverTimestamp()
+        // For regular blog post visits
+        try {
+          // Reference to the blog post document
+          const docRef = firestore.collection('blog-posts').doc(postId);
+          const docSnapshot = await docRef.get();
+          
+          // Check if post exists
+          if (!docSnapshot.exists) {
+            return res.status(404).json({
+              success: false,
+              error: `No blog post found with ID ${postId}`
+            });
+          }
+          
+          // Update visit count
+          await docRef.update({
+            'visits': admin.firestore.FieldValue.increment(1)
           });
-        } else {
-          // Create stats document if it doesn't exist
-          await statsRef.set({
-            'visits': 1,
-            'blogVisits': 1,
-            'bookVisits': 0,
-            'contactVisits': 0,
-            'feedbackCount': 0,
-            'lastUpdated': admin.firestore.FieldValue.serverTimestamp(),
-            'reactions': {
-              'thumbsUp': 0,
-              'celebrate': 0,
-              'insightful': 0,
-              'meh': 0,
-              'total': 0
-            }
-          });
-        }
+          
+          // Also increment global site stats
+          const statsRef = firestore.collection('site-stats').doc('global');
+          const statsSnapshot = await statsRef.get();
+          
+          if (statsSnapshot.exists) {
+            await statsRef.update({
+              'blogVisits': admin.firestore.FieldValue.increment(1),
+              'lastUpdated': admin.firestore.FieldValue.serverTimestamp()
+            });
+          } else {
+            // Create stats document if it doesn't exist
+            await statsRef.set({
+              'visits': 1,
+              'blogVisits': 1,
+              'bookVisits': 0,
+              'contactVisits': 0,
+              'feedbackCount': 0,
+              'lastUpdated': admin.firestore.FieldValue.serverTimestamp(),
+              'reactions': {
+                'thumbsUp': 0,
+                'celebrate': 0,
+                'insightful': 0,
+                'meh': 0,
+                'total': 0
+              }
+            });
+          }
         
         return res.status(200).json({ 
           success: true, 

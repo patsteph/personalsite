@@ -52,18 +52,31 @@ export default function AppProviders({ children }: AppProvidersProps) {
       if (!localStorage.getItem(visitKey) && typeof window !== 'undefined') {
         localStorage.setItem(visitKey, new Date().toISOString());
         
-        // Track visit through blog-post API
+        // Track visit through dedicated site-stats API
+        fetch('/api/site-stats', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            action: 'visit'
+          })
+        }).catch(error => {
+          console.error('Error tracking site visit:', error);
+        });
+        
+        // For backward compatibility, still use the old endpoint too
         fetch('/api/blog-post', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            postId: 'site-global', // Use a standard ID for site-wide visits
+            postId: 'site-global',
             action: 'visit'
           })
         }).catch(error => {
-          console.error('Error tracking site visit:', error);
+          console.error('Error tracking site visit through legacy endpoint:', error);
         });
       }
     } catch (error) {
