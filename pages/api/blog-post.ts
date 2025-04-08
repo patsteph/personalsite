@@ -21,9 +21,63 @@ export default async function handler(
   // Handle reactions (POST method)
   if (req.method === 'POST') {
     try {
-      const { postId, reaction } = req.body;
+      const { postId, reaction, previousReaction, action } = req.body;
 
-      // Validate inputs
+      // Track visits
+      if (action === 'visit') {
+        if (!postId) {
+          return res.status(400).json({ 
+            success: false, 
+            error: 'Missing required field: postId is required for visit tracking' 
+          });
+        }
+        
+        // Reference to the blog post document
+        const docRef = firestore.collection('blog-posts').doc(postId);
+        const docSnapshot = await docRef.get();
+        
+        // Check if post exists
+        if (!docSnapshot.exists) {
+          return res.status(404).json({
+            success: false,
+            error: `No blog post found with ID ${postId}`
+          });
+        }
+        
+        // Update visit count
+        await docRef.update({
+          'visits': admin.firestore.FieldValue.increment(1)
+        });
+        
+        // Also increment global site stats
+        const statsRef = firestore.collection('site-stats').doc('global');
+        const statsSnapshot = await statsRef.get();
+        
+        if (statsSnapshot.exists) {
+          await statsRef.update({
+            'totalVisits': admin.firestore.FieldValue.increment(1),
+            'blogVisits': admin.firestore.FieldValue.increment(1),
+            'lastUpdated': admin.firestore.FieldValue.serverTimestamp()
+          });
+        } else {
+          // Create stats document if it doesn't exist
+          await statsRef.set({
+            'totalVisits': 1,
+            'blogVisits': 1,
+            'bookVisits': 0,
+            'contactVisits': 0,
+            'feedbackCount': 0,
+            'lastUpdated': admin.firestore.FieldValue.serverTimestamp()
+          });
+        }
+        
+        return res.status(200).json({ 
+          success: true, 
+          message: 'Visit recorded successfully' 
+        });
+      }
+      
+      // Regular reaction handling
       if (!postId || !reaction) {
         return res.status(400).json({ 
           success: false, 
@@ -52,9 +106,17 @@ export default async function handler(
         });
       }
 
+      // If there was a previous reaction, decrement it
+      if (previousReaction && validReactions.includes(previousReaction as ReactionType)) {
+        await docRef.update({
+          [`reactions.${previousReaction}`]: admin.firestore.FieldValue.increment(-1)
+        });
+      }
+
       // Update the reaction count using atomic increment
       await docRef.update({
-        [`reactions.${reaction}`]: admin.firestore.FieldValue.increment(1)
+        [`reactions.${reaction}`]: admin.firestore.FieldValue.increment(1),
+        'reactionCount': admin.firestore.FieldValue.increment(previousReaction ? 0 : 1) // Only increment total count if it's a new reaction
       });
 
       return res.status(200).json({ 

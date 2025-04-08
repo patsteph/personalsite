@@ -121,6 +121,21 @@ function setupAnalyticsTabContent() {
       <div id="pageTrafficTab" class="analytics-tab-content active">
         <div style="margin-top: 20px;">
           <div style="border: 1px solid var(--border-color); border-radius: 8px; padding: 20px; margin-bottom: 20px;">
+            <h3 style="margin-top: 0; margin-bottom: 15px; font-size: 18px;">Site Visitors</h3>
+            <div class="visitor-counter-wrapper" style="display: flex; justify-content: center; align-items: center; padding: 20px 0;">
+              <div class="visitor-counter" style="display: flex; background: #111827; border-radius: 8px; padding: 10px; box-shadow: 0 8px 16px rgba(0,0,0,0.2);">
+                <div id="visitsDigit1" class="counter-digit" style="background: #1e293b; color: #38bdf8; font-size: 36px; font-weight: bold; padding: 10px 15px; border-radius: 6px; margin: 0 4px; min-width: 40px; text-align: center; font-family: monospace; position: relative; overflow: hidden;">0</div>
+                <div id="visitsDigit2" class="counter-digit" style="background: #1e293b; color: #38bdf8; font-size: 36px; font-weight: bold; padding: 10px 15px; border-radius: 6px; margin: 0 4px; min-width: 40px; text-align: center; font-family: monospace; position: relative; overflow: hidden;">0</div>
+                <div id="visitsDigit3" class="counter-digit" style="background: #1e293b; color: #38bdf8; font-size: 36px; font-weight: bold; padding: 10px 15px; border-radius: 6px; margin: 0 4px; min-width: 40px; text-align: center; font-family: monospace; position: relative; overflow: hidden;">0</div>
+                <div id="visitsDigit4" class="counter-digit" style="background: #1e293b; color: #38bdf8; font-size: 36px; font-weight: bold; padding: 10px 15px; border-radius: 6px; margin: 0 4px; min-width: 40px; text-align: center; font-family: monospace; position: relative; overflow: hidden;">0</div>
+              </div>
+            </div>
+            <div style="text-align: center; margin-top: 10px; font-size: 14px; color: #6b7280;">
+              Total unique visitors since launch
+            </div>
+          </div>
+          
+          <div style="border: 1px solid var(--border-color); border-radius: 8px; padding: 20px; margin-bottom: 20px;">
             <h3 style="margin-top: 0; margin-bottom: 15px; font-size: 18px;">Traffic Over Time</h3>
             <div id="trafficChart" style="width: 100%; height: 300px;"></div>
           </div>
@@ -463,6 +478,23 @@ function loadAnalyticsData(isDevMode = false) {
     if (brainCount) brainCount.textContent = '16';
     if (mehCount) mehCount.textContent = '12';
     
+    // Update visitor counter
+    const totalVisitors = 2487; // This would come from the API in a real implementation
+    const visitsDigit1 = document.getElementById('visitsDigit1');
+    const visitsDigit2 = document.getElementById('visitsDigit2');
+    const visitsDigit3 = document.getElementById('visitsDigit3');
+    const visitsDigit4 = document.getElementById('visitsDigit4');
+    
+    // Animate the counter (simple version)
+    if (visitsDigit1 && visitsDigit2 && visitsDigit3 && visitsDigit4) {
+      // Split number into digits and pad with zeros
+      const visitsStr = totalVisitors.toString().padStart(4, '0');
+      setTimeout(() => { if (visitsDigit1) visitsDigit1.textContent = visitsStr[0]; }, 200);
+      setTimeout(() => { if (visitsDigit2) visitsDigit2.textContent = visitsStr[1]; }, 400);
+      setTimeout(() => { if (visitsDigit3) visitsDigit3.textContent = visitsStr[2]; }, 600);
+      setTimeout(() => { if (visitsDigit4) visitsDigit4.textContent = visitsStr[3]; }, 800);
+    }
+    
     // Load top pages data
     const topPagesTable = document.getElementById('topPagesTable');
     if (topPagesTable) {
@@ -564,6 +596,27 @@ function addAnalyticsStyles() {
       content: "↓";
       margin-right: 2px;
     }
+    
+    /* Digital counter animation */
+    .counter-digit {
+      transition: all 0.3s ease-in-out;
+    }
+    
+    /* Flicker animation for the counter */
+    @keyframes digitalFlicker {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.8; }
+    }
+    
+    .counter-digit {
+      animation: digitalFlicker 2s infinite;
+      animation-delay: var(--delay, 0ms);
+    }
+    
+    #visitsDigit1 { --delay: 200ms; }
+    #visitsDigit2 { --delay: 400ms; }
+    #visitsDigit3 { --delay: 600ms; }
+    #visitsDigit4 { --delay: 800ms; }
   `;
   document.head.appendChild(styleEl);
 }
