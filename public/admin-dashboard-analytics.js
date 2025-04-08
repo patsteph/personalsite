@@ -478,21 +478,55 @@ function loadAnalyticsData(isDevMode = false) {
     if (brainCount) brainCount.textContent = '16';
     if (mehCount) mehCount.textContent = '12';
     
-    // Update visitor counter
-    const totalVisitors = 2487; // This would come from the API in a real implementation
-    const visitsDigit1 = document.getElementById('visitsDigit1');
-    const visitsDigit2 = document.getElementById('visitsDigit2');
-    const visitsDigit3 = document.getElementById('visitsDigit3');
-    const visitsDigit4 = document.getElementById('visitsDigit4');
+    // Fetch actual site statistics if Firebase is available
+    let totalVisitors = 2487; // Default mock value
     
-    // Animate the counter (simple version)
-    if (visitsDigit1 && visitsDigit2 && visitsDigit3 && visitsDigit4) {
-      // Split number into digits and pad with zeros
-      const visitsStr = totalVisitors.toString().padStart(4, '0');
-      setTimeout(() => { if (visitsDigit1) visitsDigit1.textContent = visitsStr[0]; }, 200);
-      setTimeout(() => { if (visitsDigit2) visitsDigit2.textContent = visitsStr[1]; }, 400);
-      setTimeout(() => { if (visitsDigit3) visitsDigit3.textContent = visitsStr[2]; }, 600);
-      setTimeout(() => { if (visitsDigit4) visitsDigit4.textContent = visitsStr[3]; }, 800);
+    if (window.SECURE_CONFIG?.firebase?.apiKey || window.runtimeConfig?.firebase?.apiKey) {
+      try {
+        // Check if Firebase is initialized
+        if (typeof firebase !== 'undefined' && firebase.firestore) {
+          console.log('Attempting to fetch real site statistics...');
+          
+          // Fetch site-wide stats
+          firebase.firestore().collection('site-stats').doc('global').get()
+            .then((doc) => {
+              if (doc.exists) {
+                const statsData = doc.data();
+                console.log('Found site statistics:', statsData);
+                
+                if (statsData && statsData.visits) {
+                  totalVisitors = statsData.visits;
+                  updateVisitorCounter(totalVisitors);
+                }
+                
+                // Update reaction counts if available
+                if (statsData && statsData.reactions) {
+                  if (totalReactions) totalReactions.textContent = statsData.reactions.total || '87';
+                  if (thumbsUpCount) thumbsUpCount.textContent = statsData.reactions.thumbsUp || '38';
+                  if (celebrateCount) celebrateCount.textContent = statsData.reactions.celebrate || '21';
+                  if (brainCount) brainCount.textContent = statsData.reactions.insightful || '16';
+                  if (mehCount) mehCount.textContent = statsData.reactions.meh || '12';
+                }
+              } else {
+                console.log('No site statistics document found, using mock data');
+                updateVisitorCounter(totalVisitors);
+              }
+            })
+            .catch((error) => {
+              console.error('Error fetching site statistics:', error);
+              updateVisitorCounter(totalVisitors);
+            });
+        } else {
+          console.log('Firebase firestore not available');
+          updateVisitorCounter(totalVisitors);
+        }
+      } catch (error) {
+        console.error('Error accessing Firebase:', error);
+        updateVisitorCounter(totalVisitors);
+      }
+    } else {
+      console.log('Firebase config not available, using mock data');
+      updateVisitorCounter(totalVisitors);
     }
     
     // Load top pages data
@@ -567,6 +601,24 @@ function loadAnalyticsData(isDevMode = false) {
         }
       }
     }
+  }
+}
+
+// Function to update the visitor counter with animation
+function updateVisitorCounter(totalVisitors) {
+  const visitsDigit1 = document.getElementById('visitsDigit1');
+  const visitsDigit2 = document.getElementById('visitsDigit2');
+  const visitsDigit3 = document.getElementById('visitsDigit3');
+  const visitsDigit4 = document.getElementById('visitsDigit4');
+  
+  // Animate the counter (simple version)
+  if (visitsDigit1 && visitsDigit2 && visitsDigit3 && visitsDigit4) {
+    // Split number into digits and pad with zeros
+    const visitsStr = totalVisitors.toString().padStart(4, '0');
+    setTimeout(() => { if (visitsDigit1) visitsDigit1.textContent = visitsStr[0]; }, 200);
+    setTimeout(() => { if (visitsDigit2) visitsDigit2.textContent = visitsStr[1]; }, 400);
+    setTimeout(() => { if (visitsDigit3) visitsDigit3.textContent = visitsStr[2]; }, 600);
+    setTimeout(() => { if (visitsDigit4) visitsDigit4.textContent = visitsStr[3]; }, 800);
   }
 }
 

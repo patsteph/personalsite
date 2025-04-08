@@ -55,19 +55,26 @@ export default async function handler(
         
         if (statsSnapshot.exists) {
           await statsRef.update({
-            'totalVisits': admin.firestore.FieldValue.increment(1),
+            'visits': admin.firestore.FieldValue.increment(1),
             'blogVisits': admin.firestore.FieldValue.increment(1),
             'lastUpdated': admin.firestore.FieldValue.serverTimestamp()
           });
         } else {
           // Create stats document if it doesn't exist
           await statsRef.set({
-            'totalVisits': 1,
+            'visits': 1,
             'blogVisits': 1,
             'bookVisits': 0,
             'contactVisits': 0,
             'feedbackCount': 0,
-            'lastUpdated': admin.firestore.FieldValue.serverTimestamp()
+            'lastUpdated': admin.firestore.FieldValue.serverTimestamp(),
+            'reactions': {
+              'thumbsUp': 0,
+              'celebrate': 0,
+              'insightful': 0,
+              'meh': 0,
+              'total': 0
+            }
           });
         }
         
@@ -118,6 +125,64 @@ export default async function handler(
         [`reactions.${reaction}`]: admin.firestore.FieldValue.increment(1),
         'reactionCount': admin.firestore.FieldValue.increment(previousReaction ? 0 : 1) // Only increment total count if it's a new reaction
       });
+      
+      // Update the global site stats for reactions
+      try {
+        const statsRef = firestore.collection('site-stats').doc('global');
+        const statsSnapshot = await statsRef.get();
+        
+        let reactionMapping = {
+          'thumbsUp': 'thumbsUp',
+          'celebrate': 'celebrate',
+          'brain': 'insightful',
+          'meh': 'meh'
+        };
+        
+        let mappedReaction = reactionMapping[reaction as keyof typeof reactionMapping] || reaction;
+        let mappedPrevious = previousReaction ? 
+          reactionMapping[previousReaction as keyof typeof reactionMapping] || previousReaction : 
+          null;
+        
+        if (statsSnapshot.exists) {
+          // If there was a previous reaction, decrement it
+          if (mappedPrevious) {
+            await statsRef.update({
+              [`reactions.${mappedPrevious}`]: admin.firestore.FieldValue.increment(-1),
+              'reactions.total': admin.firestore.FieldValue.increment(0) // total stays the same when changing reactions
+            });
+          }
+          
+          // Increment the new reaction
+          await statsRef.update({
+            [`reactions.${mappedReaction}`]: admin.firestore.FieldValue.increment(1),
+            'reactions.total': admin.firestore.FieldValue.increment(previousReaction ? 0 : 1), // Only increment total if it's a new reaction
+            'lastUpdated': admin.firestore.FieldValue.serverTimestamp()
+          });
+        } else {
+          // Create stats document if it doesn't exist with default values
+          const reactions: Record<string, number> = {
+            'thumbsUp': 0,
+            'celebrate': 0,
+            'insightful': 0,
+            'meh': 0,
+            'total': 1
+          };
+          reactions[mappedReaction] = 1;
+          
+          await statsRef.set({
+            'visits': 0,
+            'blogVisits': 0,
+            'bookVisits': 0,
+            'contactVisits': 0,
+            'feedbackCount': 0,
+            'lastUpdated': admin.firestore.FieldValue.serverTimestamp(),
+            'reactions': reactions
+          });
+        }
+      } catch (statsError) {
+        console.error('Error updating global reaction stats:', statsError);
+        // Continue anyway - don't fail the main reaction update if the stats update fails
+      }
 
       return res.status(200).json({ 
         success: true, 

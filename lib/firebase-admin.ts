@@ -304,6 +304,14 @@ export async function getBlogPostsServerSide(): Promise<BlogPost[]> {
             author: data.author || 'Admin', // Default author
             coverImage: data.coverImage || null, // Convert undefined to null for serialization
             readingTime: data.readingTime || null, // Convert undefined to null for serialization
+            visits: data.visits || 0, // Track visit count
+            reactions: data.reactions || { 
+              thumbsUp: 0, 
+              celebrate: 0, 
+              insightful: 0, 
+              meh: 0,
+              total: 0
+            } // Track reactions
           } as BlogPost;
         });
         
@@ -326,6 +334,36 @@ export async function getBlogPostsServerSide(): Promise<BlogPost[]> {
   }
   
   return posts;
+}
+
+/**
+ * Fetches site-wide statistics from Firestore
+ */
+export async function getSiteStatistics() {
+  try {
+    const db = getAdminFirestore();
+    const statsDocRef = db.collection('site-stats').doc('global');
+    const statsDoc = await statsDocRef.get();
+    
+    if (statsDoc.exists) {
+      return statsDoc.data();
+    } else {
+      console.log('No site statistics document found');
+      return {
+        visits: 0,
+        reactions: {
+          thumbsUp: 0,
+          celebrate: 0,
+          insightful: 0,
+          meh: 0,
+          total: 0
+        }
+      };
+    }
+  } catch (error) {
+    console.error('Error fetching site statistics:', error);
+    throw new Error('Failed to fetch site statistics');
+  }
 }
 
 // Optional: Keep original exports for backward compatibility if needed elsewhere, 

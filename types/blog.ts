@@ -5,6 +5,7 @@ export interface Reactions {
   celebrate: number;
   brain: number;
   meh: number;
+  total?: number;
 }
 
 export type BlogPost = {
@@ -23,4 +24,5 @@ export type BlogPost = {
   updatedAt?: Date;
   readingTime?: number;
   reactions?: Reactions;
+  visits?: number;
 }

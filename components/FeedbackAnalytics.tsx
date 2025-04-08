@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { collection, query, orderBy, getDocs } from 'firebase/firestore';
+import { collection, query, orderBy, getDocs, getDoc, doc } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase'; // Firebase client initialization
 
 interface FeedbackItem {
@@ -22,10 +22,26 @@ interface SentimentStat {
   value: number;
 }
 
+interface ReactionCounts {
+  thumbsUp: number;
+  celebrate: number;
+  insightful: number;
+  meh: number;
+  total: number;
+}
+
 const FeedbackAnalytics = () => {
   const [feedbackData, setFeedbackData] = useState<FeedbackItem[]>([]);
   const [categoryStats, setCategoryStats] = useState<CategoryStat[]>([]);
   const [sentimentStats, setSentimentStats] = useState<SentimentStat[]>([]);
+  const [reactionStats, setReactionStats] = useState<ReactionCounts>({
+    thumbsUp: 0,
+    celebrate: 0,
+    insightful: 0,
+    meh: 0,
+    total: 0
+  });
+  const [visitorCount, setVisitorCount] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -37,6 +53,33 @@ const FeedbackAnalytics = () => {
           return;
         }
         
+        // Fetch site statistics 
+        try {
+          const statsDoc = await getDoc(doc(firestore, 'site-stats', 'global'));
+          if (statsDoc.exists()) {
+            const statsData = statsDoc.data();
+            
+            // Update visitor count
+            if (statsData.visits) {
+              setVisitorCount(statsData.visits);
+            }
+            
+            // Update reaction stats
+            if (statsData.reactions) {
+              setReactionStats({
+                thumbsUp: statsData.reactions.thumbsUp || 0,
+                celebrate: statsData.reactions.celebrate || 0,
+                insightful: statsData.reactions.insightful || 0,
+                meh: statsData.reactions.meh || 0,
+                total: statsData.reactions.total || 0
+              });
+            }
+          }
+        } catch (statsError) {
+          console.error('Error fetching site statistics:', statsError);
+        }
+        
+        // Fetch feedback data
         const q = query(
           collection(firestore, 'feedback'),
           orderBy('timestamp', 'desc')
@@ -121,11 +164,11 @@ const FeedbackAnalytics = () => {
         </div>
         
         <div className="bg-white p-4 rounded-lg shadow">
-          <h3 className="text-lg font-medium mb-4">Reaction Correlation</h3>
+          <h3 className="text-lg font-medium mb-4">Site Statistics</h3>
           <div className="text-center p-4">
-            <p className="text-sm text-gray-500 mb-2">Blog reactions correlate with feedback at</p>
-            <p className="text-2xl font-bold text-green-500">76%</p>
-            <p className="text-xs text-gray-400 mt-2">Based on page visits with reactions vs. feedback</p>
+            <p className="text-sm text-gray-500 mb-2">Total Site Visitors</p>
+            <p className="text-2xl font-bold text-blue-500">{visitorCount.toLocaleString()}</p>
+            <p className="text-xs text-gray-400 mt-2">Based on unique visits across the site</p>
           </div>
         </div>
       </div>
@@ -209,27 +252,27 @@ const FeedbackAnalytics = () => {
           <div className="grid grid-cols-2 gap-4 mb-6">
             <div className="p-3 bg-gray-50 rounded text-center">
               <span className="text-xl">👍</span>
-              <p className="text-3xl font-bold text-blue-500 my-2">38</p>
+              <p className="text-3xl font-bold text-blue-500 my-2">{reactionStats.thumbsUp}</p>
               <p className="text-xs text-gray-500">Thumbs Up</p>
             </div>
             <div className="p-3 bg-gray-50 rounded text-center">
               <span className="text-xl">🎉</span>
-              <p className="text-3xl font-bold text-purple-500 my-2">21</p>
+              <p className="text-3xl font-bold text-purple-500 my-2">{reactionStats.celebrate}</p>
               <p className="text-xs text-gray-500">Celebrate</p>
             </div>
             <div className="p-3 bg-gray-50 rounded text-center">
               <span className="text-xl">🧠</span>
-              <p className="text-3xl font-bold text-green-500 my-2">16</p>
+              <p className="text-3xl font-bold text-green-500 my-2">{reactionStats.insightful}</p>
               <p className="text-xs text-gray-500">Insightful</p>
             </div>
             <div className="p-3 bg-gray-50 rounded text-center">
               <span className="text-xl">😐</span>
-              <p className="text-3xl font-bold text-amber-500 my-2">12</p>
+              <p className="text-3xl font-bold text-amber-500 my-2">{reactionStats.meh}</p>
               <p className="text-xs text-gray-500">Meh</p>
             </div>
           </div>
           <div className="text-center text-sm text-gray-500 mt-4 pt-4 border-t">
-            Total Reactions: <span className="font-bold">87</span>
+            Total Reactions: <span className="font-bold">{reactionStats.total}</span>
           </div>
         </div>
       </div>

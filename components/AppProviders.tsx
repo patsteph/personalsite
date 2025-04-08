@@ -45,6 +45,30 @@ export default function AppProviders({ children }: AppProvidersProps) {
       setTheme('light');
       document.documentElement.classList.remove('dark');
     }
+    
+    // Track site visit if not already tracked in this session
+    try {
+      const visitKey = 'site-visit-tracked';
+      if (!localStorage.getItem(visitKey) && typeof window !== 'undefined') {
+        localStorage.setItem(visitKey, new Date().toISOString());
+        
+        // Track visit through blog-post API
+        fetch('/api/blog-post', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            postId: 'site-global', // Use a standard ID for site-wide visits
+            action: 'visit'
+          })
+        }).catch(error => {
+          console.error('Error tracking site visit:', error);
+        });
+      }
+    } catch (error) {
+      console.error('Error in site visit tracking:', error);
+    }
   }, []);
   
   // Toggle theme function
