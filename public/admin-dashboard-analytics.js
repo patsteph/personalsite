@@ -9,7 +9,11 @@ function initAnalyticsDashboard() {
   console.log('Analytics: SECURE_CONFIG exists:', !!window.SECURE_CONFIG);
   console.log('Analytics: runtimeConfig exists:', !!window.runtimeConfig);
   
-  const isDevMode = !window.SECURE_CONFIG?.firebase?.apiKey && !window.runtimeConfig?.firebase?.apiKey;
+  // Safer check for Firebase config availability
+  const isDevMode = 
+    !window.SECURE_CONFIG?.firebase?.apiKey && 
+    !window.runtimeConfig?.firebase?.apiKey;
+  
   console.log('Analytics: Firebase config available:', !isDevMode);
   
   // Use proper configuration based on availability
@@ -24,14 +28,117 @@ function initAnalyticsDashboard() {
       console.log('Analytics: DOM Content Loaded event fired');
       setupAnalyticsTabContent();
       setupDateRangePickers();
-      loadAnalyticsData(isDevMode);
+      
+      // Check auth status before loading analytics data
+      checkAuthAndLoadData(isDevMode);
     });
   } else {
     // Document already loaded, run immediately
     console.log('Analytics: Document already loaded, running setup immediately');
     setupAnalyticsTabContent();
     setupDateRangePickers();
-    loadAnalyticsData(isDevMode);
+    
+    // Check auth status before loading analytics data
+    checkAuthAndLoadData(isDevMode);
+  }
+}
+
+// Check if the user is authenticated before loading analytics data
+function checkAuthAndLoadData(isDevMode = false) {
+  // Display authentication status message
+  showAuthMessage('Checking authentication status...', 'info');
+  
+  // Wait a moment for auth to initialize
+  setTimeout(() => {
+    try {
+      // Safer check for Firebase availability
+      if (typeof window.firebase === 'undefined') {
+        console.log('Firebase global object not available, using mock data');
+        showAuthMessage('Firebase is not initialized. Using sample data.', 'warning');
+        loadAnalyticsData(true); // Force dev mode to use mock data
+        return;
+      }
+      
+      // Check if Firebase auth is available
+      if (!window.firebase.auth) {
+        console.log('Firebase auth not available, using mock data');
+        showAuthMessage('Firebase auth is not available. Using sample data.', 'warning');
+        loadAnalyticsData(true); // Force dev mode to use mock data
+        return;
+      }
+      
+      console.log('Checking auth status before loading analytics data...');
+      
+      // Auth state changed listener
+      window.firebase.auth().onAuthStateChanged((user) => {
+        if (user) {
+          console.log('User is authenticated, loading analytics data as:', user.email);
+          showAuthMessage(`Authenticated as ${user.email}. Loading data...`, 'success');
+          loadAnalyticsData(isDevMode);
+        } else {
+          console.log('User is not authenticated, using mock data only');
+          showAuthMessage('Not authenticated. Using sample data. Please log in to see real analytics.', 'warning');
+          loadAnalyticsData(true); // Force dev mode to use mock data
+        }
+      });
+    } catch (error) {
+      console.error('Error checking authentication:', error);
+      showAuthMessage('Error checking authentication. Using sample data.', 'error');
+      loadAnalyticsData(true); // Force dev mode to use mock data
+    }
+  }, 1000); // Give Firebase a second to initialize
+}
+
+// Show authentication status message
+function showAuthMessage(message, type = 'info') {
+  const siteAdminTab = document.getElementById('siteAdminTab');
+  if (!siteAdminTab) return;
+  
+  // Remove any existing auth message
+  const existingMessage = document.getElementById('auth-status-message');
+  if (existingMessage) {
+    existingMessage.remove();
+  }
+  
+  // Create new message
+  const messageDiv = document.createElement('div');
+  messageDiv.id = 'auth-status-message';
+  
+  // Set styles based on message type
+  let backgroundColor = '#f0f9ff'; // info - light blue
+  let textColor = '#3b82f6';
+  let borderColor = '#93c5fd';
+  
+  if (type === 'success') {
+    backgroundColor = '#f0fdf4'; // light green
+    textColor = '#22c55e';
+    borderColor = '#86efac';
+  } else if (type === 'warning') {
+    backgroundColor = '#fffbeb'; // light yellow
+    textColor = '#f59e0b';
+    borderColor = '#fcd34d';
+  } else if (type === 'error') {
+    backgroundColor = '#fef2f2'; // light red
+    textColor = '#ef4444';
+    borderColor = '#fca5a5';
+  }
+  
+  // Apply styles
+  messageDiv.style.padding = '10px 15px';
+  messageDiv.style.marginBottom = '15px';
+  messageDiv.style.borderRadius = '6px';
+  messageDiv.style.backgroundColor = backgroundColor;
+  messageDiv.style.color = textColor;
+  messageDiv.style.border = `1px solid ${borderColor}`;
+  messageDiv.style.fontSize = '14px';
+  
+  messageDiv.textContent = message;
+  
+  // Insert at the top of the tab content
+  if (siteAdminTab.firstChild) {
+    siteAdminTab.insertBefore(messageDiv, siteAdminTab.firstChild);
+  } else {
+    siteAdminTab.appendChild(messageDiv);
   }
 }
 
@@ -411,7 +518,7 @@ function setupDateRangePickers() {
 // Load analytics data
 function loadAnalyticsData(isDevMode = false) {
   try {
-    console.log('Loading analytics data...');
+    console.log('Loading analytics data, isDevMode:', isDevMode);
     
     // This would normally fetch data from an API
     // For now, we'll use mock data
@@ -478,54 +585,75 @@ function loadAnalyticsData(isDevMode = false) {
     if (brainCount) brainCount.textContent = '16';
     if (mehCount) mehCount.textContent = '12';
     
-    // Fetch actual site statistics if Firebase is available
+    // Default visitor counter value
     let totalVisitors = 2487; // Default mock value
+    updateVisitorCounter(totalVisitors); // Always update with default first
     
-    if (window.SECURE_CONFIG?.firebase?.apiKey || window.runtimeConfig?.firebase?.apiKey) {
+    // Fetch actual site statistics if Firebase is available AND we're not in dev mode
+    if (!isDevMode && (window.SECURE_CONFIG?.firebase?.apiKey || window.runtimeConfig?.firebase?.apiKey)) {
       try {
-        // Check if Firebase is initialized
-        if (typeof firebase !== 'undefined' && firebase.firestore) {
+        // Check if Firebase is initialized and available in window scope
+        if (typeof window.firebase !== 'undefined' && window.firebase.firestore && window.firebase.auth) {
           console.log('Attempting to fetch real site statistics...');
           
-          // Fetch site-wide stats
-          firebase.firestore().collection('site-stats').doc('global').get()
-            .then((doc) => {
-              if (doc.exists) {
-                const statsData = doc.data();
-                console.log('Found site statistics:', statsData);
-                
-                if (statsData && statsData.visits) {
-                  totalVisitors = statsData.visits;
+          // Handle auth state more robustly
+          window.firebase.auth().onAuthStateChanged((user) => {
+            if (!user) {
+              console.log('User not authenticated, cannot fetch stats - using mock data');
+              showAuthMessage('You must be logged in to view actual analytics data. Using sample data instead.', 'warning');
+              updateVisitorCounter(totalVisitors);
+              return;
+            }
+            
+            console.log('User authenticated, fetching stats as:', user.email);
+            showAuthMessage(`Authenticated as ${user.email}. Loading analytics data...`, 'success');
+            
+            // Fetch site-wide stats
+            window.firebase.firestore().collection('site-stats').doc('global').get()
+              .then((doc) => {
+                if (doc.exists) {
+                  const statsData = doc.data();
+                  console.log('Found site statistics:', statsData);
+                  
+                  if (statsData && statsData.visits) {
+                    totalVisitors = statsData.visits;
+                    updateVisitorCounter(totalVisitors);
+                    showAuthMessage(`Authenticated as ${user.email}. Data loaded successfully.`, 'success');
+                  }
+                  
+                  // Update reaction counts if available
+                  if (statsData && statsData.reactions) {
+                    if (totalReactions) totalReactions.textContent = statsData.reactions.total || '87';
+                    if (thumbsUpCount) thumbsUpCount.textContent = statsData.reactions.thumbsUp || '38';
+                    if (celebrateCount) celebrateCount.textContent = statsData.reactions.celebrate || '21';
+                    if (brainCount) brainCount.textContent = statsData.reactions.insightful || '16';
+                    if (mehCount) mehCount.textContent = statsData.reactions.meh || '12';
+                  }
+                } else {
+                  console.log('No site statistics document found, using mock data');
+                  showAuthMessage('No analytics data found. Using sample data.', 'warning');
                   updateVisitorCounter(totalVisitors);
                 }
-                
-                // Update reaction counts if available
-                if (statsData && statsData.reactions) {
-                  if (totalReactions) totalReactions.textContent = statsData.reactions.total || '87';
-                  if (thumbsUpCount) thumbsUpCount.textContent = statsData.reactions.thumbsUp || '38';
-                  if (celebrateCount) celebrateCount.textContent = statsData.reactions.celebrate || '21';
-                  if (brainCount) brainCount.textContent = statsData.reactions.insightful || '16';
-                  if (mehCount) mehCount.textContent = statsData.reactions.meh || '12';
-                }
-              } else {
-                console.log('No site statistics document found, using mock data');
+              })
+              .catch((error) => {
+                console.error('Error fetching site statistics:', error);
+                showAuthMessage('Error loading data: ' + error.message, 'error');
                 updateVisitorCounter(totalVisitors);
-              }
-            })
-            .catch((error) => {
-              console.error('Error fetching site statistics:', error);
-              updateVisitorCounter(totalVisitors);
-            });
+              });
+          });
         } else {
           console.log('Firebase firestore not available');
+          showAuthMessage('Firebase services not fully initialized. Using sample data.', 'warning');
           updateVisitorCounter(totalVisitors);
         }
       } catch (error) {
         console.error('Error accessing Firebase:', error);
+        showAuthMessage('Error accessing Firebase: ' + error.message, 'error');
         updateVisitorCounter(totalVisitors);
       }
     } else {
       console.log('Firebase config not available, using mock data');
+      showAuthMessage('Firebase configuration not available. Using sample data.', 'warning');
       updateVisitorCounter(totalVisitors);
     }
     
@@ -602,7 +730,6 @@ function loadAnalyticsData(isDevMode = false) {
       }
     }
   }
-}
 
 // Function to update the visitor counter with animation
 function updateVisitorCounter(totalVisitors) {
