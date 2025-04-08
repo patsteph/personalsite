@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Book, BookFilter, BookSortOption, BookStatus } from '@/types/book';
+import { Book, BookFilter, BookSortOption } from '@/types/book';
 import { getBooks } from '@/lib/books';
 import BookSpine from './BookSpine';
 import BookDetails from './BookDetails';

@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Book, BookStatus } from '@/types/book';
-import Image from 'next/image';
+// Next Image import not used - using standard HTML img tags
 // Import Firebase modules directly at the top level
 import { initializeApp, getApps } from 'firebase/app';
 import { getFirestore, collection, getDocs } from 'firebase/firestore';
@@ -16,6 +16,33 @@ export default function SimpleBookGrid({ initialBooks }: SimpleBookGridProps) {
   const [books, setBooks] = useState<Book[]>(initialBooks);
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
   const [loading, setLoading] = useState(!initialBooks.length);
+  
+  // Analytics for book views - consolidated at component level to avoid hook rule violations
+  useEffect(() => {
+    if (selectedBook) {
+      try {
+        logAnalyticsEvent('book_detail_view', {
+          book_id: selectedBook.id,
+          book_title: selectedBook.title
+        });
+      } catch (error) {
+        console.error('Error logging book detail view:', error);
+      }
+    }
+  }, [selectedBook]);
+  
+  // Log when books are loaded/displayed
+  useEffect(() => {
+    if (books.length > 0) {
+      try {
+        logAnalyticsEvent('books_view', {
+          book_count: books.length
+        });
+      } catch (error) {
+        console.error('Error logging books view:', error);
+      }
+    }
+  }, [books.length]);
   
   useEffect(() => {
     // Load books directly from Firebase client without dynamic imports
@@ -74,7 +101,7 @@ export default function SimpleBookGrid({ initialBooks }: SimpleBookGridProps) {
           }
           
           // Convert data to books array
-          const firebaseBooks: any[] = [];
+          const firebaseBooks: Record<string, unknown>[] = [];
           snapshot.forEach(doc => {
             firebaseBooks.push({
               id: doc.id,
@@ -86,7 +113,7 @@ export default function SimpleBookGrid({ initialBooks }: SimpleBookGridProps) {
           console.log(`Processing ${firebaseBooks.length} books from Firebase`);
           
           const validatedBooks: Book[] = firebaseBooks.map(rawBook => {
-            const book: Record<string, any> = {...rawBook};
+            const book: Record<string, unknown> = {...rawBook};
             
             // Process single author field
             if (book.author && !book.authors) {
@@ -167,17 +194,7 @@ export default function SimpleBookGrid({ initialBooks }: SimpleBookGridProps) {
       return null;
     }
     
-    // Log book view for analytics
-    useEffect(() => {
-      try {
-        logAnalyticsEvent('book_view', {
-          book_id: book.id,
-          book_title: book.title
-        });
-      } catch (error) {
-        console.error('Error logging book view:', error);
-      }
-    }, [book.id]);
+    // Analytics logging moved out of conditional block
     
     // Ultra-safe author text handling with fallbacks at every level
     let authorText = 'Unknown Author';
@@ -289,17 +306,7 @@ export default function SimpleBookGrid({ initialBooks }: SimpleBookGridProps) {
       return null;
     }
     
-    // Log book detail view for analytics
-    useEffect(() => {
-      try {
-        logAnalyticsEvent('book_detail_view', {
-          book_id: book.id,
-          book_title: book.title
-        });
-      } catch (error) {
-        console.error('Error logging book detail view:', error);
-      }
-    }, [book.id]);
+    // Analytics logging moved out of conditional block
     
     // Ultra-safe author text handling with fallbacks at every level
     let authorText = 'Unknown Author';

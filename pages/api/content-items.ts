@@ -5,7 +5,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { firestore } from '@/lib/firebase-admin';
 import { validateFirebaseIdToken } from '@/lib/api/server-auth';
-import { Signal } from '@/types/signals';
+// Signal type removed as it's not used directly
 
 // Configure API to handle both JSON and form data
 export const config = {

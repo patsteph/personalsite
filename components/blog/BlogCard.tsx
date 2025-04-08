@@ -1,5 +1,4 @@
 import { BlogPost } from '@/types/blog';
-import Link from 'next/link';
 import { format } from 'date-fns';
 import { useTranslation } from '@/lib/translations';
 import { useState } from 'react';

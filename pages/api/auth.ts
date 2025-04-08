@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { auth } from '@/lib/firebase-admin';
+// Direct auth import removed as it's not used in this file
 import * as authApi from '@/lib/api/auth';
 
 type AuthResponse = {

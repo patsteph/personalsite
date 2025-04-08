@@ -1,7 +1,7 @@
 import { GetStaticProps } from 'next';
 import Layout from '@/components/layout/Layout';
 import SimpleBookGrid from '@/components/books/SimpleBookGrid';
-import { getBooks, getBookStats } from '@/lib/books';
+import { getBookStats } from '@/lib/books';
 import { Book } from '@/types/book';
 import { useTranslation } from '@/lib/translations';
 import { useEffect, useState } from 'react';

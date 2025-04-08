@@ -6,7 +6,6 @@ import Layout from '@/components/layout/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { BlogPost } from '@/types/blog';
 import * as api from '@/lib/api';
-import { useTranslation } from '@/lib/translations';
 
 // Dynamically import the blog editor to reduce initial load size
 const BlogEditor = dynamic(() => import('@/components/admin/BlogEditor'), {
@@ -16,7 +15,7 @@ const BlogEditor = dynamic(() => import('@/components/admin/BlogEditor'), {
 
 export default function AdminBlogPage() {
   const router = useRouter();
-  const { t } = useTranslation();
+  // const { t } = useTranslation(); // Not using translations in this component
   
   // Blog posts state
   const [posts, setPosts] = useState<BlogPost[]>([]);

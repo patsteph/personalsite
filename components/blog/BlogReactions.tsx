@@ -39,7 +39,13 @@ export default function BlogReactions({ postId, slug, initialReactions = default
   });
 
   // Handle reaction click
-  const handleReaction = async (type: ReactionType) => {
+  const handleReaction = async (type: ReactionType, event?: React.MouseEvent) => {
+    // Prevent event propagation to parent elements
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    
     // Reset all reactions if changing reaction
     const hasReactedBefore = Object.values(userReacted).some(value => value === true);
     
@@ -106,7 +112,7 @@ export default function BlogReactions({ postId, slug, initialReactions = default
           reaction: type,
           // If changing reaction, indicate the previous one to remove
           previousReaction: hasReactedBefore ? 
-            Object.entries(userReacted).find(([_, value]) => value === true)?.[0] : 
+            Object.entries(userReacted).find(([, value]) => value === true)?.[0] : 
             undefined
         })
       });
@@ -178,14 +184,19 @@ export default function BlogReactions({ postId, slug, initialReactions = default
     }
   }, [slug, postId]);
 
+  // Prevent event propagation for the entire reactions section
+  const preventPropagation = (e: React.MouseEvent) => {
+    e.stopPropagation();
+  };
+
   return (
-    <div className="my-6 border-t border-gray-200 pt-4">
+    <div className="my-6 border-t border-gray-200 pt-4" onClick={preventPropagation}>
       <h3 className="text-base font-medium text-gray-700 mb-2">What did you think?</h3>
       <div className="flex flex-wrap gap-2">
         {Object.entries(reactionEmojis).map(([type, emoji]) => (
           <button
             key={type}
-            onClick={() => handleReaction(type as ReactionType)}
+            onClick={(e) => handleReaction(type as ReactionType, e)}
             disabled={userReacted[type as ReactionType]}
             className={`flex flex-col items-center px-2 py-1 rounded-md transition-colors ${
               userReacted[type as ReactionType]

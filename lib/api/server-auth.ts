@@ -36,7 +36,7 @@ export async function validateFirebaseIdToken(req: NextApiRequest): Promise<stri
       // Verify the token
       const decodedToken = await adminAuth.verifyIdToken(token);
       return decodedToken.uid;
-    } catch (verifyError) {
+    } catch (_) {
       return null;
     }
   } catch (error) {

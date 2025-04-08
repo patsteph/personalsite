@@ -1,8 +1,7 @@
 // components/ProtectedRoute.tsx
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/router';
 import { useAuth } from '@/lib/auth';
-import { getBasePath } from '@/lib/firebase';
+// getBasePath not used
 
 // For debugging
 console.log('Auth hooks loaded:', useAuth);
@@ -26,7 +25,8 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { user, loading } = auth;
   // Use a computed property instead of directly destructuring isAuthenticated
   const isAuthenticated = !!user;
-  const router = useRouter();
+  // Router not used - redirect handled by window.location.href
+  // const router = useRouter();
   
   // State to track if we've started the redirect
   const [redirectInProgress, setRedirectInProgress] = useState(false);

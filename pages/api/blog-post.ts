@@ -3,9 +3,25 @@ import { firestore } from '@/lib/firebase-admin';
 import * as admin from 'firebase-admin';
 import { ReactionType } from '@/types/blog';
 
+interface BlogPostData {
+  id: string;
+  title: string;
+  slug: string;
+  content?: string;
+  summary?: string;
+  date?: string;
+  publishedAt?: Date;
+  updatedAt?: Date;
+  published?: boolean;
+  reactions?: Record<string, number>;
+  tags?: string[];
+  _matchType?: string;
+  [key: string]: unknown; // For any other fields from Firestore
+}
+
 type PostResponse = {
   success: boolean;
-  data?: any;
+  data?: BlogPostData;
   error?: string;
   message?: string;
 }
@@ -131,15 +147,15 @@ export default async function handler(
         const statsRef = firestore.collection('site-stats').doc('global');
         const statsSnapshot = await statsRef.get();
         
-        let reactionMapping = {
+        const reactionMapping = {
           'thumbsUp': 'thumbsUp',
           'celebrate': 'celebrate',
           'brain': 'insightful',
           'meh': 'meh'
         };
         
-        let mappedReaction = reactionMapping[reaction as keyof typeof reactionMapping] || reaction;
-        let mappedPrevious = previousReaction ? 
+        const mappedReaction = reactionMapping[reaction as keyof typeof reactionMapping] || reaction;
+        const mappedPrevious = previousReaction ? 
           reactionMapping[previousReaction as keyof typeof reactionMapping] || previousReaction : 
           null;
         
@@ -188,11 +204,11 @@ export default async function handler(
         success: true, 
         message: 'Reaction recorded successfully' 
       });
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error processing blog post reaction:', error);
       return res.status(500).json({
         success: false,
-        error: `Error processing reaction: ${error.message}`
+        error: `Error processing reaction: ${error instanceof Error ? error.message : 'Unknown error'}`
       });
     }
   }
@@ -313,11 +329,11 @@ export default async function handler(
         success: false,
         error: 'You must provide either an ID or a slug parameter'
       });
-    } catch (error: any) {
+    } catch (error) {
       console.error('Blog Post API error:', error);
       return res.status(500).json({
         success: false,
-        error: `Error fetching blog post: ${error.message}`
+        error: `Error fetching blog post: ${error instanceof Error ? error.message : 'Unknown error'}`
       });
     }
   }

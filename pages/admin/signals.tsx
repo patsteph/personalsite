@@ -108,7 +108,7 @@ export default function SignalsAdminPage({ signals: initialSignals, error: serve
         shareToSocial: data.shareToSocial ? 'Specified' : 'Not specified'
       });
       
-      let result: Signal | null = null;
+      // Result variable removed as it's not used
       let message = '';
       
       // Use the API library with fallback instead of direct fetch
@@ -128,15 +128,7 @@ export default function SignalsAdminPage({ signals: initialSignals, error: serve
         
         if (updated) {
           message = 'Signal updated successfully';
-          // Convert from API signal type to app signal type
-          result = { 
-            id: selectedSignal.id, 
-            ...data,
-            // Ensure required fields for Article type
-            ...(data.type === 'article' ? {
-              publishDate: data.dateAdded || new Date().toISOString()
-            } : {})
-          } as Signal;
+          // No longer storing result as it's not needed
         } else {
           throw new Error('Failed to update signal');
         }
@@ -156,15 +148,7 @@ export default function SignalsAdminPage({ signals: initialSignals, error: serve
         const apiResult = await api.signals.addSignal(apiSignal);
         
         if (apiResult) {
-          // Convert from API signal type to app signal type
-          result = {
-            ...apiResult,
-            // Ensure required fields for Article type
-            ...(apiResult.type === 'article' ? {
-              publishDate: apiResult.dateAdded || new Date().toISOString()
-            } : {})
-          } as Signal;
-          
+          // Successfully created signal
           message = 'Signal created successfully';
         } else {
           throw new Error('Failed to create signal');
@@ -174,7 +158,7 @@ export default function SignalsAdminPage({ signals: initialSignals, error: serve
       // Add social share message if applicable
       if (data.shareToSocial && Object.values(data.shareToSocial).some(v => v)) {
         const platforms = Object.entries(data.shareToSocial)
-          .filter(([_, value]) => value)
+          .filter(([, value]) => value)
           .map(([platform]) => platform);
         
         if (platforms.length > 0) {
@@ -188,7 +172,7 @@ export default function SignalsAdminPage({ signals: initialSignals, error: serve
     } catch (err) {
       console.error('Error submitting signal:', err);
       
-      let errorMessage = err instanceof Error ? err.message : String(err);
+      const errorMessage = err instanceof Error ? err.message : String(err);
       setError(`Error: ${errorMessage}`);
     } finally {
       setIsSubmitting(false);
@@ -487,7 +471,7 @@ export default function SignalsAdminPage({ signals: initialSignals, error: serve
   );
 }
 
-export const getServerSideProps: GetServerSideProps<SignalsAdminPageProps, ParsedUrlQuery> = async (context) => {
+export const getServerSideProps: GetServerSideProps<SignalsAdminPageProps, ParsedUrlQuery> = async () => {
   try {
     // We'll load signals client-side for better reliability
     return {

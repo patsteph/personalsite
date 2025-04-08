@@ -1,6 +1,5 @@
 import { Book } from '@/types/book';
 import { useMemo, useEffect } from 'react';
-import Image from 'next/image';
 
 type BookSpineProps = {
   book: Book;

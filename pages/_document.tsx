@@ -53,15 +53,15 @@ export default function Document() {
         {/* Viewport settings for better mobile experience */}
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, viewport-fit=cover" />
         
-        {/* Add runtime configuration scripts */}
-        <script src={`${basePath}/runtime-config.js`} />
-        <script src={`${basePath}/secure-config.js`} />
+        {/* Add runtime configuration scripts with proper async/defer attributes */}
+        <script src={`${basePath}/runtime-config.js`} async />
+        <script src={`${basePath}/secure-config.js`} async />
         
         
         {/* Additional fixes only for development */}
         {!isProduction && (
           <>
-            <script src={`${basePath}/fix-api-url.js`} />
+            <script src={`${basePath}/fix-api-url.js`} async />
             {/* Removed signals-redirect.js - it was causing API call issues */}
             {/* <script src={`${basePath}/personalsite/signals-redirect.js`} /> */}
           </>

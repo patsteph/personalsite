@@ -6,13 +6,14 @@ import Layout from '@/components/layout/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { useAuth } from '@/lib/auth';
 import { useTranslation } from '@/lib/translations';
-import { getBasePath } from '@/lib/firebase';
-
 // Dynamically import components to reduce initial load size
-const BookForm = dynamic(() => import('@/components/admin/BookForm'), {
-  loading: () => <div className="p-6 text-center">Loading book management tools...</div>,
-  ssr: false // Admin section doesn't need server-side rendering
-});
+// BookForm is not used in this component, so no need to import it
+
+// Removed unused import:
+// const BookForm = dynamic(() => import('@/components/admin/BookForm'), {
+//   loading: () => <div className="p-6 text-center">Loading book management tools...</div>,
+//   ssr: false // Admin section doesn't need server-side rendering
+// });
 
 // Dynamically import FeedbackAnalytics component
 const FeedbackAnalytics = dynamic(() => import('@/components/FeedbackAnalytics'), {
@@ -24,7 +25,8 @@ export default function AdminPage() {
   const router = useRouter();
   const { signOut } = useAuth();
   const { t } = useTranslation();
-  const [isSuccess, setIsSuccess] = useState(false);
+  // Success state removed since it's not currently used
+  // const [isSuccess, setIsSuccess] = useState(false);
   const [activeTab, setActiveTab] = useState('main'); // 'main' or 'feedback'
   
   const handleSignOut = async () => {
@@ -32,10 +34,11 @@ export default function AdminPage() {
     router.push('/');
   };
   
-  const handleSuccess = () => {
-    setIsSuccess(true);
-    setTimeout(() => setIsSuccess(false), 3000);
-  };
+  // Success handler - not currently used but kept for future feature implementation
+  // const handleSuccess = () => {
+  //   setIsSuccess(true);
+  //   setTimeout(() => setIsSuccess(false), 3000);
+  // };
   
   const navigateTo = (path: string) => {
     router.push(path);
@@ -85,11 +88,12 @@ export default function AdminPage() {
             </div>
           </div>
           
+          {/* Success message removed since state is not currently used
           {isSuccess && (
             <div className="bg-green-100 text-green-700 p-3 rounded mb-4">
               {t('admin.success', 'Operation completed successfully!')}
             </div>
-          )}
+          )} */}
           
           {activeTab === 'feedback' ? (
             <FeedbackAnalytics />

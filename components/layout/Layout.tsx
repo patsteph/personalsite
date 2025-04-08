@@ -4,7 +4,7 @@ import Head from 'next/head';
 import Image from 'next/image';
 import Sidebar from './Sidebar';
 import AdminButton from '../ui/AdminButton';
-import { useTranslation, LanguageCode, LANGUAGES } from '@/lib/translations';
+import { useTranslation } from '@/lib/translations';
 
 // Import page section types
 import { PageSection } from './types';
@@ -44,25 +44,7 @@ export default function Layout({
   const pageTitle = title || sectionTitles[section];
   const metaDescription = description || `Patrick Stephens personal website - ${pageTitle} section`;
   
-  // Handle language change
-  const handleLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const newLanguage = e.target.value as LanguageCode;
-    console.log('Language selected in dropdown:', newLanguage);
-    setLanguage(newLanguage);
-    
-    // Add immediate visual feedback for the user
-    if (e.target) {
-      e.target.blur(); // Remove focus
-      
-      // Flash the select element to indicate change
-      e.target.classList.add('bg-blue-100');
-      setTimeout(() => {
-        if (e.target) {
-          e.target.classList.remove('bg-blue-100');
-        }
-      }, 300);
-    }
-  };
+  // Dropdown language change removed - now using button-based language selection
   
   return (
     <div className="min-h-screen bg-linen text-gray-800 theme-transition">

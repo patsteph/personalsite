@@ -13,7 +13,8 @@ import {
   query,
   where,
   orderBy,
-  limit,
+  // limit is defined but not used
+  // limit,
   DocumentData,
   QueryDocumentSnapshot
 } from 'firebase/firestore';

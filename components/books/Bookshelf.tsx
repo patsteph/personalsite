@@ -3,16 +3,14 @@ import { Book, BookFilter, BookSortOption } from '@/types/book';
 import { getBooks } from '@/lib/books';
 import BookSpine from './BookSpine';
 import BookDetails from './BookDetails';
-import { useTranslation } from '@/lib/translations';
 import { useAuth } from '@/lib/auth';
-import AdminButton from '../ui/AdminButton';
 
 type BookshelfProps = {
   initialBooks?: Book[];
   booksPerShelf?: number;
 };
 
-export default function Bookshelf({ initialBooks, booksPerShelf = 16 }: BookshelfProps) {
+export default function Bookshelf({ initialBooks }: BookshelfProps) {
   const [allBooks, setAllBooks] = useState<Book[]>(initialBooks || []);
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
   const [filter, setFilter] = useState<BookFilter>('all');
@@ -21,7 +19,8 @@ export default function Bookshelf({ initialBooks, booksPerShelf = 16 }: Bookshel
   
   // Skip translations temporarily to avoid build errors
   const t = (key: string, fallback: string) => fallback;
-  const { user } = useAuth();
+  // Auth not needed here
+  useAuth(); // Keep the hook call to maintain hooks order but don't use the result
   
   // Fetch books when component mounts or filter/sort changes
   useEffect(() => {

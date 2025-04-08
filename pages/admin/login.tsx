@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/router';
 import dynamic from 'next/dynamic';
 import Layout from '@/components/layout/Layout';
 import { useAuth } from '@/lib/auth';
-import { getBasePath } from '@/lib/firebase';
+// getBasePath not used
 import { useTranslation } from '@/lib/translations';
 
 // Dynamically import the LoginForm component
@@ -13,7 +12,8 @@ const LoginForm = dynamic(() => import('@/components/admin/LoginForm'), {
 });
 
 function AdminLoginPage() {
-  const router = useRouter();
+  // Not using Next.js router as we redirect with window.location for a full page reload
+  // const router = useRouter();
   const { user, isAuthenticated, loading } = useAuth();
   const { t } = useTranslation();
   const [redirecting, setRedirecting] = useState(false);

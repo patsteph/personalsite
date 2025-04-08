@@ -68,8 +68,8 @@ export default function AdminBooksPage() {
     }
   };
   
-  // Handle book deletion (commented out for now until UI wires it up)
-  const _handleDeleteBook = async (id: string) => {
+  // Handle book deletion
+  const handleDeleteBook = async (id: string) => {
     if (!confirm('Are you sure you want to delete this book?')) {
       return;
     }
@@ -153,25 +153,42 @@ export default function AdminBooksPage() {
                   <div 
                     key={book.id}
                     className={`
-                      p-3 rounded-lg cursor-pointer transition-colors
+                      p-3 rounded-lg transition-colors
                       ${selectedBook?.id === book.id ? 'bg-light-accent border-l-4 border-steel-blue' : 'hover:bg-gray-50'}
                     `}
-                    onClick={() => handleSelectBook(book.id)}
                   >
-                    <div className="font-medium truncate">{book.title}</div>
-                    <div className="text-sm text-gray-600 truncate">
-                      {book.authors.join(', ')}
-                    </div>
-                    <div className="flex mt-1">
-                      <span className={`
-                        text-xs px-2 py-0.5 rounded-full
-                        ${book.status === 'read' ? 'bg-green-100 text-green-800' : ''}
-                        ${book.status === 'reading' ? 'bg-blue-100 text-blue-800' : ''}
-                        ${book.status === 'toRead' ? 'bg-yellow-100 text-yellow-800' : ''}
-                      `}>
-                        {book.status === 'read' ? 'Read' : 
-                         book.status === 'reading' ? 'Reading' : 'To Read'}
-                      </span>
+                    <div className="flex justify-between">
+                      <div className="w-5/6 cursor-pointer" onClick={() => handleSelectBook(book.id)}>
+                        <div className="font-medium truncate">{book.title}</div>
+                        <div className="text-sm text-gray-600 truncate">
+                          {book.authors.join(', ')}
+                        </div>
+                        <div className="flex mt-1">
+                          <span className={`
+                            text-xs px-2 py-0.5 rounded-full
+                            ${book.status === 'read' ? 'bg-green-100 text-green-800' : ''}
+                            ${book.status === 'reading' ? 'bg-blue-100 text-blue-800' : ''}
+                            ${book.status === 'toRead' ? 'bg-yellow-100 text-yellow-800' : ''}
+                          `}>
+                            {book.status === 'read' ? 'Read' : 
+                             book.status === 'reading' ? 'Reading' : 'To Read'}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-start">
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteBook(book.id);
+                          }}
+                          className="text-red-500 hover:text-red-700"
+                          aria-label="Delete book"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                          </svg>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}
