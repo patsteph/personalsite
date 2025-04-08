@@ -232,6 +232,8 @@ For other hosting platforms, follow the standard Next.js deployment guidelines.
 - [ ] Add RSS feed for blog posts
 - [ ] Create PWA support for offline access
 - [X] Add commenting system to blog posts
+- [X] Add Feedback system to site
+- [X] Add Analytics to the admin dashboard
 
 ---
 

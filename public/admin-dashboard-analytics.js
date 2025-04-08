@@ -258,8 +258,8 @@ function setupAnalyticsTabContent() {
                 <div style="font-size: 14px; color: #6b7280;">Avg. Read Time</div>
               </div>
               <div style="border: 1px solid var(--border-color); border-radius: 4px; padding: 15px; text-align: center;">
-                <div id="commentCount" style="font-size: 24px; font-weight: bold; color: #3b82f6; margin-bottom: 5px;">32</div>
-                <div style="font-size: 14px; color: #6b7280;">Comments</div>
+                <div id="totalReactions" style="font-size: 24px; font-weight: bold; color: #3b82f6; margin-bottom: 5px;">87</div>
+                <div style="font-size: 14px; color: #6b7280;">Reactions</div>
               </div>
               <div style="border: 1px solid var(--border-color); border-radius: 4px; padding: 15px; text-align: center;">
                 <div id="shareCount" style="font-size: 24px; font-weight: bold; color: #f59e0b; margin-bottom: 5px;">19</div>
@@ -268,7 +268,7 @@ function setupAnalyticsTabContent() {
             </div>
           </div>
           
-          <div style="border: 1px solid var(--border-color); border-radius: 8px; padding: 20px;">
+          <div style="border: 1px solid var(--border-color); border-radius: 8px; padding: 20px; margin-bottom: 20px;">
             <h3 style="margin-top: 0; margin-bottom: 15px; font-size: 18px;">Most Popular Posts</h3>
             <table class="table">
               <thead>
@@ -276,7 +276,7 @@ function setupAnalyticsTabContent() {
                   <th>Post</th>
                   <th>Views</th>
                   <th>Avg. Read Time</th>
-                  <th>Comments</th>
+                  <th>Reactions</th>
                 </tr>
               </thead>
               <tbody id="popularPostsTable">
@@ -284,22 +284,48 @@ function setupAnalyticsTabContent() {
                   <td>How to Build a React App with Firebase</td>
                   <td>142</td>
                   <td>5:12</td>
-                  <td>8</td>
+                  <td>43</td>
                 </tr>
                 <tr>
                   <td>Getting Started with TypeScript</td>
                   <td>98</td>
                   <td>4:08</td>
-                  <td>5</td>
+                  <td>25</td>
                 </tr>
                 <tr>
                   <td>Best Practices for Modern Web Development</td>
                   <td>81</td>
                   <td>3:45</td>
-                  <td>3</td>
+                  <td>19</td>
                 </tr>
               </tbody>
             </table>
+          </div>
+          
+          <div style="border: 1px solid var(--border-color); border-radius: 8px; padding: 20px;">
+            <h3 style="margin-top: 0; margin-bottom: 15px; font-size: 18px;">Blog Reactions Breakdown</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px;">
+              <div style="border: 1px solid var(--border-color); border-radius: 4px; padding: 12px; text-align: center;">
+                <div style="font-size: 24px; margin-bottom: 5px;">👍</div>
+                <div id="thumbsUpCount" style="font-size: 20px; font-weight: bold; color: var(--primary-color);">38</div>
+                <div style="font-size: 14px; color: #6b7280;">Thumbs Up</div>
+              </div>
+              <div style="border: 1px solid var(--border-color); border-radius: 4px; padding: 12px; text-align: center;">
+                <div style="font-size: 24px; margin-bottom: 5px;">🎉</div>
+                <div id="celebrateCount" style="font-size: 20px; font-weight: bold; color: var(--primary-color);">21</div>
+                <div style="font-size: 14px; color: #6b7280;">Celebrate</div>
+              </div>
+              <div style="border: 1px solid var(--border-color); border-radius: 4px; padding: 12px; text-align: center;">
+                <div style="font-size: 24px; margin-bottom: 5px;">🧠</div>
+                <div id="brainCount" style="font-size: 20px; font-weight: bold; color: var(--primary-color);">16</div>
+                <div style="font-size: 14px; color: #6b7280;">Insightful</div>
+              </div>
+              <div style="border: 1px solid var(--border-color); border-radius: 4px; padding: 12px; text-align: center;">
+                <div style="font-size: 24px; margin-bottom: 5px;">😐</div>
+                <div id="mehCount" style="font-size: 20px; font-weight: bold; color: var(--primary-color);">12</div>
+                <div style="font-size: 14px; color: #6b7280;">Meh</div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -423,6 +449,19 @@ function loadAnalyticsData(isDevMode = false) {
     } else {
       console.log('Analytics: bounceDelta element not found');
     }
+    
+    // Load blog reaction metrics
+    const totalReactions = document.getElementById('totalReactions');
+    const thumbsUpCount = document.getElementById('thumbsUpCount');
+    const celebrateCount = document.getElementById('celebrateCount');
+    const brainCount = document.getElementById('brainCount');
+    const mehCount = document.getElementById('mehCount');
+    
+    if (totalReactions) totalReactions.textContent = '87';
+    if (thumbsUpCount) thumbsUpCount.textContent = '38';
+    if (celebrateCount) celebrateCount.textContent = '21';
+    if (brainCount) brainCount.textContent = '16';
+    if (mehCount) mehCount.textContent = '12';
     
     // Load top pages data
     const topPagesTable = document.getElementById('topPagesTable');

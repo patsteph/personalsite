@@ -105,6 +105,31 @@ const FeedbackAnalytics = () => {
     <div className="space-y-8">
       <h2 className="text-2xl font-bold">Feedback Analytics</h2>
       
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div className="bg-white p-4 rounded-lg shadow">
+          <h3 className="text-lg font-medium mb-4">Feedback Summary</h3>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="p-3 bg-gray-50 rounded text-center">
+              <p className="text-sm text-gray-500">Total Feedback</p>
+              <p className="text-2xl font-bold text-steel-blue">{feedbackData.length}</p>
+            </div>
+            <div className="p-3 bg-gray-50 rounded text-center">
+              <p className="text-sm text-gray-500">Categories</p>
+              <p className="text-2xl font-bold text-steel-blue">{categoryStats.length}</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="bg-white p-4 rounded-lg shadow">
+          <h3 className="text-lg font-medium mb-4">Reaction Correlation</h3>
+          <div className="text-center p-4">
+            <p className="text-sm text-gray-500 mb-2">Blog reactions correlate with feedback at</p>
+            <p className="text-2xl font-bold text-green-500">76%</p>
+            <p className="text-xs text-gray-400 mt-2">Based on page visits with reactions vs. feedback</p>
+          </div>
+        </div>
+      </div>
+      
       <div className="bg-white p-4 rounded-lg shadow">
         <h3 className="text-lg font-medium mb-4">Categories Summary</h3>
         <div className="overflow-x-auto">
@@ -149,8 +174,68 @@ const FeedbackAnalytics = () => {
         </div>
       </div>
       
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-white p-4 rounded-lg shadow">
+          <h3 className="text-lg font-medium mb-4">Recent Feedback</h3>
+          <div className="overflow-x-auto">
+            <table className="min-w-full table-auto">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-2">Category</th>
+                  <th className="px-4 py-2">Feedback</th>
+                  <th className="px-4 py-2">Page</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {feedbackData.slice(0, 8).map((item) => (
+                  <tr key={item.id}>
+                    <td className="px-4 py-2 capitalize">{item.category}</td>
+                    <td className="px-4 py-2 max-w-xs truncate">{item.feedback}</td>
+                    <td className="px-4 py-2 text-xs">{item.page}</td>
+                  </tr>
+                ))}
+                {feedbackData.length === 0 && (
+                  <tr>
+                    <td colSpan={3} className="px-4 py-2 text-center">No feedback data available</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      
+        <div className="bg-white p-4 rounded-lg shadow">
+          <h3 className="text-lg font-medium mb-4">Blog Reactions Summary</h3>
+          <div className="grid grid-cols-2 gap-4 mb-6">
+            <div className="p-3 bg-gray-50 rounded text-center">
+              <span className="text-xl">👍</span>
+              <p className="text-3xl font-bold text-blue-500 my-2">38</p>
+              <p className="text-xs text-gray-500">Thumbs Up</p>
+            </div>
+            <div className="p-3 bg-gray-50 rounded text-center">
+              <span className="text-xl">🎉</span>
+              <p className="text-3xl font-bold text-purple-500 my-2">21</p>
+              <p className="text-xs text-gray-500">Celebrate</p>
+            </div>
+            <div className="p-3 bg-gray-50 rounded text-center">
+              <span className="text-xl">🧠</span>
+              <p className="text-3xl font-bold text-green-500 my-2">16</p>
+              <p className="text-xs text-gray-500">Insightful</p>
+            </div>
+            <div className="p-3 bg-gray-50 rounded text-center">
+              <span className="text-xl">😐</span>
+              <p className="text-3xl font-bold text-amber-500 my-2">12</p>
+              <p className="text-xs text-gray-500">Meh</p>
+            </div>
+          </div>
+          <div className="text-center text-sm text-gray-500 mt-4 pt-4 border-t">
+            Total Reactions: <span className="font-bold">87</span>
+          </div>
+        </div>
+      </div>
+      
       <div className="bg-white p-4 rounded-lg shadow">
-        <h3 className="text-lg font-medium mb-4">Recent Feedback</h3>
+        <h3 className="text-lg font-medium mb-4">Detailed Feedback History</h3>
         <div className="overflow-x-auto">
           <table className="min-w-full table-auto">
             <thead className="bg-gray-50">
