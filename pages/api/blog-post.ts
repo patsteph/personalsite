@@ -233,12 +233,17 @@ export default async function handler(
           });
         }
         
+        const postData = docSnapshot.data() || {};
+        const blogPost: BlogPostData = {
+          id: docSnapshot.id,
+          title: typeof postData?.title === 'string' ? postData.title : 'Untitled Post',
+          slug: typeof postData?.slug === 'string' ? postData.slug : docSnapshot.id,
+          ...postData
+        };
+        
         return res.status(200).json({
           success: true,
-          data: {
-            id: docSnapshot.id,
-            ...docSnapshot.data()
-          }
+          data: blogPost
         });
       }
       
@@ -294,13 +299,18 @@ export default async function handler(
             if (closestMatch) {
               console.log(`Blog Post API: Found closest match with slug "${closestMatch.data().slug}"`);
               
+              const matchData = closestMatch.data() || {};
+              const blogPost: BlogPostData = {
+                id: closestMatch.id,
+                title: typeof matchData?.title === 'string' ? matchData.title : 'Untitled Post',
+                slug: typeof matchData?.slug === 'string' ? matchData.slug : closestMatch.id,
+                _matchType: 'similar',
+                ...matchData
+              };
+              
               return res.status(200).json({
                 success: true,
-                data: {
-                  id: closestMatch.id,
-                  ...closestMatch.data(),
-                  _matchType: 'similar'
-                }
+                data: blogPost
               });
             }
           }
@@ -315,12 +325,18 @@ export default async function handler(
         }
         
         // Return the first document if multiple matches
+        const doc = snapshot.docs[0];
+        const docData = doc.data() || {};
+        const blogPost: BlogPostData = {
+          id: doc.id,
+          title: typeof docData?.title === 'string' ? docData.title : 'Untitled Post',
+          slug: typeof docData?.slug === 'string' ? docData.slug : doc.id,
+          ...docData
+        };
+        
         return res.status(200).json({
           success: true,
-          data: {
-            id: snapshot.docs[0].id,
-            ...snapshot.docs[0].data()
-          }
+          data: blogPost
         });
       }
       

@@ -113,61 +113,40 @@ export default function SimpleBookGrid({ initialBooks }: SimpleBookGridProps) {
           console.log(`Processing ${firebaseBooks.length} books from Firebase`);
           
           const validatedBooks: Book[] = firebaseBooks.map(rawBook => {
-            const book: Record<string, unknown> = {...rawBook};
+            // Create a book object with proper types
+            const bookData = {...rawBook};
             
-            // Process single author field
-            if (book.author && !book.authors) {
-              book.authors = [book.author];
-            }
-            
-            // Default values for required fields
-            if (!book.id) book.id = `temp-${Math.random().toString(36).substring(2, 9)}`;
-            if (!book.title) book.title = 'Untitled Book';
-            if (!book.status || !['read', 'reading', 'toRead'].includes(book.status)) book.status = 'read';
-            if (!book.dateAdded) book.dateAdded = new Date().toISOString();
-            if (!book.isbn) book.isbn = '';
-            
-            // Handle authors field
-            if (!book.authors) {
-              book.authors = ['Unknown Author'];
-            } else if (typeof book.authors === 'string') {
-              book.authors = [book.authors];
-            } else if (!Array.isArray(book.authors)) {
-              book.authors = ['Unknown Author'];
-            }
-            
-            // Filter any non-string values from authors array
-            if (Array.isArray(book.authors)) {
-              book.authors = book.authors.filter(author => 
-                author !== undefined && author !== null && typeof author === 'string'
-              );
-              
-              if (book.authors.length === 0) {
-                book.authors = ['Unknown Author'];
-              }
-            }
-            
-            // Ensure imageLinks is an object
-            if (!book.imageLinks) book.imageLinks = {};
-            
-            // Convert to Book type
-            return {
-              id: book.id,
-              isbn: book.isbn,
-              title: book.title,
-              authors: book.authors,
-              status: book.status as BookStatus,
-              dateAdded: book.dateAdded,
-              publisher: book.publisher,
-              publishedDate: book.publishedDate,
-              description: book.description,
-              pageCount: book.pageCount,
-              categories: Array.isArray(book.categories) ? book.categories : [],
-              imageLinks: book.imageLinks,
-              userRating: typeof book.userRating === 'number' ? book.userRating : undefined,
-              averageRating: typeof book.averageRating === 'number' ? book.averageRating : undefined,
-              notes: book.notes
+            // Create a properly typed book object
+            const book: Book = {
+              id: typeof bookData.id === 'string' ? bookData.id : `temp-${Math.random().toString(36).substring(2, 9)}`,
+              isbn: typeof bookData.isbn === 'string' ? bookData.isbn : '',
+              title: typeof bookData.title === 'string' ? bookData.title : 'Untitled Book',
+              authors: Array.isArray(bookData.authors) ? bookData.authors : 
+                       (typeof bookData.author === 'string' ? [bookData.author] : ['Unknown Author']),
+              status: ['read', 'reading', 'toRead'].includes(bookData.status as string) ? 
+                      bookData.status as BookStatus : 'read',
+              dateAdded: typeof bookData.dateAdded === 'string' ? bookData.dateAdded : new Date().toISOString(),
+              publisher: typeof bookData.publisher === 'string' ? bookData.publisher : undefined,
+              publishedDate: typeof bookData.publishedDate === 'string' ? bookData.publishedDate : undefined,
+              description: typeof bookData.description === 'string' ? bookData.description : undefined,
+              pageCount: typeof bookData.pageCount === 'number' ? bookData.pageCount : undefined,
+              notes: typeof bookData.notes === 'string' ? bookData.notes : undefined,
+              categories: Array.isArray(bookData.categories) ? bookData.categories : undefined,
+              userRating: typeof bookData.userRating === 'number' ? bookData.userRating : undefined,
+              averageRating: typeof bookData.averageRating === 'number' ? bookData.averageRating : undefined,
             };
+            
+            // Handle imageLinks field
+            if (typeof bookData.imageLinks === 'object' && bookData.imageLinks !== null) {
+              const imgLinks = bookData.imageLinks as Record<string, unknown>;
+              book.imageLinks = {
+                thumbnail: typeof imgLinks.thumbnail === 'string' ? imgLinks.thumbnail : undefined,
+                smallThumbnail: typeof imgLinks.smallThumbnail === 'string' ? imgLinks.smallThumbnail : undefined
+              };
+            }
+            
+            // Book has already been properly typed with all required fields
+            return book;
           });
           
           console.log(`Successfully processed ${validatedBooks.length} books`);
