@@ -424,7 +424,32 @@ function loadAnalyticsData() {
   showStatusMessage('Loading analytics data...', 'info');
   
   // Fetch analytics data from the server API
-  fetch('/api/admin-analytics')
+  // Get the current active Firebase auth token from local storage or the auth module
+  const getAuthToken = async () => {
+    try {
+      // If the Firebase auth object is available, use it to get a fresh token
+      if (window.firebase && window.firebase.auth && window.firebase.auth().currentUser) {
+        return await window.firebase.auth().currentUser.getIdToken(true);
+      }
+      
+      // Otherwise try to use our stored token
+      return localStorage.getItem('firebaseToken') || '';
+    } catch (error) {
+      console.error('Error getting auth token:', error);
+      return '';
+    }
+  };
+  
+  // First get the auth token, then make the request
+  getAuthToken().then(token => {
+    return fetch('/api/admin-analytics', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    });
+  })
     .then(response => {
       if (!response.ok) {
         throw new Error(`Failed to load analytics data (${response.status})`);

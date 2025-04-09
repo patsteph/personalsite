@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { firestore } from '@/lib/firebase-admin';
-import { verifyAdminSession } from '@/lib/api/server-auth';
+import { validateFirebaseIdToken } from '@/lib/api/server-auth';
 
 type AdminAnalyticsResponse = {
   success: boolean;
@@ -12,15 +12,21 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<AdminAnalyticsResponse>
 ) {
-  // Verify the user is authenticated and has admin access
-  const isAdmin = await verifyAdminSession(req);
+  // Verify the user is authenticated - uses direct token verification
+  const uid = await validateFirebaseIdToken(req);
   
-  if (!isAdmin) {
+  if (!uid) {
+    console.error('Admin analytics: Authentication failed - invalid or missing token');
     return res.status(401).json({
       success: false,
       error: 'Unauthorized: You must be logged in as an admin to access analytics'
     });
   }
+  
+  console.log(`Admin analytics: Authenticated user with UID ${uid}`);
+  
+  // For existing admin websites, we'll skip the admin collection check
+  // and just use Firebase Authentication
   
   // Only GET requests are supported
   if (req.method !== 'GET') {

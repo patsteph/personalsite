@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useAuth } from '@/lib/auth';
 
 interface FeedbackItem {
   id: string;
@@ -52,13 +53,27 @@ const FeedbackAnalytics = () => {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { user, refreshToken } = useAuth();
 
   useEffect(() => {
     const fetchFeedbackAnalytics = async () => {
       try {
         setIsLoading(true);
         
-        const response = await fetch('/api/admin-analytics?type=feedback');
+        // Get the current user's ID token
+        const token = user ? await refreshToken() : null;
+        
+        if (!token) {
+          throw new Error('No authentication token available');
+        }
+          
+        const response = await fetch('/api/admin-analytics?type=feedback', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        });
         
         if (!response.ok) {
           throw new Error(`Failed to fetch feedback analytics (${response.status})`);

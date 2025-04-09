@@ -176,6 +176,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setUser(userCredential.user);
       setIsAuthenticated(true);
       
+      // Get and store token for API calls
+      try {
+        const token = await userCredential.user.getIdToken();
+        localStorage.setItem('firebaseAuthToken', token);
+        console.log('Firebase auth token saved to localStorage');
+      } catch (tokenError) {
+        console.error('Unable to get auth token:', tokenError);
+      }
+      
       // Reset activity timestamp
       updateLastActivity();
       
@@ -220,16 +229,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setUser(null);
       setIsAuthenticated(false);
       
-      // Clear auth data from sessionStorage and cookies
+      // Clear auth data from sessionStorage, localStorage and cookies
       if (typeof window !== 'undefined') {
         // Clear session storage
         sessionStorage.removeItem('auth_success');
         sessionStorage.removeItem('auth_timestamp');
         
+        // Clear localStorage
+        localStorage.removeItem('firebaseAuthToken');
+        
         // Clear cookies by setting expiration to past date
         document.cookie = 'auth_success=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Strict';
         
-        console.log('Auth state cleared from session and cookies');
+        console.log('Auth state cleared from session, localStorage, and cookies');
       }
     } catch (error) {
       console.error('Sign out error:', error);
