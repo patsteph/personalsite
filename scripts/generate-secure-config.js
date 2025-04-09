@@ -6,11 +6,24 @@
 const fs = require('fs');
 const path = require('path');
 
-// Create the secure config content - simplified version with no sensitive data
+// Load environment variables from .env.local for Firebase config
+require('dotenv').config({ path: '.env.local' });
+
+// Create a secure config with Firebase authentication details
 const configContent = `
-// Secure configuration is no longer loaded in the client
-// All secure operations now use server-side APIs
-console.log('Using server-side APIs for all secure operations');
+// Secure configuration with Firebase credentials
+window.SECURE_CONFIG = {
+  firebase: {
+    apiKey: "${process.env.NEXT_PUBLIC_FIREBASE_API_KEY || ''}",
+    authDomain: "${process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || ''}",
+    projectId: "${process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || ''}",
+    storageBucket: "${process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || ''}",
+    messagingSenderId: "${process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || ''}",
+    appId: "${process.env.NEXT_PUBLIC_FIREBASE_APP_ID || ''}",
+    measurementId: "${process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID || ''}"
+  }
+};
+console.log('Secure configuration loaded with Firebase credentials');
 `;
 
 // Path for the config file

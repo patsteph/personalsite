@@ -3,15 +3,15 @@ import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
 import { getAuth, Auth, connectAuthEmulator } from 'firebase/auth';
 import { getFirestore, Firestore, connectFirestoreEmulator } from 'firebase/firestore';
 import { getStorage, FirebaseStorage } from 'firebase/storage';
-// Default empty Firebase config for type safety
+// Default Firebase config from environment variables (at build time)
 const defaultFirebaseConfig = {
-  apiKey: "",
-  authDomain: "",
-  projectId: "",
-  storageBucket: "",
-  messagingSenderId: "",
-  appId: "",
-  measurementId: ""
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "",
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "",
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "",
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "",
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "",
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "",
+  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID || ""
 };
 
 // Initialize Firebase using a function to allow for different initialization paths
@@ -33,24 +33,15 @@ const initializeFirebase = () => {
     app = getApps()[0];
   } else {
     // We're on the client side now, safe to try browser-specific configs
-    // Start with empty default config
+    // Start with default config from env variables (injected at build time)
     let config = defaultFirebaseConfig;
     
     try {
-      // Try SECURE_CONFIG first
-      if (window.SECURE_CONFIG?.firebase?.apiKey) {
-        config = {
-          apiKey: window.SECURE_CONFIG.firebase.apiKey || "",
-          authDomain: window.SECURE_CONFIG.firebase.authDomain || "",
-          projectId: window.SECURE_CONFIG.firebase.projectId || "",
-          storageBucket: window.SECURE_CONFIG.firebase.storageBucket || "",
-          messagingSenderId: window.SECURE_CONFIG.firebase.messagingSenderId || "",
-          appId: window.SECURE_CONFIG.firebase.appId || "",
-          measurementId: window.SECURE_CONFIG.firebase.measurementId || ""
-        };
-      } 
-      // Then try runtimeConfig
-      else if (window.runtimeConfig?.firebase?.apiKey) {
+      // Prioritize runtime config from the browser
+      if (window.runtimeConfig?.firebase?.apiKey) {
+        // Log the found configuration (for debugging)
+        console.log("Using Firebase config from runtime-config.js");
+        
         config = {
           apiKey: window.runtimeConfig.firebase.apiKey || "",
           authDomain: window.runtimeConfig.firebase.authDomain || "",
@@ -60,11 +51,28 @@ const initializeFirebase = () => {
           appId: window.runtimeConfig.firebase.appId || "",
           measurementId: window.runtimeConfig.firebase.measurementId || ""
         };
+      } else {
+        // Also try SECURE_CONFIG as a fallback
+        if (window.SECURE_CONFIG?.firebase?.apiKey) {
+          console.log("Using Firebase config from secure-config.js");
+          
+          config = {
+            apiKey: window.SECURE_CONFIG.firebase.apiKey || "",
+            authDomain: window.SECURE_CONFIG.firebase.authDomain || "",
+            projectId: window.SECURE_CONFIG.firebase.projectId || "",
+            storageBucket: window.SECURE_CONFIG.firebase.storageBucket || "",
+            messagingSenderId: window.SECURE_CONFIG.firebase.messagingSenderId || "",
+            appId: window.SECURE_CONFIG.firebase.appId || "",
+            measurementId: window.SECURE_CONFIG.firebase.measurementId || ""
+          };
+        } else {
+          console.log("Using default Firebase config from environment variables");
+        }
       }
       
-      // Return if no configuration is available
-      if (!config.apiKey) {
-        // Return without initializing Firebase when no config is available
+      // Verification step - ensure we have at least the apiKey and projectId
+      if (!config.apiKey || !config.projectId) {
+        console.error("No Firebase config available", config);
         return { app: null, auth: null, firestore: null, storage: null };
       }
     } catch (error) {
