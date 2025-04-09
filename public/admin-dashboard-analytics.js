@@ -4,23 +4,6 @@
 function initAnalyticsDashboard() {
   console.log('Initializing analytics dashboard...');
   
-  // Check for Firebase config
-  console.log('Analytics: Checking for Firebase configuration...');
-  console.log('Analytics: SECURE_CONFIG exists:', !!window.SECURE_CONFIG);
-  console.log('Analytics: runtimeConfig exists:', !!window.runtimeConfig);
-  
-  // Safer check for Firebase config availability
-  const isDevMode = 
-    !window.SECURE_CONFIG?.firebase?.apiKey && 
-    !window.runtimeConfig?.firebase?.apiKey;
-  
-  console.log('Analytics: Firebase config available:', !isDevMode);
-  
-  // Use proper configuration based on availability
-  if (isDevMode) {
-    console.log('Analytics: Firebase configuration is missing - using mock data instead');
-  }
-  
   // Set up event listeners for DOMContentLoaded
   if (document.readyState === "loading") {
     // Wait for the document to finish loading
@@ -28,117 +11,14 @@ function initAnalyticsDashboard() {
       console.log('Analytics: DOM Content Loaded event fired');
       setupAnalyticsTabContent();
       setupDateRangePickers();
-      
-      // Check auth status before loading analytics data
-      checkAuthAndLoadData(isDevMode);
+      loadAnalyticsData();
     });
   } else {
     // Document already loaded, run immediately
     console.log('Analytics: Document already loaded, running setup immediately');
     setupAnalyticsTabContent();
     setupDateRangePickers();
-    
-    // Check auth status before loading analytics data
-    checkAuthAndLoadData(isDevMode);
-  }
-}
-
-// Check if the user is authenticated before loading analytics data
-function checkAuthAndLoadData(isDevMode = false) {
-  // Display authentication status message
-  showAuthMessage('Checking authentication status...', 'info');
-  
-  // Wait a moment for auth to initialize
-  setTimeout(() => {
-    try {
-      // Safer check for Firebase availability
-      if (typeof window.firebase === 'undefined') {
-        console.log('Firebase global object not available, using mock data');
-        showAuthMessage('Firebase is not initialized. Using sample data.', 'warning');
-        loadAnalyticsData(true); // Force dev mode to use mock data
-        return;
-      }
-      
-      // Check if Firebase auth is available
-      if (!window.firebase.auth) {
-        console.log('Firebase auth not available, using mock data');
-        showAuthMessage('Firebase auth is not available. Using sample data.', 'warning');
-        loadAnalyticsData(true); // Force dev mode to use mock data
-        return;
-      }
-      
-      console.log('Checking auth status before loading analytics data...');
-      
-      // Auth state changed listener
-      window.firebase.auth().onAuthStateChanged((user) => {
-        if (user) {
-          console.log('User is authenticated, loading analytics data as:', user.email);
-          showAuthMessage(`Authenticated as ${user.email}. Loading data...`, 'success');
-          loadAnalyticsData(isDevMode);
-        } else {
-          console.log('User is not authenticated, using mock data only');
-          showAuthMessage('Not authenticated. Using sample data. Please log in to see real analytics.', 'warning');
-          loadAnalyticsData(true); // Force dev mode to use mock data
-        }
-      });
-    } catch (error) {
-      console.error('Error checking authentication:', error);
-      showAuthMessage('Error checking authentication. Using sample data.', 'error');
-      loadAnalyticsData(true); // Force dev mode to use mock data
-    }
-  }, 1000); // Give Firebase a second to initialize
-}
-
-// Show authentication status message
-function showAuthMessage(message, type = 'info') {
-  const siteAdminTab = document.getElementById('siteAdminTab');
-  if (!siteAdminTab) return;
-  
-  // Remove any existing auth message
-  const existingMessage = document.getElementById('auth-status-message');
-  if (existingMessage) {
-    existingMessage.remove();
-  }
-  
-  // Create new message
-  const messageDiv = document.createElement('div');
-  messageDiv.id = 'auth-status-message';
-  
-  // Set styles based on message type
-  let backgroundColor = '#f0f9ff'; // info - light blue
-  let textColor = '#3b82f6';
-  let borderColor = '#93c5fd';
-  
-  if (type === 'success') {
-    backgroundColor = '#f0fdf4'; // light green
-    textColor = '#22c55e';
-    borderColor = '#86efac';
-  } else if (type === 'warning') {
-    backgroundColor = '#fffbeb'; // light yellow
-    textColor = '#f59e0b';
-    borderColor = '#fcd34d';
-  } else if (type === 'error') {
-    backgroundColor = '#fef2f2'; // light red
-    textColor = '#ef4444';
-    borderColor = '#fca5a5';
-  }
-  
-  // Apply styles
-  messageDiv.style.padding = '10px 15px';
-  messageDiv.style.marginBottom = '15px';
-  messageDiv.style.borderRadius = '6px';
-  messageDiv.style.backgroundColor = backgroundColor;
-  messageDiv.style.color = textColor;
-  messageDiv.style.border = `1px solid ${borderColor}`;
-  messageDiv.style.fontSize = '14px';
-  
-  messageDiv.textContent = message;
-  
-  // Insert at the top of the tab content
-  if (siteAdminTab.firstChild) {
-    siteAdminTab.insertBefore(messageDiv, siteAdminTab.firstChild);
-  } else {
-    siteAdminTab.appendChild(messageDiv);
+    loadAnalyticsData();
   }
 }
 
@@ -151,6 +31,9 @@ function setupAnalyticsTabContent() {
   siteAdminTab.innerHTML = `
     <div class="card">
       <h2>Site Analytics</h2>
+      
+      <!-- Status message area -->
+      <div id="analytics-status-message" class="mb-4"></div>
       
       <!-- Date range selector -->
       <div style="display: flex; margin: 20px 0; gap: 15px; flex-wrap: wrap;">
@@ -312,19 +195,19 @@ function setupAnalyticsTabContent() {
             <h3 style="margin-top: 0; margin-bottom: 15px; font-size: 18px;">Book Activity Overview</h3>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
               <div style="border: 1px solid var(--border-color); border-radius: 4px; padding: 15px; text-align: center;">
-                <div id="totalBookViews" style="font-size: 24px; font-weight: bold; color: var(--primary-color); margin-bottom: 5px;">435</div>
+                <div id="totalBookViews" style="font-size: 24px; font-weight: bold; color: var(--primary-color); margin-bottom: 5px;">0</div>
                 <div style="font-size: 14px; color: #6b7280;">Total Book Views</div>
               </div>
               <div style="border: 1px solid var(--border-color); border-radius: 4px; padding: 15px; text-align: center;">
-                <div id="totalDetailViews" style="font-size: 24px; font-weight: bold; color: var(--success-color); margin-bottom: 5px;">187</div>
+                <div id="totalDetailViews" style="font-size: 24px; font-weight: bold; color: var(--success-color); margin-bottom: 5px;">0</div>
                 <div style="font-size: 14px; color: #6b7280;">Book Detail Views</div>
               </div>
               <div style="border: 1px solid var(--border-color); border-radius: 4px; padding: 15px; text-align: center;">
-                <div id="searchCount" style="font-size: 24px; font-weight: bold; color: #3b82f6; margin-bottom: 5px;">52</div>
+                <div id="searchCount" style="font-size: 24px; font-weight: bold; color: #3b82f6; margin-bottom: 5px;">0</div>
                 <div style="font-size: 14px; color: #6b7280;">Search Count</div>
               </div>
               <div style="border: 1px solid var(--border-color); border-radius: 4px; padding: 15px; text-align: center;">
-                <div id="filterUseCount" style="font-size: 24px; font-weight: bold; color: #f59e0b; margin-bottom: 5px;">124</div>
+                <div id="filterUseCount" style="font-size: 24px; font-weight: bold; color: #f59e0b; margin-bottom: 5px;">0</div>
                 <div style="font-size: 14px; color: #6b7280;">Filter Usage Count</div>
               </div>
             </div>
@@ -372,19 +255,19 @@ function setupAnalyticsTabContent() {
             <h3 style="margin-top: 0; margin-bottom: 15px; font-size: 18px;">Blog Activity Overview</h3>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
               <div style="border: 1px solid var(--border-color); border-radius: 4px; padding: 15px; text-align: center;">
-                <div id="totalPostViews" style="font-size: 24px; font-weight: bold; color: var(--primary-color); margin-bottom: 5px;">321</div>
+                <div id="totalPostViews" style="font-size: 24px; font-weight: bold; color: var(--primary-color); margin-bottom: 5px;">0</div>
                 <div style="font-size: 14px; color: #6b7280;">Total Post Views</div>
               </div>
               <div style="border: 1px solid var(--border-color); border-radius: 4px; padding: 15px; text-align: center;">
-                <div id="avgReadTime" style="font-size: 24px; font-weight: bold; color: var(--success-color); margin-bottom: 5px;">4:26</div>
+                <div id="avgReadTime" style="font-size: 24px; font-weight: bold; color: var(--success-color); margin-bottom: 5px;">0:00</div>
                 <div style="font-size: 14px; color: #6b7280;">Avg. Read Time</div>
               </div>
               <div style="border: 1px solid var(--border-color); border-radius: 4px; padding: 15px; text-align: center;">
-                <div id="totalReactions" style="font-size: 24px; font-weight: bold; color: #3b82f6; margin-bottom: 5px;">87</div>
+                <div id="totalReactions" style="font-size: 24px; font-weight: bold; color: #3b82f6; margin-bottom: 5px;">0</div>
                 <div style="font-size: 14px; color: #6b7280;">Reactions</div>
               </div>
               <div style="border: 1px solid var(--border-color); border-radius: 4px; padding: 15px; text-align: center;">
-                <div id="shareCount" style="font-size: 24px; font-weight: bold; color: #f59e0b; margin-bottom: 5px;">19</div>
+                <div id="shareCount" style="font-size: 24px; font-weight: bold; color: #f59e0b; margin-bottom: 5px;">0</div>
                 <div style="font-size: 14px; color: #6b7280;">Shares</div>
               </div>
             </div>
@@ -403,22 +286,7 @@ function setupAnalyticsTabContent() {
               </thead>
               <tbody id="popularPostsTable">
                 <tr>
-                  <td>How to Build a React App with Firebase</td>
-                  <td>142</td>
-                  <td>5:12</td>
-                  <td>43</td>
-                </tr>
-                <tr>
-                  <td>Getting Started with TypeScript</td>
-                  <td>98</td>
-                  <td>4:08</td>
-                  <td>25</td>
-                </tr>
-                <tr>
-                  <td>Best Practices for Modern Web Development</td>
-                  <td>81</td>
-                  <td>3:45</td>
-                  <td>19</td>
+                  <td colspan="4" style="text-align: center;">Loading post data...</td>
                 </tr>
               </tbody>
             </table>
@@ -429,22 +297,22 @@ function setupAnalyticsTabContent() {
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px;">
               <div style="border: 1px solid var(--border-color); border-radius: 4px; padding: 12px; text-align: center;">
                 <div style="font-size: 24px; margin-bottom: 5px;">👍</div>
-                <div id="thumbsUpCount" style="font-size: 20px; font-weight: bold; color: var(--primary-color);">38</div>
+                <div id="thumbsUpCount" style="font-size: 20px; font-weight: bold; color: var(--primary-color);">0</div>
                 <div style="font-size: 14px; color: #6b7280;">Thumbs Up</div>
               </div>
               <div style="border: 1px solid var(--border-color); border-radius: 4px; padding: 12px; text-align: center;">
                 <div style="font-size: 24px; margin-bottom: 5px;">🎉</div>
-                <div id="celebrateCount" style="font-size: 20px; font-weight: bold; color: var(--primary-color);">21</div>
+                <div id="celebrateCount" style="font-size: 20px; font-weight: bold; color: var(--primary-color);">0</div>
                 <div style="font-size: 14px; color: #6b7280;">Celebrate</div>
               </div>
               <div style="border: 1px solid var(--border-color); border-radius: 4px; padding: 12px; text-align: center;">
                 <div style="font-size: 24px; margin-bottom: 5px;">🧠</div>
-                <div id="brainCount" style="font-size: 20px; font-weight: bold; color: var(--primary-color);">16</div>
+                <div id="brainCount" style="font-size: 20px; font-weight: bold; color: var(--primary-color);">0</div>
                 <div style="font-size: 14px; color: #6b7280;">Insightful</div>
               </div>
               <div style="border: 1px solid var(--border-color); border-radius: 4px; padding: 12px; text-align: center;">
                 <div style="font-size: 24px; margin-bottom: 5px;">😐</div>
-                <div id="mehCount" style="font-size: 20px; font-weight: bold; color: var(--primary-color);">12</div>
+                <div id="mehCount" style="font-size: 20px; font-weight: bold; color: var(--primary-color);">0</div>
                 <div style="font-size: 14px; color: #6b7280;">Meh</div>
               </div>
             </div>
@@ -515,245 +383,262 @@ function setupDateRangePickers() {
   }
 }
 
-// Load analytics data
-function loadAnalyticsData(isDevMode = false) {
-  try {
-    console.log('Loading analytics data, isDevMode:', isDevMode);
-    
-    // This would normally fetch data from an API
-    // For now, we'll use mock data
-    
-    // Ensure the site analytics tab is populated
-    const siteAdminTab = document.getElementById('siteAdminTab');
-    if (!siteAdminTab || !siteAdminTab.innerHTML || siteAdminTab.innerHTML.trim() === '') {
-      console.log('Analytics: Site Admin tab appears to be empty, setting up content');
-      setupAnalyticsTabContent();
-    }
-    
-    // Update overview stats with mock data
-    const totalPageviews = document.getElementById('totalPageviews');
-    const pageviewsDelta = document.getElementById('pageviewsDelta');
-    const uniqueVisitors = document.getElementById('uniqueVisitors');
-    const visitorsDelta = document.getElementById('visitorsDelta');
-    const avgSessionDuration = document.getElementById('avgSessionDuration');
-    const durationDelta = document.getElementById('durationDelta');
-    const bounceRate = document.getElementById('bounceRate');
-    const bounceDelta = document.getElementById('bounceDelta');
-    
-    if (totalPageviews) totalPageviews.textContent = '1,258';
-    if (pageviewsDelta) {
-      pageviewsDelta.textContent = '+12.5%';
-      pageviewsDelta.classList.add('positive');
-    } else {
-      console.log('Analytics: pageviewsDelta element not found');
-    }
-    
-    if (uniqueVisitors) uniqueVisitors.textContent = '487';
-    if (visitorsDelta) {
-      visitorsDelta.textContent = '+8.2%';
-      visitorsDelta.classList.add('positive');
-    } else {
-      console.log('Analytics: visitorsDelta element not found');
-    }
-    
-    if (avgSessionDuration) avgSessionDuration.textContent = '3:42';
-    if (durationDelta) {
-      durationDelta.textContent = '+5.8%';
-      durationDelta.classList.add('positive');
-    } else {
-      console.log('Analytics: durationDelta element not found');
-    }
-    
-    if (bounceRate) bounceRate.textContent = '38.4%';
-    if (bounceDelta) {
-      bounceDelta.textContent = '-2.1%';
-      bounceDelta.classList.add('positive');
-    } else {
-      console.log('Analytics: bounceDelta element not found');
-    }
-    
-    // Load blog reaction metrics
-    const totalReactions = document.getElementById('totalReactions');
-    const thumbsUpCount = document.getElementById('thumbsUpCount');
-    const celebrateCount = document.getElementById('celebrateCount');
-    const brainCount = document.getElementById('brainCount');
-    const mehCount = document.getElementById('mehCount');
-    
-    if (totalReactions) totalReactions.textContent = '87';
-    if (thumbsUpCount) thumbsUpCount.textContent = '38';
-    if (celebrateCount) celebrateCount.textContent = '21';
-    if (brainCount) brainCount.textContent = '16';
-    if (mehCount) mehCount.textContent = '12';
-    
-    // Default visitor counter value
-    let totalVisitors = 2487; // Default mock value
-    updateVisitorCounter(totalVisitors); // Always update with default first
-    
-    // Fetch actual site statistics if Firebase is available AND we're not in dev mode
-    if (!isDevMode && (window.SECURE_CONFIG?.firebase?.apiKey || window.runtimeConfig?.firebase?.apiKey)) {
-      try {
-        // Check if Firebase is initialized and available in window scope
-        if (typeof window.firebase !== 'undefined' && window.firebase.firestore && window.firebase.auth) {
-          console.log('Attempting to fetch real site statistics...');
-          
-          // Handle auth state more robustly
-          window.firebase.auth().onAuthStateChanged((user) => {
-            if (!user) {
-              console.log('User not authenticated, cannot fetch stats - using mock data');
-              showAuthMessage('You must be logged in to view actual analytics data. Using sample data instead.', 'warning');
-              updateVisitorCounter(totalVisitors);
-              return;
-            }
-            
-            console.log('User authenticated, fetching stats as:', user.email);
-            showAuthMessage(`Authenticated as ${user.email}. Loading analytics data...`, 'success');
-            
-            // Fetch site-wide stats
-            window.firebase.firestore().collection('site-stats').doc('global').get()
-              .then((doc) => {
-                if (doc.exists) {
-                  const statsData = doc.data();
-                  console.log('Found site statistics:', statsData);
-                  
-                  if (statsData && typeof statsData.visits === 'number') {
-                    totalVisitors = statsData.visits;
-                    updateVisitorCounter(totalVisitors);
-                    
-                    // Show success message with visit count and last visit time if available
-                    let successMessage = `Authenticated as ${user.email}. Data loaded successfully. Total site visits: ${totalVisitors}`;
-                    
-                    // Add last visit time if available
-                    if (statsData.lastVisit && typeof statsData.lastVisit.toDate === 'function') {
-                      const lastVisitDate = statsData.lastVisit.toDate();
-                      successMessage += `. Last visit: ${lastVisitDate.toLocaleString()}`;
-                    }
-                    
-                    showAuthMessage(successMessage, 'success');
-                    
-                    // Update other stats if available
-                    if (totalPageviews) totalPageviews.textContent = statsData.visits.toLocaleString();
-                    if (uniqueVisitors) {
-                      // Estimate unique visitors as roughly 40-60% of total visits
-                      const estimatedUnique = Math.round(statsData.visits * (statsData.visits > 1000 ? 0.4 : 0.6));
-                      uniqueVisitors.textContent = estimatedUnique.toLocaleString();
-                    }
-                  }
-                  
-                  // Update reaction counts if available
-                  if (statsData && statsData.reactions) {
-                    if (totalReactions) totalReactions.textContent = statsData.reactions.total || '87';
-                    if (thumbsUpCount) thumbsUpCount.textContent = statsData.reactions.thumbsUp || '38';
-                    if (celebrateCount) celebrateCount.textContent = statsData.reactions.celebrate || '21';
-                    if (brainCount) brainCount.textContent = statsData.reactions.insightful || '16';
-                    if (mehCount) mehCount.textContent = statsData.reactions.meh || '12';
-                  }
-                } else {
-                  console.log('No site statistics document found, using mock data');
-                  showAuthMessage(
-                    'No site analytics data found in Firestore (site-stats/global document missing). ' + 
-                    'This could be because no visitors have been tracked yet. ' +
-                    'Try visiting the site homepage in another browser to generate visit data. ' +
-                    'Using sample data for display purposes.', 
-                    'warning'
-                  );
-                  updateVisitorCounter(totalVisitors);
-                }
-              })
-              .catch((error) => {
-                console.error('Error fetching site statistics:', error);
-                showAuthMessage('Error loading data: ' + error.message, 'error');
-                updateVisitorCounter(totalVisitors);
-              });
-          });
-        } else {
-          console.log('Firebase firestore not available');
-          showAuthMessage('Firebase services not fully initialized. Using sample data.', 'warning');
-          updateVisitorCounter(totalVisitors);
-        }
-      } catch (error) {
-        console.error('Error accessing Firebase:', error);
-        showAuthMessage('Error accessing Firebase: ' + error.message, 'error');
-        updateVisitorCounter(totalVisitors);
-      }
-    } else {
-      console.log('Firebase config not available, using mock data');
-      showAuthMessage('Firebase configuration not available. Using sample data.', 'warning');
-      updateVisitorCounter(totalVisitors);
-    }
-    
-    // Load top pages data
-    const topPagesTable = document.getElementById('topPagesTable');
-    if (topPagesTable) {
-      topPagesTable.innerHTML = `
-        <tr>
-          <td>/books</td>
-          <td>428</td>
-          <td>5:12</td>
-          <td>31.2%</td>
-        </tr>
-        <tr>
-          <td>/</td>
-          <td>389</td>
-          <td>2:45</td>
-          <td>42.8%</td>
-        </tr>
-        <tr>
-          <td>/blog</td>
-          <td>298</td>
-          <td>6:18</td>
-          <td>28.5%</td>
-        </tr>
-        <tr>
-          <td>/cv</td>
-          <td>143</td>
-          <td>4:05</td>
-          <td>35.7%</td>
-        </tr>
-      `;
-    } else {
-      console.log('Analytics: topPagesTable element not found');
-    }
-    
-    // Load book activity data
-    const totalBookViews = document.getElementById('totalBookViews');
-    const totalDetailViews = document.getElementById('totalDetailViews');
-    const searchCount = document.getElementById('searchCount');
-    const filterUseCount = document.getElementById('filterUseCount');
-    
-    if (totalBookViews) totalBookViews.textContent = '435';
-    if (totalDetailViews) totalDetailViews.textContent = '187';
-    if (searchCount) searchCount.textContent = '52';
-    if (filterUseCount) filterUseCount.textContent = '124';
-    
-    console.log('Analytics data loaded successfully');
-    
-    // Set up the analytics tabs (in case they weren't set up already)
-    setupAnalyticsTabs();
-  } catch (error) {
-    console.error('Error loading analytics data:', error);
-    
-    // Always show mock data with a warning
-    const siteAdminTab = document.getElementById('siteAdminTab');
-    if (siteAdminTab) {
-        const errorDiv = document.createElement('div');
-        errorDiv.className = 'card';
-        errorDiv.innerHTML = `
-          <div style="padding: 20px; text-align: center; color: #f59e0b;">
-            <h3>Analytics Information</h3>
-            <p>Sample analytics data is being displayed. In production, this would be connected to Firebase Analytics.</p>
-            <p style="margin-top: 10px; font-size: 14px;">The data shown is for demonstration purposes only.</p>
-          </div>
-        `;
-        
-        // Insert at the top
-        if (siteAdminTab.firstChild) {
-          siteAdminTab.insertBefore(errorDiv, siteAdminTab.firstChild);
-        } else {
-          siteAdminTab.appendChild(errorDiv);
-        }
-      }
-    }
+// Show status message
+function showStatusMessage(message, type = 'info') {
+  const messageArea = document.getElementById('analytics-status-message');
+  if (!messageArea) return;
+  
+  // Set styles based on message type
+  let backgroundColor = '#f0f9ff'; // info - light blue
+  let textColor = '#3b82f6';
+  let borderColor = '#93c5fd';
+  
+  if (type === 'success') {
+    backgroundColor = '#f0fdf4'; // light green
+    textColor = '#22c55e';
+    borderColor = '#86efac';
+  } else if (type === 'warning') {
+    backgroundColor = '#fffbeb'; // light yellow
+    textColor = '#f59e0b';
+    borderColor = '#fcd34d';
+  } else if (type === 'error') {
+    backgroundColor = '#fef2f2'; // light red
+    textColor = '#ef4444';
+    borderColor = '#fca5a5';
   }
+  
+  // Create the message element
+  messageArea.innerHTML = '';
+  messageArea.style.padding = '10px 15px';
+  messageArea.style.marginBottom = '15px';
+  messageArea.style.borderRadius = '6px';
+  messageArea.style.backgroundColor = backgroundColor;
+  messageArea.style.color = textColor;
+  messageArea.style.border = `1px solid ${borderColor}`;
+  messageArea.style.fontSize = '14px';
+  messageArea.textContent = message;
+}
+
+// Load analytics data from the server API
+function loadAnalyticsData() {
+  showStatusMessage('Loading analytics data...', 'info');
+  
+  // Fetch analytics data from the server API
+  fetch('/api/admin-analytics')
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`Failed to load analytics data (${response.status})`);
+      }
+      return response.json();
+    })
+    .then(data => {
+      if (data.success) {
+        updateDashboardWithData(data.data);
+        showStatusMessage('Analytics data loaded successfully', 'success');
+      } else {
+        showStatusMessage(`Error loading data: ${data.error || 'Unknown error'}`, 'error');
+      }
+    })
+    .catch(error => {
+      console.error('Error loading analytics data:', error);
+      showStatusMessage(`Error: ${error.message}. Using sample data instead.`, 'error');
+      
+      // Use sample data as fallback
+      useSampleData();
+    });
+}
+
+// Update the dashboard with the received data
+function updateDashboardWithData(data) {
+  if (!data) {
+    useSampleData();
+    return;
+  }
+  
+  console.log('Updating dashboard with data:', data);
+  
+  // Extract data
+  const siteStats = data.siteStats || {};
+  const topPages = data.topPages || [];
+  const bookEngagement = data.bookEngagement || {};
+  const blogEngagement = data.blogEngagement || {};
+  
+  // Update visitor counter
+  const totalVisitors = siteStats.visits || 0;
+  updateVisitorCounter(totalVisitors);
+  
+  // Update overview stats
+  const totalPageviews = document.getElementById('totalPageviews');
+  const uniqueVisitors = document.getElementById('uniqueVisitors');
+  const avgSessionDuration = document.getElementById('avgSessionDuration');
+  const bounceRate = document.getElementById('bounceRate');
+  
+  if (totalPageviews) totalPageviews.textContent = totalVisitors.toLocaleString();
+  if (uniqueVisitors) {
+    // Estimate unique visitors as 40-60% of total visits
+    const estimatedUnique = Math.round(totalVisitors * (totalVisitors > 1000 ? 0.4 : 0.6));
+    uniqueVisitors.textContent = estimatedUnique.toLocaleString();
+  }
+  if (avgSessionDuration) avgSessionDuration.textContent = '3:42'; // Placeholder
+  if (bounceRate) bounceRate.textContent = '38.4%'; // Placeholder
+  
+  // Update top pages table
+  const topPagesTable = document.getElementById('topPagesTable');
+  if (topPagesTable && topPages.length > 0) {
+    topPagesTable.innerHTML = topPages.map(page => `
+      <tr>
+        <td>${page.path}</td>
+        <td>${page.views}</td>
+        <td>${page.avgTime}</td>
+        <td>${page.bounceRate}%</td>
+      </tr>
+    `).join('');
+  }
+  
+  // Update book engagement stats
+  const totalBookViews = document.getElementById('totalBookViews');
+  const totalDetailViews = document.getElementById('totalDetailViews');
+  const searchCount = document.getElementById('searchCount');
+  const filterUseCount = document.getElementById('filterUseCount');
+  
+  if (totalBookViews) totalBookViews.textContent = (bookEngagement.totalViews || 0).toLocaleString();
+  if (totalDetailViews) totalDetailViews.textContent = (bookEngagement.totalDetailViews || 0).toLocaleString();
+  if (searchCount) searchCount.textContent = (bookEngagement.searchCount || 0).toLocaleString();
+  if (filterUseCount) filterUseCount.textContent = (bookEngagement.filterCount || 0).toLocaleString();
+  
+  // Update blog engagement stats
+  const totalPostViews = document.getElementById('totalPostViews');
+  const avgReadTime = document.getElementById('avgReadTime');
+  const totalReactions = document.getElementById('totalReactions');
+  
+  if (totalPostViews) totalPostViews.textContent = (blogEngagement.totalViews || 0).toLocaleString();
+  if (avgReadTime) avgReadTime.textContent = blogEngagement.avgReadTime || '0:00';
+  if (totalReactions) totalReactions.textContent = (blogEngagement.totalReactions || 0).toLocaleString();
+  
+  // Update reaction counts
+  const reactions = siteStats.reactions || {};
+  
+  const thumbsUpCount = document.getElementById('thumbsUpCount');
+  const celebrateCount = document.getElementById('celebrateCount');
+  const brainCount = document.getElementById('brainCount');
+  const mehCount = document.getElementById('mehCount');
+  
+  if (thumbsUpCount) thumbsUpCount.textContent = (reactions.thumbsUp || 0).toLocaleString();
+  if (celebrateCount) celebrateCount.textContent = (reactions.celebrate || 0).toLocaleString();
+  if (brainCount) brainCount.textContent = (reactions.insightful || 0).toLocaleString();
+  if (mehCount) mehCount.textContent = (reactions.meh || 0).toLocaleString();
+  
+  // Update popular books table
+  const popularBooksTable = document.getElementById('popularBooksTable');
+  if (popularBooksTable && bookEngagement.popularBooks && bookEngagement.popularBooks.length > 0) {
+    popularBooksTable.innerHTML = bookEngagement.popularBooks.map(book => `
+      <tr>
+        <td>${book.title}</td>
+        <td>${book.views}</td>
+        <td>${book.detailViews}</td>
+        <td>${book.engagement}</td>
+      </tr>
+    `).join('');
+  } else if (popularBooksTable) {
+    popularBooksTable.innerHTML = '<tr><td colspan="4" style="text-align: center;">No book data available</td></tr>';
+  }
+  
+  // Update popular posts table
+  const popularPostsTable = document.getElementById('popularPostsTable');
+  if (popularPostsTable && blogEngagement.popularPosts && blogEngagement.popularPosts.length > 0) {
+    popularPostsTable.innerHTML = blogEngagement.popularPosts.map(post => `
+      <tr>
+        <td>${post.title}</td>
+        <td>${post.views}</td>
+        <td>${post.readTime}</td>
+        <td>${post.reactions}</td>
+      </tr>
+    `).join('');
+  } else if (popularPostsTable) {
+    popularPostsTable.innerHTML = '<tr><td colspan="4" style="text-align: center;">No blog data available</td></tr>';
+  }
+}
+
+// Use sample data as fallback
+function useSampleData() {
+  // Update visitor counter
+  updateVisitorCounter(2487);
+  
+  // Update overview stats
+  const totalPageviews = document.getElementById('totalPageviews');
+  const uniqueVisitors = document.getElementById('uniqueVisitors');
+  const avgSessionDuration = document.getElementById('avgSessionDuration');
+  const bounceRate = document.getElementById('bounceRate');
+  
+  if (totalPageviews) totalPageviews.textContent = '1,258';
+  if (uniqueVisitors) uniqueVisitors.textContent = '487';
+  if (avgSessionDuration) avgSessionDuration.textContent = '3:42';
+  if (bounceRate) bounceRate.textContent = '38.4%';
+  
+  // Update top pages table
+  const topPagesTable = document.getElementById('topPagesTable');
+  if (topPagesTable) {
+    topPagesTable.innerHTML = `
+      <tr>
+        <td>/books</td>
+        <td>428</td>
+        <td>5:12</td>
+        <td>31.2%</td>
+      </tr>
+      <tr>
+        <td>/</td>
+        <td>389</td>
+        <td>2:45</td>
+        <td>42.8%</td>
+      </tr>
+      <tr>
+        <td>/blog</td>
+        <td>298</td>
+        <td>6:18</td>
+        <td>28.5%</td>
+      </tr>
+      <tr>
+        <td>/cv</td>
+        <td>143</td>
+        <td>4:05</td>
+        <td>35.7%</td>
+      </tr>
+    `;
+  }
+  
+  // Update book engagement stats
+  const totalBookViews = document.getElementById('totalBookViews');
+  const totalDetailViews = document.getElementById('totalDetailViews');
+  const searchCount = document.getElementById('searchCount');
+  const filterUseCount = document.getElementById('filterUseCount');
+  
+  if (totalBookViews) totalBookViews.textContent = '435';
+  if (totalDetailViews) totalDetailViews.textContent = '187';
+  if (searchCount) searchCount.textContent = '52';
+  if (filterUseCount) filterUseCount.textContent = '124';
+  
+  // Update blog engagement stats
+  const totalPostViews = document.getElementById('totalPostViews');
+  const avgReadTime = document.getElementById('avgReadTime');
+  const totalReactions = document.getElementById('totalReactions');
+  
+  if (totalPostViews) totalPostViews.textContent = '321';
+  if (avgReadTime) avgReadTime.textContent = '4:26';
+  if (totalReactions) totalReactions.textContent = '87';
+  
+  // Update reaction counts
+  const thumbsUpCount = document.getElementById('thumbsUpCount');
+  const celebrateCount = document.getElementById('celebrateCount');
+  const brainCount = document.getElementById('brainCount');
+  const mehCount = document.getElementById('mehCount');
+  
+  if (thumbsUpCount) thumbsUpCount.textContent = '38';
+  if (celebrateCount) celebrateCount.textContent = '21';
+  if (brainCount) brainCount.textContent = '16';
+  if (mehCount) mehCount.textContent = '12';
+  
+  // Sample data for popular books and posts tables is already in the HTML
+}
 
 // Function to update the visitor counter with animation
 function updateVisitorCounter(totalVisitors) {

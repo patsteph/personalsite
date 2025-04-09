@@ -1,88 +1,5 @@
-// This file contains analytics tracking functions
-import { initializeApp, getApps } from 'firebase/app';
-import { getAnalytics, logEvent, isSupported, Analytics } from 'firebase/analytics';
-
-// Global analytics instance
-let analyticsInstance: Analytics | null = null;
-
-/**
- * Initialize Firebase Analytics
- */
-export async function initAnalytics(): Promise<Analytics | null> {
-  // Only run on client
-  if (typeof window === 'undefined') {
-    return null;
-  }
-
-  // Check if analytics is supported in this environment
-  if (!(await isSupported())) {
-    console.warn('Firebase Analytics is not supported in this environment');
-    return null;
-  }
-
-  try {
-    // Get Firebase config from window
-    let firebaseConfig = null;
-    
-    // Try to use secure config first
-    if (window.SECURE_CONFIG?.firebase?.apiKey) {
-      console.log('Using Firebase config from SECURE_CONFIG for analytics');
-      firebaseConfig = window.SECURE_CONFIG.firebase;
-    } 
-    // Fallback to runtime config
-    else if (window.runtimeConfig?.firebase?.apiKey) {
-      console.log('Using Firebase config from runtimeConfig for analytics');
-      firebaseConfig = window.runtimeConfig.firebase;
-    }
-    
-    if (!firebaseConfig?.apiKey) {
-      console.error('No Firebase config available for analytics');
-      return null;
-    }
-
-    // Initialize Firebase (or reuse existing)
-    let app;
-    if (getApps().length > 0) {
-      app = getApps()[0];
-    } else {
-      app = initializeApp(firebaseConfig);
-    }
-
-    // Initialize Analytics
-    analyticsInstance = getAnalytics(app);
-    console.log('Firebase Analytics initialized successfully');
-    return analyticsInstance;
-  } catch (error) {
-    console.error('Error initializing Firebase Analytics:', error);
-    return null;
-  }
-}
-
-/**
- * Log an analytics event
- * @param eventName Name of the event to log
- * @param eventParams Optional parameters to include with the event
- */
-export function logAnalyticsEvent(eventName: string, eventParams?: Record<string, any>): void {
-  // Initialize analytics if not already done
-  if (!analyticsInstance) {
-    initAnalytics().then(instance => {
-      if (instance) {
-        logEvent(instance, eventName, eventParams);
-      }
-    }).catch(error => {
-      console.error('Error initializing analytics for event logging:', error);
-    });
-    return;
-  }
-
-  // Log the event using the existing instance
-  try {
-    logEvent(analyticsInstance, eventName, eventParams);
-  } catch (error) {
-    console.error(`Error logging analytics event ${eventName}:`, error);
-  }
-}
+// This file contains analytics tracking functions for client-side events
+// Uses server API for tracking instead of direct Firebase access
 
 /**
  * Track page view
@@ -90,10 +7,32 @@ export function logAnalyticsEvent(eventName: string, eventParams?: Record<string
  * @param pageTitle Title of the page being viewed
  */
 export function trackPageView(pagePath: string, pageTitle: string): void {
-  logAnalyticsEvent('page_view', {
-    page_path: pagePath,
-    page_title: pageTitle
-  });
+  // Only run on client
+  if (typeof window === 'undefined') {
+    return;
+  }
+  
+  // Use server API to track the page view
+  try {
+    fetch('/api/site-stats', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        action: 'pageView',
+        type: getPageType(pagePath),
+        details: {
+          path: pagePath,
+          title: pageTitle
+        }
+      })
+    }).catch(error => {
+      console.error('Error tracking page view:', error);
+    });
+  } catch (error) {
+    console.error('Error tracking page view:', error);
+  }
 }
 
 /**
@@ -109,12 +48,34 @@ export function trackUserAction(
   label?: string, 
   value?: number
 ): void {
-  logAnalyticsEvent('user_action', {
-    action,
-    category,
-    ...(label && { label }),
-    ...(value !== undefined && { value })
-  });
+  // Only run on client
+  if (typeof window === 'undefined') {
+    return;
+  }
+  
+  // Use server API to track the user action
+  try {
+    fetch('/api/site-stats', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        action: 'userAction',
+        type: category,
+        details: {
+          action,
+          category,
+          ...(label && { label }),
+          ...(value !== undefined && { value })
+        }
+      })
+    }).catch(error => {
+      console.error('Error tracking user action:', error);
+    });
+  } catch (error) {
+    console.error('Error tracking user action:', error);
+  }
 }
 
 /**
@@ -128,11 +89,33 @@ export function trackBookInteraction(
   bookId?: string,
   details?: Record<string, any>
 ): void {
-  logAnalyticsEvent('book_interaction', {
-    action,
-    ...(bookId && { book_id: bookId }),
-    ...(details && details)
-  });
+  // Only run on client
+  if (typeof window === 'undefined') {
+    return;
+  }
+  
+  // Use server API to track the book interaction
+  try {
+    fetch('/api/site-stats', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        action: 'bookInteraction',
+        type: 'book',
+        details: {
+          interactionType: action,
+          ...(bookId && { book_id: bookId }),
+          ...(details && details)
+        }
+      })
+    }).catch(error => {
+      console.error('Error tracking book interaction:', error);
+    });
+  } catch (error) {
+    console.error('Error tracking book interaction:', error);
+  }
 }
 
 /**
@@ -146,11 +129,33 @@ export function trackBlogInteraction(
   postId?: string,
   details?: Record<string, any>
 ): void {
-  logAnalyticsEvent('blog_interaction', {
-    action,
-    ...(postId && { post_id: postId }),
-    ...(details && details)
-  });
+  // Only run on client
+  if (typeof window === 'undefined') {
+    return;
+  }
+  
+  // Use server API to track the blog interaction
+  try {
+    fetch('/api/site-stats', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        action: 'blogInteraction',
+        type: 'blog',
+        details: {
+          interactionType: action,
+          ...(postId && { post_id: postId }),
+          ...(details && details)
+        }
+      })
+    }).catch(error => {
+      console.error('Error tracking blog interaction:', error);
+    });
+  } catch (error) {
+    console.error('Error tracking blog interaction:', error);
+  }
 }
 
 /**
@@ -162,8 +167,43 @@ export function trackContactInteraction(
   method: 'email' | 'phone' | 'form' | 'social',
   details?: Record<string, any>
 ): void {
-  logAnalyticsEvent('contact_interaction', {
-    method,
-    ...(details && details)
-  });
+  // Only run on client
+  if (typeof window === 'undefined') {
+    return;
+  }
+  
+  // Use server API to track the contact interaction
+  try {
+    fetch('/api/site-stats', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        action: 'contactInteraction',
+        type: 'contact',
+        details: {
+          method,
+          ...(details && details)
+        }
+      })
+    }).catch(error => {
+      console.error('Error tracking contact interaction:', error);
+    });
+  } catch (error) {
+    console.error('Error tracking contact interaction:', error);
+  }
+}
+
+/**
+ * Helper function to determine page type from path
+ */
+function getPageType(path: string): string {
+  if (path.startsWith('/blog')) return 'blog';
+  if (path.startsWith('/books')) return 'book';
+  if (path.startsWith('/cv')) return 'cv';
+  if (path.startsWith('/contact')) return 'contact';
+  if (path.startsWith('/signals')) return 'signals';
+  if (path.startsWith('/admin')) return 'admin';
+  return 'other';
 }

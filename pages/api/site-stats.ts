@@ -130,6 +130,98 @@ export default async function handler(
           
           await statsRef.set(initialData);
         }
+      } else if (action === 'userAction') {
+        // Track user interactions (generic)
+        console.log('Tracking user action:', type, details);
+        
+        // Log the action to a user-actions collection for detailed tracking
+        await firestore.collection('user-actions').add({
+          type,
+          details,
+          timestamp: admin.firestore.FieldValue.serverTimestamp()
+        });
+        
+      } else if (action === 'bookInteraction') {
+        // Track book-specific interactions
+        console.log('Tracking book interaction:', details);
+        
+        // Increment book-specific counters
+        if (details?.interactionType === 'search') {
+          // Track searches in book-stats
+          const bookStatsRef = firestore.collection('book-stats').doc('global');
+          const bookStatsSnapshot = await bookStatsRef.get();
+          
+          if (bookStatsSnapshot.exists) {
+            await bookStatsRef.update({
+              'searchCount': admin.firestore.FieldValue.increment(1),
+              'lastUpdated': admin.firestore.FieldValue.serverTimestamp()
+            });
+          } else {
+            await bookStatsRef.set({
+              'searchCount': 1,
+              'filterCount': 0,
+              'lastUpdated': admin.firestore.FieldValue.serverTimestamp()
+            });
+          }
+        } else if (details?.interactionType === 'filter') {
+          // Track filters in book-stats
+          const bookStatsRef = firestore.collection('book-stats').doc('global');
+          const bookStatsSnapshot = await bookStatsRef.get();
+          
+          if (bookStatsSnapshot.exists) {
+            await bookStatsRef.update({
+              'filterCount': admin.firestore.FieldValue.increment(1),
+              'lastUpdated': admin.firestore.FieldValue.serverTimestamp()
+            });
+          } else {
+            await bookStatsRef.set({
+              'searchCount': 0,
+              'filterCount': 1,
+              'lastUpdated': admin.firestore.FieldValue.serverTimestamp()
+            });
+          }
+        } else if (details?.interactionType === 'detail' && details?.book_id) {
+          // Track book detail views
+          const bookRef = firestore.collection('books').doc(details.book_id);
+          await bookRef.update({
+            'detailViews': admin.firestore.FieldValue.increment(1),
+            'lastViewed': admin.firestore.FieldValue.serverTimestamp()
+          });
+        }
+        
+        // Log all book interactions for detailed analysis
+        await firestore.collection('book-interactions').add({
+          ...details,
+          timestamp: admin.firestore.FieldValue.serverTimestamp()
+        });
+        
+      } else if (action === 'blogInteraction') {
+        // Track blog-specific interactions
+        console.log('Tracking blog interaction:', details);
+        
+        // Log all blog interactions for detailed analysis
+        await firestore.collection('blog-interactions').add({
+          ...details,
+          timestamp: admin.firestore.FieldValue.serverTimestamp()
+        });
+        
+      } else if (action === 'contactInteraction') {
+        // Track contact-specific interactions
+        console.log('Tracking contact interaction:', details);
+        
+        // Increment the contactVisits counter in global stats
+        if (statsSnapshot.exists) {
+          await statsRef.update({
+            'contactVisits': admin.firestore.FieldValue.increment(1),
+            'lastUpdated': admin.firestore.FieldValue.serverTimestamp()
+          });
+        }
+        
+        // Log all contact interactions for detailed analysis
+        await firestore.collection('contact-interactions').add({
+          ...details,
+          timestamp: admin.firestore.FieldValue.serverTimestamp()
+        });
       }
       
       return res.status(200).json({

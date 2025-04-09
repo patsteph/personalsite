@@ -10,12 +10,12 @@ export default function Document() {
   const cspContent = isProduction && enableStrictCSP 
     ? `
       default-src 'self';
-      script-src 'self' https://apis.google.com https://*.firebaseio.com https://*.firebase.com;
+      script-src 'self' https://apis.google.com;
       style-src 'self' 'unsafe-inline';
       img-src 'self' data: https://*.googleapis.com https://*.gstatic.com;
       font-src 'self';
-      connect-src 'self' https://*.firebaseio.com https://*.googleapis.com;
-      frame-src 'self' https://*.firebaseauth.com;
+      connect-src 'self' https://*.googleapis.com;
+      frame-src 'self';
       object-src 'none';
       base-uri 'self';
       form-action 'self';
@@ -24,17 +24,6 @@ export default function Document() {
       upgrade-insecure-requests;
     `.replace(/\s+/g, ' ').trim()
     : '';
-    
-  // Load Firebase config from environment variables
-  const firebaseConfig = {
-    apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-    authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-    messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-    appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-    measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID || '',
-  };
   
   return (
     <Html lang="en">
@@ -55,15 +44,11 @@ export default function Document() {
         
         {/* Add runtime configuration scripts with proper async/defer attributes */}
         <script src={`${basePath}/runtime-config.js`} async />
-        <script src={`${basePath}/secure-config.js`} async />
-        
         
         {/* Additional fixes only for development */}
         {!isProduction && (
           <>
             <script src={`${basePath}/fix-api-url.js`} async />
-            {/* Removed signals-redirect.js - it was causing API call issues */}
-            {/* <script src={`${basePath}/personalsite/signals-redirect.js`} /> */}
           </>
         )}
         
@@ -75,16 +60,12 @@ export default function Document() {
         />
       </Head>
       <body>
-        {/* Inline the runtime config at the beginning of the body */}
+        {/* Inline the runtime config at the beginning of the body - minimal version */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
-              // This is a critical script that must load first
+              // Minimal runtime config without sensitive data
               window.runtimeConfig = {
-                firebase: {
-                  // Only include project ID, other values will be loaded from environment
-                  projectId: "${firebaseConfig.projectId || ''}"
-                },
                 isProduction: ${isProduction},
                 basePath: "${basePath}"
               };
@@ -94,19 +75,6 @@ export default function Document() {
             `
           }}
         />
-        {/* Simple debug logging script */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              console.log('Firebase config status:', {
-                secure: !!window.SECURE_CONFIG?.firebase?.apiKey,
-                runtime: !!window.runtimeConfig?.firebase?.apiKey,
-                projectId: window.SECURE_CONFIG?.firebase?.projectId || window.runtimeConfig?.firebase?.projectId || 'unknown'
-              });
-            `
-          }}
-        />
-        
         <Main />
         <NextScript />
       </body>
