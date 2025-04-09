@@ -3,7 +3,16 @@ import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
 import { getAuth, Auth, connectAuthEmulator } from 'firebase/auth';
 import { getFirestore, Firestore, connectFirestoreEmulator } from 'firebase/firestore';
 import { getStorage, FirebaseStorage } from 'firebase/storage';
-import { firebaseConfig } from './config';
+// Default empty Firebase config for type safety
+const defaultFirebaseConfig = {
+  apiKey: "",
+  authDomain: "",
+  projectId: "",
+  storageBucket: "",
+  messagingSenderId: "",
+  appId: "",
+  measurementId: ""
+};
 
 // Initialize Firebase using a function to allow for different initialization paths
 let app: FirebaseApp | null = null;
@@ -24,20 +33,20 @@ const initializeFirebase = () => {
     app = getApps()[0];
   } else {
     // We're on the client side now, safe to try browser-specific configs
-    // Start with the basic config from environment
-    let config = firebaseConfig;
+    // Start with empty default config
+    let config = defaultFirebaseConfig;
     
     try {
       // Try SECURE_CONFIG first
       if (window.SECURE_CONFIG?.firebase?.apiKey) {
         config = {
-          apiKey: window.SECURE_CONFIG.firebase.apiKey,
-          authDomain: window.SECURE_CONFIG.firebase.authDomain,
-          projectId: window.SECURE_CONFIG.firebase.projectId,
-          storageBucket: window.SECURE_CONFIG.firebase.storageBucket,
-          messagingSenderId: window.SECURE_CONFIG.firebase.messagingSenderId,
-          appId: window.SECURE_CONFIG.firebase.appId,
-          measurementId: window.SECURE_CONFIG.firebase.measurementId
+          apiKey: window.SECURE_CONFIG.firebase.apiKey || "",
+          authDomain: window.SECURE_CONFIG.firebase.authDomain || "",
+          projectId: window.SECURE_CONFIG.firebase.projectId || "",
+          storageBucket: window.SECURE_CONFIG.firebase.storageBucket || "",
+          messagingSenderId: window.SECURE_CONFIG.firebase.messagingSenderId || "",
+          appId: window.SECURE_CONFIG.firebase.appId || "",
+          measurementId: window.SECURE_CONFIG.firebase.measurementId || ""
         };
       } 
       // Then try runtimeConfig
@@ -49,7 +58,7 @@ const initializeFirebase = () => {
           storageBucket: window.runtimeConfig.firebase.storageBucket || "",
           messagingSenderId: window.runtimeConfig.firebase.messagingSenderId || "",
           appId: window.runtimeConfig.firebase.appId || "",
-          measurementId: window.runtimeConfig.firebase.measurementId
+          measurementId: window.runtimeConfig.firebase.measurementId || ""
         };
       }
       

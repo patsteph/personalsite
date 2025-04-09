@@ -4,6 +4,27 @@
  */
 import { NextApiRequest } from 'next';
 import { auth as adminAuth } from '../firebase-admin';
+import { firestore } from '../firebase-admin';
+
+/**
+ * Verify if the user is an admin
+ */
+export async function verifyAdminSession(req: NextApiRequest): Promise<boolean> {
+  const uid = await validateFirebaseIdToken(req);
+  
+  if (!uid) {
+    return false;
+  }
+  
+  try {
+    // Check if user is in admins collection
+    const adminDoc = await firestore.collection('admins').doc(uid).get();
+    return adminDoc.exists;
+  } catch (error) {
+    console.error('Error verifying admin status:', error);
+    return false;
+  }
+}
 
 /**
  * Validate Firebase ID token from API request

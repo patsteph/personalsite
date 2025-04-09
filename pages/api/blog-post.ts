@@ -137,10 +137,17 @@ export default async function handler(
             });
           }
         
-        return res.status(200).json({ 
-          success: true, 
-          message: 'Visit recorded successfully' 
-        });
+          return res.status(200).json({ 
+            success: true, 
+            message: 'Visit recorded successfully' 
+          });
+        } catch (visitError) {
+          console.error('Error recording visit:', visitError);
+          return res.status(500).json({
+            success: false,
+            error: `Error recording visit: ${visitError instanceof Error ? visitError.message : 'Unknown error'}`
+          });
+        }
       }
       
       // Regular reaction handling

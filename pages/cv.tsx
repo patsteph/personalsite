@@ -9,7 +9,7 @@ import { getCVData } from '@/lib/cv';
 import { CVData } from '@/types/cv';
 import { useTranslation } from '@/lib/translations';
 import { useState } from 'react';
-import { logAnalyticsEvent } from '@/lib/analytics';
+import { trackUserAction } from '@/lib/analytics';
 import Image from 'next/image';
 
 // Props type definition
@@ -26,9 +26,7 @@ export default function CVPage({ cvData }: CVPageProps) {
     setShowCareerJourney(true);
     
     try {
-      logAnalyticsEvent('career_journey_view', {
-        page: 'cv'
-      });
+      trackUserAction('career_journey_view', 'cv', 'career_timeline');
     } catch (error) {
       console.error('Error logging career journey view:', error);
     }

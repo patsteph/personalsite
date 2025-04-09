@@ -4,7 +4,7 @@ import { Book, BookStatus } from '@/types/book';
 // Import Firebase modules directly at the top level
 import { initializeApp, getApps } from 'firebase/app';
 import { getFirestore, collection, getDocs } from 'firebase/firestore';
-import { logAnalyticsEvent } from '@/lib/analytics';
+import { trackBookInteraction } from '@/lib/analytics';
 
 // No need to re-declare Window types - they're already defined in /types/window.d.ts
 
@@ -21,12 +21,11 @@ export default function SimpleBookGrid({ initialBooks }: SimpleBookGridProps) {
   useEffect(() => {
     if (selectedBook) {
       try {
-        logAnalyticsEvent('book_detail_view', {
-          book_id: selectedBook.id,
+        trackBookInteraction('detail', selectedBook.id, {
           book_title: selectedBook.title
         });
       } catch (error) {
-        console.error('Error logging book detail view:', error);
+        console.error('Error tracking book detail view:', error);
       }
     }
   }, [selectedBook]);
@@ -35,11 +34,11 @@ export default function SimpleBookGrid({ initialBooks }: SimpleBookGridProps) {
   useEffect(() => {
     if (books.length > 0) {
       try {
-        logAnalyticsEvent('books_view', {
+        trackBookInteraction('view', undefined, {
           book_count: books.length
         });
       } catch (error) {
-        console.error('Error logging books view:', error);
+        console.error('Error tracking books view:', error);
       }
     }
   }, [books.length]);

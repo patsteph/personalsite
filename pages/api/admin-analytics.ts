@@ -1,7 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { firestore } from '@/lib/firebase-admin';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from './auth';
+import { verifyAdminSession } from '@/lib/api/server-auth';
 
 type AdminAnalyticsResponse = {
   success: boolean;
@@ -14,12 +13,12 @@ export default async function handler(
   res: NextApiResponse<AdminAnalyticsResponse>
 ) {
   // Verify the user is authenticated and has admin access
-  const session = await getServerSession(req, res, authOptions);
+  const isAdmin = await verifyAdminSession(req);
   
-  if (!session) {
+  if (!isAdmin) {
     return res.status(401).json({
       success: false,
-      error: 'Unauthorized: You must be logged in to access admin analytics'
+      error: 'Unauthorized: You must be logged in as an admin to access analytics'
     });
   }
   
@@ -127,7 +126,13 @@ async function getBookEngagement() {
     const booksRef = firestore.collection('books');
     const booksSnapshot = await booksRef.orderBy('views', 'desc').limit(10).get();
     
-    const books = [];
+    const books: Array<{
+      id: string;
+      title: string;
+      views: number;
+      detailViews: number;
+      engagement: string;
+    }> = [];
     let totalViews = 0;
     let totalDetailViews = 0;
     
@@ -194,7 +199,13 @@ async function getBlogEngagement() {
     const postsRef = firestore.collection('blog-posts');
     const postsSnapshot = await postsRef.orderBy('views', 'desc').limit(10).get();
     
-    const posts = [];
+    const posts: Array<{
+      id: string;
+      title: string;
+      views: number;
+      readTime: string;
+      reactions: number;
+    }> = [];
     let totalViews = 0;
     let totalReactions = 0;
     
@@ -290,9 +301,17 @@ async function getFeedbackAnalytics() {
     const feedbackRef = firestore.collection('feedback');
     const feedbackSnapshot = await feedbackRef.orderBy('timestamp', 'desc').get();
     
-    const feedbackItems = [];
-    const categories = {};
-    const sentiments = {
+    const feedbackItems: Array<{
+      id: string;
+      category: string;
+      feedback: string;
+      page: string;
+      timestamp: string;
+      classification: string;
+      status: string;
+    }> = [];
+    const categories: Record<string, number> = {};
+    const sentiments: Record<string, number> = {
       positive: 0,
       neutral: 0,
       negative: 0,
