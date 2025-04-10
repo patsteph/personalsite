@@ -10,9 +10,11 @@ type AuthResponse = {
     email?: string;
     displayName?: string;
     photoURL?: string;
+    isAdmin?: boolean;
   };
   error?: string;
   valid?: boolean;
+  debug?: any; // Add debug property for troubleshooting
 }
 
 /**

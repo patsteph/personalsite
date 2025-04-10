@@ -17,9 +17,27 @@ export async function verifyAdminSession(req: NextApiRequest): Promise<boolean> 
   }
   
   try {
-    // Check if user is in admins collection
+    // First check if user is in admins collection (plural)
+    console.log(`Checking admin status for user: ${uid} in 'admins' collection`);
     const adminDoc = await firestore.collection('admins').doc(uid).get();
-    return adminDoc.exists;
+    const isAdminPlural = adminDoc.exists;
+    
+    // Log the result
+    console.log(`Admin doc check (plural) - exists: ${adminDoc.exists}, path: ${adminDoc.ref.path}`);
+    
+    if (isAdminPlural) {
+      return true;
+    }
+    
+    // If not found in plural, check singular form as fallback
+    console.log(`Checking admin status for user: ${uid} in 'admin' collection`);
+    const altAdminDoc = await firestore.collection('admin').doc(uid).get();
+    const isAdminSingular = altAdminDoc.exists;
+    
+    // Log the result
+    console.log(`Admin doc check (singular) - exists: ${altAdminDoc.exists}, path: ${altAdminDoc.ref.path}`);
+    
+    return isAdminSingular;
   } catch (error) {
     console.error('Error verifying admin status:', error);
     return false;
