@@ -1,61 +1,95 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { auth as adminAuth } from '@/lib/firebase-admin';
+import { auth as adminAuth, firestore } from '@/lib/firebase-admin';
+import { validateAuthToken } from '@/lib/api/server-auth';
 
-type UserResponse = {
+type MeResponse = {
   success: boolean;
   user?: {
     uid: string;
     email?: string;
     displayName?: string;
     photoURL?: string;
+    isAdmin?: boolean;
   };
   error?: string;
+  debug?: any;
 }
 
 /**
- * Server-side get current user endpoint
+ * Get current authenticated user
  */
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<UserResponse>
+  res: NextApiResponse<MeResponse>
 ) {
-  // Only allow GET method for getting user info
+  // Only allow GET method
   if (req.method !== 'GET') {
     return res.status(405).json({ success: false, error: 'Method not allowed' });
   }
-
+  
   try {
     // Get token from Authorization header
     const authHeader = req.headers.authorization || '';
     const token = authHeader.startsWith('Bearer ') ? authHeader.substring(7) : '';
     
     if (!token) {
-      return res.status(401).json({ success: false, error: 'No token provided' });
+      return res.status(401).json({ 
+        success: false, 
+        error: 'No token provided',
+        debug: { authHeader }
+      });
     }
     
     try {
-      // Verify the token
-      const decodedToken = await adminAuth.verifyIdToken(token);
+      // Try to decode the token without verification first for debugging
+      let debugInfo = { tokenExists: !!token, tokenLength: token.length };
+      
+      // Validate the token and get user ID
+      const uid = await validateAuthToken(req);
+      
+      if (!uid) {
+        return res.status(401).json({ 
+          success: false, 
+          error: 'Invalid token',
+          debug: { ...debugInfo, uid, token: token.substring(0, 10) + '...' }
+        });
+      }
       
       // Get user record from Firebase Auth
-      const userRecord = await adminAuth.getUser(decodedToken.uid);
+      const userRecord = await adminAuth.getUser(uid);
+      debugInfo = { ...debugInfo, uid, email: userRecord.email };
       
-      // Return user info
+      // Check admin status
+      const adminDoc = await firestore.collection('admins').doc(uid).get();
+      const isAdmin = adminDoc.exists;
+      debugInfo = { ...debugInfo, isAdmin, adminDocExists: adminDoc.exists };
+      
+      // Return user info with admin status
       return res.status(200).json({
         success: true,
         user: {
           uid: userRecord.uid,
-          email: userRecord.email,
+          email: userRecord.email || '',
           displayName: userRecord.displayName || undefined,
-          photoURL: userRecord.photoURL || undefined
-        }
+          photoURL: userRecord.photoURL || undefined,
+          isAdmin
+        },
+        debug: debugInfo
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Get current user error:', error);
-      return res.status(401).json({ success: false, error: 'Invalid token' });
+      return res.status(401).json({ 
+        success: false, 
+        error: 'Invalid token or user not found',
+        debug: { error: error.message, stack: error.stack }
+      });
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Get current user error:', error);
-    return res.status(500).json({ success: false, error: 'Error getting user info' });
+    return res.status(500).json({ 
+      success: false, 
+      error: 'Error getting user info',
+      debug: { error: error.message }
+    });
   }
 }

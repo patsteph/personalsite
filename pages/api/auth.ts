@@ -73,11 +73,36 @@ async function handleLogin(
       // simplified approach - checking for admin users
       
       // Check if user is an admin
+      console.log(`Checking admin status for user: ${userRecord.uid} (${email})`);
       const adminDoc = await firestore.collection('admins').doc(userRecord.uid).get();
 
-      if (!adminDoc.exists) {
+      // Log more details about the admin document
+      console.log(`Admin doc check result - exists: ${adminDoc.exists}, path: ${adminDoc.ref.path}`);
+      
+      // Also check admins collection (singular form) as fallback
+      let isAdmin = adminDoc.exists;
+      if (!isAdmin) {
+        try {
+          const altAdminDoc = await firestore.collection('admin').doc(userRecord.uid).get();
+          isAdmin = altAdminDoc.exists;
+          console.log(`Alternative admin doc check (singular) - exists: ${altAdminDoc.exists}`);
+        } catch (error) {
+          console.log('Error checking alternative admin collection:', error);
+        }
+      }
+
+      if (!isAdmin) {
         console.error(`User ${email} is not an admin`);
-        return res.status(403).json({ success: false, error: 'Not authorized as admin' });
+        return res.status(403).json({ 
+          success: false, 
+          error: 'Not authorized as admin',
+          debug: { 
+            uid: userRecord.uid, 
+            email: userRecord.email,
+            adminCollection: 'admins',
+            adminDocPath: adminDoc.ref.path,
+          }
+        });
       }
 
       // Get their display name, if available
@@ -85,34 +110,52 @@ async function handleLogin(
       let photoURL = userRecord.photoURL || null;
 
       // Create a custom token for this user
-      const customToken = await adminAuth.createCustomToken(userRecord.uid);
-      
-      // Store token in Firestore for validation
-      // This is needed because custom tokens can't be verified directly with verifyIdToken
-      const expirationTime = new Date();
-      expirationTime.setHours(expirationTime.getHours() + 24); // 24 hour expiration
-      
-      await firestore.collection('admin_tokens').add({
-        token: customToken,
-        userId: userRecord.uid,
-        created: new Date(),
-        expires: expirationTime,
-        email: userRecord.email
-      });
-      
-      console.log(`Successfully authenticated admin user: ${email}`);
-      
-      // Return the token and user info
-      return res.status(200).json({
-        success: true,
-        token: customToken,
-        user: {
-          uid: userRecord.uid,
-          email: userRecord.email || '',
-          displayName,
-          photoURL: photoURL || undefined
-        }
-      });
+      console.log(`Creating custom token for admin user: ${userRecord.uid}`);
+      try {
+        const customToken = await adminAuth.createCustomToken(userRecord.uid, {
+          admin: true, // Add custom claim for admin
+          email: userRecord.email
+        });
+        
+        // Store token in Firestore for validation
+        // This is needed because custom tokens can't be verified directly with verifyIdToken
+        const expirationTime = new Date();
+        expirationTime.setHours(expirationTime.getHours() + 24); // 24 hour expiration
+        
+        // Add token to Firestore
+        const tokenRef = await firestore.collection('admin_tokens').add({
+          token: customToken,
+          userId: userRecord.uid,
+          created: new Date(),
+          expires: expirationTime,
+          email: userRecord.email
+        });
+        
+        console.log(`Successfully authenticated admin user: ${email}, token stored with ID: ${tokenRef.id}`);
+        
+        // Return the token and user info
+        return res.status(200).json({
+          success: true,
+          token: customToken,
+          user: {
+            uid: userRecord.uid,
+            email: userRecord.email || '',
+            displayName,
+            photoURL: photoURL || undefined,
+            isAdmin: true
+          }
+        });
+      } catch (tokenError) {
+        console.error('Error creating custom token:', tokenError);
+        return res.status(500).json({
+          success: false,
+          error: 'Failed to create authentication token',
+          debug: { 
+            message: tokenError instanceof Error ? tokenError.message : String(tokenError),
+            uid: userRecord.uid
+          }
+        });
+      }
     } catch (error: any) {
       console.error('Server authentication error:', error);
       return res.status(401).json({
