@@ -73,12 +73,14 @@ export default function AdminPage() {
               {t('admin.dashboard', 'Admin Dashboard')}
             </h1>
             <div className="flex space-x-4">
-              <button
-                onClick={() => setActiveTab(activeTab === 'main' ? 'feedback' : 'main')}
-                className="bg-steel-blue hover:bg-accent text-white font-medium py-2 px-4 rounded transition-colors"
-              >
-                {activeTab === 'main' ? 'Show Feedback Analytics' : 'Show Admin Dashboard'}
-              </button>
+              {activeTab === 'feedback' && (
+                <button
+                  onClick={() => setActiveTab('main')}
+                  className="bg-steel-blue hover:bg-accent text-white font-medium py-2 px-4 rounded transition-colors"
+                >
+                  Back to Dashboard
+                </button>
+              )}
               <button
                 onClick={handleSignOut}
                 className="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded transition-colors"

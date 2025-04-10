@@ -5,7 +5,6 @@ type ValidateResponse = {
   success: boolean;
   valid?: boolean;
   error?: string;
-  debug?: any;
 }
 
 /**
@@ -29,16 +28,11 @@ export default async function handler(
       return res.status(401).json({ success: false, valid: false, error: 'No token provided' });
     }
     
-    console.log(`Attempting to validate token: ${token.substring(0, 10)}...`);
-    
     // First, try to verify with Firebase
     try {
       await adminAuth.verifyIdToken(token);
-      console.log('Token validated successfully via verifyIdToken');
       return res.status(200).json({ success: true, valid: true });
     } catch (verifyError) {
-      console.log('Standard token validation failed, checking admin_tokens collection');
-      
       // If standard validation fails, check admin_tokens collection
       try {
         // Look for this token in admin collection
@@ -62,44 +56,35 @@ export default async function handler(
               : new Date(tokenData.expires);
             
             isExpired = expiryDate < now;
-            console.log(`Token expiry check: ${expiryDate} vs ${now}, expired=${isExpired}`);
           }
           
           if (!isExpired) {
             // Validate against Firebase one more time using user ID
             try {
               await adminAuth.getUser(tokenData.userId);
-              console.log('User ID from token validated successfully');
               return res.status(200).json({ success: true, valid: true });
             } catch (userError) {
-              console.error('User validation error:', userError);
               return res.status(401).json({ 
                 success: false, 
                 valid: false, 
-                error: 'Invalid user', 
-                debug: { tokenFound: true, userError: true } 
+                error: 'Invalid user'
               });
             }
           } else {
-            console.log('Token is expired');
-            
             // Delete expired token
             await tokenDoc.ref.delete();
             
             return res.status(401).json({ 
               success: false, 
               valid: false, 
-              error: 'Token expired', 
-              debug: { reason: 'expired' } 
+              error: 'Token expired'
             });
           }
         } else {
-          console.log('Token not found in admin_tokens collection');
           return res.status(401).json({ 
             success: false, 
             valid: false, 
-            error: 'Invalid token', 
-            debug: { reason: 'not_found_in_collection' } 
+            error: 'Invalid token'
           });
         }
       } catch (firestoreError) {
@@ -107,8 +92,7 @@ export default async function handler(
         return res.status(401).json({ 
           success: false, 
           valid: false, 
-          error: 'Error validating token',
-          debug: { firestoreError: true } 
+          error: 'Error validating token'
         });
       }
     }
@@ -116,8 +100,7 @@ export default async function handler(
     console.error('Token validation error:', error);
     return res.status(500).json({ 
       success: false, 
-      error: 'Error validating token',
-      debug: { unexpectedError: true } 
+      error: 'Error validating token'
     });
   }
 }

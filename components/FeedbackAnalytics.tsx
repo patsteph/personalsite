@@ -62,22 +62,17 @@ const FeedbackAnalytics = () => {
         
         // Make sure we have a user before trying to refresh token
         if (!user) {
-          console.log('No user available for fetching analytics');
           setError('Authentication required');
           setIsLoading(false);
           return;
         }
         
         // Get the current user's ID token
-        console.log('Refreshing token for analytics');
         const token = await refreshToken();
         
         if (!token) {
-          console.error('Token refresh failed');
           throw new Error('No authentication token available');
         }
-        
-        console.log('Token obtained, fetching analytics data');
           
         const response = await fetch('/api/admin-analytics?type=feedback', {
           method: 'GET',
@@ -97,7 +92,6 @@ const FeedbackAnalytics = () => {
           throw new Error(data.error || 'Unknown error fetching feedback analytics');
         }
         
-        console.log('Analytics data fetched successfully');
         setAnalyticsData(data.data);
         setError(null);
       } catch (err) {
