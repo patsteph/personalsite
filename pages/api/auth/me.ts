@@ -42,7 +42,7 @@ export default async function handler(
     
     try {
       // Try to decode the token without verification first for debugging
-      let debugInfo = { tokenExists: !!token, tokenLength: token.length };
+      let debugInfo: Record<string, any> = { tokenExists: !!token, tokenLength: token.length };
       
       // Validate the token and get user ID
       const uid = await validateAuthToken(req);
