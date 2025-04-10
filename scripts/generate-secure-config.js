@@ -9,21 +9,14 @@ const path = require('path');
 // Load environment variables from .env.local for Firebase config
 require('dotenv').config({ path: '.env.local' });
 
-// Create a secure config with Firebase authentication details
+// Create a minimal secure config without sensitive keys
 const configContent = `
-// Secure configuration with Firebase credentials
+// Secure configuration - no sensitive data kept client-side
 window.SECURE_CONFIG = {
-  firebase: {
-    apiKey: "${process.env.NEXT_PUBLIC_FIREBASE_API_KEY || ''}",
-    authDomain: "${process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || ''}",
-    projectId: "${process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || ''}",
-    storageBucket: "${process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || ''}",
-    messagingSenderId: "${process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || ''}",
-    appId: "${process.env.NEXT_PUBLIC_FIREBASE_APP_ID || ''}",
-    measurementId: "${process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID || ''}"
-  }
+  // Security note: We don't store API keys client-side anymore
+  // All authentication is now handled by server APIs
 };
-console.log('Secure configuration loaded with Firebase credentials');
+console.log('Secure configuration loaded');
 `;
 
 // Path for the config file

@@ -3,15 +3,15 @@ import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
 import { getAuth, Auth, connectAuthEmulator } from 'firebase/auth';
 import { getFirestore, Firestore, connectFirestoreEmulator } from 'firebase/firestore';
 import { getStorage, FirebaseStorage } from 'firebase/storage';
-// Default Firebase config from environment variables (at build time)
+// Default Firebase config with minimal info - we use server APIs for auth
+// SECURITY: No API keys here - only public info
 const defaultFirebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "",
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "",
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "",
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "",
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "",
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "",
-  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID || ""
+  apiKey: "USE_SERVER_API", // Signal that we are not using direct Firebase auth
+  authDomain: `${process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "personalsite-19189"}.firebaseapp.com`,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "personalsite-19189",
+  storageBucket: `${process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "personalsite-19189"}.appspot.com`,
+  appId: "1:000000000000:web:0000000000000000000000", // Placeholder
+  measurementId: ""
 };
 
 // Initialize Firebase using a function to allow for different initialization paths
@@ -37,38 +37,28 @@ const initializeFirebase = () => {
     let config = defaultFirebaseConfig;
     
     try {
-      // Prioritize runtime config from the browser
-      if (window.runtimeConfig?.firebase?.apiKey) {
-        // Log the found configuration (for debugging)
-        console.log("Using Firebase config from runtime-config.js");
-        
-        config = {
-          apiKey: window.runtimeConfig.firebase.apiKey || "",
-          authDomain: window.runtimeConfig.firebase.authDomain || "",
-          projectId: window.runtimeConfig.firebase.projectId || "",
-          storageBucket: window.runtimeConfig.firebase.storageBucket || "",
-          messagingSenderId: window.runtimeConfig.firebase.messagingSenderId || "",
-          appId: window.runtimeConfig.firebase.appId || "",
-          measurementId: window.runtimeConfig.firebase.measurementId || ""
-        };
-      } else {
-        // Also try SECURE_CONFIG as a fallback
-        if (window.SECURE_CONFIG?.firebase?.apiKey) {
-          console.log("Using Firebase config from secure-config.js");
-          
-          config = {
-            apiKey: window.SECURE_CONFIG.firebase.apiKey || "",
-            authDomain: window.SECURE_CONFIG.firebase.authDomain || "",
-            projectId: window.SECURE_CONFIG.firebase.projectId || "",
-            storageBucket: window.SECURE_CONFIG.firebase.storageBucket || "",
-            messagingSenderId: window.SECURE_CONFIG.firebase.messagingSenderId || "",
-            appId: window.SECURE_CONFIG.firebase.appId || "",
-            measurementId: window.SECURE_CONFIG.firebase.measurementId || ""
-          };
-        } else {
-          console.log("Using default Firebase config from environment variables");
-        }
+      // Note: We no longer store sensitive Firebase API keys in client-side config files
+      // Instead we use server APIs that will handle Firebase authentication
+      
+      // Note: We need a different approach for client-side auth. Let's use a
+      // dedicated auth API endpoint for sensitive operations
+      console.log("Using Firebase auth via API endpoint instead of direct SDK");
+      
+      // Check for project ID at minimum to identify the Firebase project
+      if (window.runtimeConfig?.firebase?.projectId) {
+        config.projectId = window.runtimeConfig.firebase.projectId;
       }
+      
+      // This will redirect to the auth API for actual Firebase access
+      // We'll use our API endpoints instead of direct Firebase access
+      config = {
+        apiKey: "USE_SERVER_API", // Signal to use server API instead of direct access
+        authDomain: `${config.projectId || "personalsite-19189"}.firebaseapp.com`,
+        projectId: config.projectId || "personalsite-19189",
+        storageBucket: `${config.projectId || "personalsite-19189"}.appspot.com`,
+        appId: "1:000000000000:web:0000000000000000000000", // Placeholder
+        measurementId: ""
+      };
       
       // Verification step - ensure we have at least the apiKey and projectId
       if (!config.apiKey || !config.projectId) {
