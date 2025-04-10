@@ -73,10 +73,44 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   // Function to refresh token
   const refreshToken = useCallback(async (): Promise<string | null> => {
-    if (!user) return null;
+    if (!user) {
+      console.log('refreshToken: No user available');
+      return null;
+    }
+    
     try {
       updateLastActivity();
-      return await authApi.getCurrentUserToken(true);
+      console.log('Refreshing token for user:', user.uid);
+      
+      // If token is in localStorage, try to validate it first
+      const currentToken = localStorage.getItem('authToken');
+      if (currentToken) {
+        try {
+          // Attempt to validate the existing token
+          const response = await fetch('/api/auth/validate', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${currentToken}`
+            }
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            if (data.valid) {
+              console.log('Current token is still valid');
+              return currentToken;
+            }
+            console.log('Token validation failed, will get a new one');
+          }
+        } catch (validateError) {
+          console.warn('Error validating current token:', validateError);
+        }
+      }
+      
+      // If we reach here, either there was no token or it was invalid
+      const newToken = await authApi.getCurrentUserToken(true);
+      console.log('Received new token:', newToken ? 'yes' : 'no');
+      return newToken;
     } catch (error) {
       console.error('Failed to refresh token:', error);
       return null;
