@@ -94,8 +94,8 @@ export default function ContentItemsPage() {
       
       console.log('Form data prepared');
       
-      // Get token from auth
-      const token = await user?.getIdToken();
+      // Get token from localStorage
+      const token = localStorage.getItem('authToken');
       if (!token) {
         throw new Error('Authentication token not available');
       }

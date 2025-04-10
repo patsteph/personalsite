@@ -1,7 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
-import { User, onAuthStateChanged, Auth } from 'firebase/auth';
-import { auth } from './firebase';
 import * as authApi from './api/auth';
+import { AppUser } from './api/auth';
 
 // Constants for auth timeouts
 const TOKEN_REFRESH_INTERVAL = 10 * 60 * 1000; // 10 minutes
@@ -9,7 +8,7 @@ const SESSION_TIMEOUT = 60 * 60 * 1000; // 1 hour of inactivity
 
 // Define the authentication context type
 type AuthContextType = {
-  user: User | null;
+  user: AppUser | null;
   loading: boolean;
   isAuthenticated: boolean;
   authError: Error | null;
@@ -48,7 +47,7 @@ export function useAuth() {
 
 // The AuthProvider component
 export function AuthProvider({ children }: AuthProviderProps) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [authError, setAuthError] = useState<Error | null>(null);
@@ -121,28 +120,39 @@ export function AuthProvider({ children }: AuthProviderProps) {
     };
   }, [isAuthenticated, refreshToken, updateLastActivity, checkInactivity]);
 
-  // Listen for auth state changes
+  // Check for existing auth token on mount
   useEffect(() => {
-    // Check if auth is initialized
-    if (!auth) {
-      console.warn('Firebase Auth not initialized');
-      setLoading(false);
-      return () => {};
-    }
-
-    const unsubscribe = onAuthStateChanged(auth as Auth, (currentUser) => {
-      setUser(currentUser);
-      setIsAuthenticated(!!currentUser);
-      setLoading(false);
-      
-      if (currentUser) {
-        // Reset activity timestamp when user logs in
-        updateLastActivity();
+    const checkExistingAuth = async () => {
+      try {
+        setLoading(true);
+        // Check for existing token in localStorage
+        const token = localStorage.getItem('authToken');
+        
+        if (token) {
+          // Verify token with server
+          try {
+            const currentUser = await authApi.getCurrentUser();
+            if (currentUser) {
+              setUser(currentUser);
+              setIsAuthenticated(true);
+              updateLastActivity();
+            } else {
+              // Invalid token, clear it
+              localStorage.removeItem('authToken');
+            }
+          } catch (error) {
+            console.error('Error restoring authentication:', error);
+            localStorage.removeItem('authToken');
+          }
+        }
+      } catch (error) {
+        console.error('Auth restoration error:', error);
+      } finally {
+        setLoading(false);
       }
-    });
-
-    // Cleanup subscription
-    return () => unsubscribe();
+    };
+    
+    checkExistingAuth();
   }, [updateLastActivity]);
 
   // Function to reset auth error
@@ -172,18 +182,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setAuthError(null);
       
       // Use the auth API to sign in
-      const userCredential = await authApi.signInWithEmailAndPassword(email, password);
-      setUser(userCredential.user);
+      const authCredential = await authApi.signInWithEmailAndPassword(email, password);
+      setUser(authCredential.user);
       setIsAuthenticated(true);
       
-      // Get and store token for API calls
-      try {
-        const token = await userCredential.user.getIdToken();
-        localStorage.setItem('firebaseAuthToken', token);
-        console.log('Firebase auth token saved to localStorage');
-      } catch (tokenError) {
-        console.error('Unable to get auth token:', tokenError);
-      }
+      // Token is already stored in localStorage by the auth API function
       
       // Reset activity timestamp
       updateLastActivity();
@@ -236,7 +239,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         sessionStorage.removeItem('auth_timestamp');
         
         // Clear localStorage
-        localStorage.removeItem('firebaseAuthToken');
+        localStorage.removeItem('authToken');
         
         // Clear cookies by setting expiration to past date
         document.cookie = 'auth_success=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Strict';

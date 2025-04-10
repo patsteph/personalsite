@@ -91,8 +91,8 @@ export default function ContentManagerPage() {
       
       console.log('Form data:', signalData);
       
-      // Get token from auth
-      const token = await user?.getIdToken();
+      // Get token from localStorage
+      const token = localStorage.getItem('authToken');
       
       // Send to API
       const response = await fetch('/api/content-manager-post', {
@@ -144,8 +144,8 @@ export default function ContentManagerPage() {
     try {
       console.log('Testing direct POST with token:', user ? 'available' : 'not available');
       
-      // Get token from auth
-      const token = await user?.getIdToken();
+      // Get token from localStorage
+      const token = localStorage.getItem('authToken');
       
       // Basic test payload
       const testData = {

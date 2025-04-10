@@ -4,12 +4,8 @@ import { auth } from '@/lib/firebase';
 // Get authentication token
 const getAuthToken = async (): Promise<string | null> => {
   try {
-    if (!auth) return null;
-    
-    const currentUser = auth.currentUser;
-    if (!currentUser) return null;
-    
-    return currentUser.getIdToken();
+    // Get token from localStorage instead of Firebase SDK
+    return localStorage.getItem('authToken');
   } catch (error) {
     console.error('Error getting auth token:', error);
     return null;

@@ -1,30 +1,81 @@
 /**
  * Authentication API module
  * 
- * This module handles all authentication-related interactions with Firebase
+ * This module handles authentication via server-side endpoints
+ * No Firebase client SDK usage or API keys in client code
  */
-import {
-  signInWithEmailAndPassword as firebaseSignIn,
-  signOut as firebaseSignOut,
-  getIdToken,
-  UserCredential,
-  User,
-  Auth
-} from 'firebase/auth';
-import { auth } from '../firebase';
+
+// Define our own user interface instead of using Firebase types
+export interface AppUser {
+  uid: string;
+  email?: string;
+  displayName?: string;
+  photoURL?: string;
+}
+
+// Define our own credential interface
+export interface AuthCredential {
+  user: AppUser;
+  token: string;
+}
+
+// Define interface for signIn response from server
+interface SignInResponse {
+  success: boolean;
+  token?: string;
+  user?: {
+    uid: string;
+    email?: string;
+    displayName?: string;
+    photoURL?: string;
+  };
+  error?: string;
+}
 
 /**
- * Sign in user with email and password
+ * Sign in user with email and password using server API
  */
 export async function signInWithEmailAndPassword(
   email: string, 
   password: string
-): Promise<UserCredential> {
+): Promise<AuthCredential> {
   try {
-    if (!auth) {
-      throw new Error('Firebase Auth is not initialized');
+    // Call our server API for authentication
+    const response = await fetch('/api/auth', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        email,
+        password
+      })
+    });
+    
+    if (!response.ok) {
+      const data = await response.json();
+      throw new Error(data.error || 'Authentication failed');
     }
-    return await firebaseSignIn(auth as Auth, email, password);
+    
+    const data = await response.json() as SignInResponse;
+    
+    if (!data.success || !data.token || !data.user) {
+      throw new Error(data.error || 'Authentication failed');
+    }
+    
+    // Store token in localStorage for API requests
+    localStorage.setItem('authToken', data.token);
+    
+    // Return our simplified credential
+    return {
+      user: {
+        uid: data.user.uid,
+        email: data.user.email,
+        displayName: data.user.displayName,
+        photoURL: data.user.photoURL
+      },
+      token: data.token
+    };
   } catch (error) {
     console.error('API: Authentication error:', error);
     throw error;
@@ -36,11 +87,15 @@ export async function signInWithEmailAndPassword(
  */
 export async function signOut(): Promise<void> {
   try {
-    if (!auth) {
-      console.warn('Firebase Auth is not initialized, no need to sign out');
-      return;
+    // Clear token from localStorage
+    localStorage.removeItem('authToken');
+    
+    // Optionally call server to invalidate session
+    try {
+      await fetch('/api/auth/signout', { method: 'POST' });
+    } catch (error) {
+      console.warn('Failed to notify server about signout', error);
     }
-    return await firebaseSignOut(auth as Auth);
   } catch (error) {
     console.error('API: Sign out error:', error);
     throw error;
@@ -48,19 +103,44 @@ export async function signOut(): Promise<void> {
 }
 
 /**
- * Get the current user's ID token
+ * Get the current auth token
  */
 export async function getCurrentUserToken(forceRefresh = false): Promise<string | null> {
   try {
-    if (!auth) {
-      console.warn('Firebase Auth is not initialized');
+    // Get token from localStorage
+    const token = localStorage.getItem('authToken');
+    
+    if (!token) {
       return null;
     }
     
-    const currentUser = auth.currentUser;
-    if (!currentUser) return null;
+    // If forced refresh is requested, validate token with server
+    if (forceRefresh) {
+      try {
+        const response = await fetch('/api/auth/validate', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (!response.ok) {
+          localStorage.removeItem('authToken');
+          return null;
+        }
+        
+        const data = await response.json();
+        if (!data.valid) {
+          localStorage.removeItem('authToken');
+          return null;
+        }
+      } catch (error) {
+        console.error('Token validation failed:', error);
+        return null;
+      }
+    }
     
-    return await getIdToken(currentUser, forceRefresh);
+    return token;
   } catch (error) {
     console.error('API: Error getting token:', error);
     return null;
@@ -68,12 +148,31 @@ export async function getCurrentUserToken(forceRefresh = false): Promise<string 
 }
 
 /**
- * Get the current user
+ * Get the current user from token
  */
-export function getCurrentUser(): User | null {
-  if (!auth) {
-    console.warn('Firebase Auth is not initialized');
+export async function getCurrentUser(): Promise<AppUser | null> {
+  const token = await getCurrentUserToken();
+  
+  if (!token) {
     return null;
   }
-  return auth.currentUser;
+  
+  try {
+    // Get user profile from server
+    const response = await fetch('/api/auth/me', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    
+    if (!response.ok) {
+      return null;
+    }
+    
+    const data = await response.json();
+    return data.user || null;
+  } catch (error) {
+    console.error('Error getting current user:', error);
+    return null;
+  }
 }
