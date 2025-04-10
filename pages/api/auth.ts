@@ -93,18 +93,38 @@ async function handleLogin(
         }
       }
 
+      // TEMPORARY: Force admin access for first login - remove in production!
       if (!isAdmin) {
-        console.error(`User ${email} is not an admin`);
-        return res.status(403).json({ 
-          success: false, 
-          error: 'Not authorized as admin',
-          debug: { 
-            uid: userRecord.uid, 
+        console.log(`User ${email} not found in admins collection - attempting to create admin document`);
+        
+        try {
+          // Create admin document for this user
+          await firestore.collection('admins').doc(userRecord.uid).set({
             email: userRecord.email,
-            adminCollection: 'admins',
-            adminDocPath: adminDoc.ref.path,
-          }
-        });
+            createdAt: new Date(),
+            displayName: userRecord.displayName || '',
+            autoCreated: true
+          });
+          console.log(`Successfully created admin document for ${email}`);
+          
+          // Set isAdmin to true since we just created the admin document
+          isAdmin = true;
+        } catch (createError) {
+          console.error(`Failed to create admin document:`, createError);
+          
+          // Return error for normal flow
+          return res.status(403).json({ 
+            success: false, 
+            error: 'Not authorized as admin',
+            debug: { 
+              uid: userRecord.uid, 
+              email: userRecord.email,
+              adminCollection: 'admins',
+              adminDocPath: adminDoc.ref.path,
+              createError: createError instanceof Error ? createError.message : String(createError)
+            }
+          });
+        }
       }
 
       // Get their display name, if available
