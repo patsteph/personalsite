@@ -45,7 +45,13 @@ export default async function handler(
     }
     
     // List all users
-    let adminUsers = [];
+    let adminUsers: Array<{
+      uid: string;
+      email: string | undefined;
+      emailVerified: boolean;
+      displayName: string | undefined;
+    }> = [];
+    
     try {
       // Limit to 10 users for safety
       const listUsersResult = await adminAuth.listUsers(10);
