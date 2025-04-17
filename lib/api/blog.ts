@@ -3,23 +3,11 @@
  * 
  * This module handles all blog-related interactions with Firebase
  */
-import {
-  collection,
-  doc,
-  addDoc,
-  updateDoc,
-  deleteDoc,
-  getDocs,
-  query,
-  where,
-  orderBy,
-  // limit is defined but not used
-  // limit,
-  DocumentData,
-  QueryDocumentSnapshot
-} from 'firebase/firestore';
-import { firestore } from '../firebase';
-import { Firestore } from 'firebase/firestore';
+// Blog API module (server-side only)
+import { BlogPost } from '@/types/blog';
+import { getCurrentUserToken } from './auth';
+
+const API_BASE = '/api';
 import { BlogPost } from '@/types/blog';
 import { getCurrentUserToken } from './auth';
 
@@ -30,10 +18,10 @@ const API_BASE = '/api';
 /**
  * Convert Firestore document to BlogPost type
  */
-function convertDocToBlogPost(doc: QueryDocumentSnapshot<DocumentData>): BlogPost {
-  const data = doc.data();
+// Convert API response to BlogPost type
+function convertApiToBlogPost(data: any): BlogPost {
   return {
-    id: doc.id,
+    id: data.id,
     title: data.title || '',
     slug: data.slug || '',
     summary: data.summary || '',
@@ -49,382 +37,158 @@ function convertDocToBlogPost(doc: QueryDocumentSnapshot<DocumentData>): BlogPos
 }
 
 /**
- * Get all published blog posts - tries server API first, falls back to client
+ * Get all published blog posts from API
  */
-export async function getPublishedPosts(
-  maxPosts?: number
-): Promise<BlogPost[]> {
-  // Server-side API attempt first
+export async function getPublishedPosts(maxPosts?: number): Promise<BlogPost[]> {
   try {
-    // Determine base URL based on environment
-    const baseUrl = typeof window === 'undefined' 
-      ? process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000' // Server-side needs full URL
-      : API_BASE; // Client-side uses relative path
-
-    const limitParam = maxPosts ? `?limit=${maxPosts}` : '';
-    const response = await fetch(`${baseUrl}/blog${limitParam}`);
-
+    const response = await fetch(`${API_BASE}/blog?published=true${maxPosts ? `&limit=${maxPosts}` : ''}`);
     if (response.ok) {
       const data = await response.json();
-      console.log('Successfully fetched posts from server API');
-      return data.success ? data.data : [];
-    }
-    // If server API response is not ok, log warning and proceed to fallback
-    console.warn(`Server API failed with status ${response.status}, falling back to client-side API`);
-
-  } catch (serverError) {
-    // Catch fetch errors (e.g., network issues, invalid URL)
-    console.error('Server API fetch error, falling back to client-side:', serverError);
-  }
-
-  // Client-side fallback logic (only runs if server-side try block fails or response is not ok)
-  console.log('Attempting client-side fallback to get published posts...');
-  try {
-    const { getFirestore, collection, query, where, orderBy, limit, getDocs } = await import('firebase/firestore');
-    const { firestore } = await import('../../lib/firebase'); // Client-side firebase
-
-    if (!firestore) {
-      console.warn('Client-side Firestore not initialized, returning empty posts array');
-      return [];
-    }
-
-    let blogQuery = query(
-      collection(firestore as Firestore, COLLECTION_NAME),
-      where('published', '==', true),
-      orderBy('publishedAt', 'desc')
-    );
-
-    if (maxPosts) {
-      blogQuery = query(blogQuery, limit(maxPosts));
-    }
-
-    const querySnapshot = await getDocs(blogQuery);
-    console.log(`Client-side fallback successful, found ${querySnapshot.docs.length} posts.`);
-    return querySnapshot.docs.map(convertDocToBlogPost);
-  } catch (clientError) {
-    console.error('Client-side Firestore fallback error:', clientError);
-    return []; // Return empty array on client-side error as well
-  }
-}
-
-/**
- * Get all blog posts (including unpublished) - tries server API first, falls back to client
- */
-export async function getAllPosts(): Promise<BlogPost[]> {
-  try {
-    // Try server API first
-    const token = await getCurrentUserToken();
-    if (token) {
-      try {
-        const response = await fetch(`${API_BASE}/blog?admin=true`, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          return data.success ? data.data : [];
-        }
-        // If server API fails, log error and continue with client-side fallback
-        console.warn('Server API failed, falling back to client-side API');
-      } catch (serverError) {
-        console.error('Server API error, falling back to client-side:', serverError);
+      if (data.success && Array.isArray(data.data)) {
+        return data.data.map(convertApiToBlogPost);
       }
     }
-
-    // Client-side fallback
-    if (!firestore) {
-      console.warn('Firestore not initialized, returning empty posts array');
-      return [];
-    }
-
-    const blogQuery = query(
-      collection(firestore as Firestore, COLLECTION_NAME),
-      orderBy('createdAt', 'desc')
-    );
-
-    const querySnapshot = await getDocs(blogQuery);
-    return querySnapshot.docs.map(convertDocToBlogPost);
+    throw new Error('API did not return success');
   } catch (error) {
-    console.error('API: Error fetching all blog posts:', error);
+    console.error('Error fetching published blog posts from API:', error);
     return [];
   }
 }
 
 /**
- * Get blog post by slug - tries server API first, falls back to client
+ * Get all blog posts (including unpublished) from API
+ */
+export async function getAllPosts(): Promise<BlogPost[]> {
+  try {
+    const token = await getCurrentUserToken();
+    const response = await fetch(`${API_BASE}/blog?admin=true`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    if (response.ok) {
+      const data = await response.json();
+      if (data.success && Array.isArray(data.data)) {
+        return data.data.map(convertApiToBlogPost);
+      }
+    }
+    throw new Error('API did not return success');
+  } catch (error) {
+    console.error('Error fetching all blog posts from API:', error);
+    return [];
+  }
+}
+
+/**
+ * Get blog post by slug from API
  */
 export async function getPostBySlug(slug: string): Promise<BlogPost | null> {
   try {
-    // Try server API first
-    try {
-      const baseUrl = typeof window === 'undefined' 
-        ? process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000' // Server-side needs full URL
-        : API_BASE; // Client-side uses relative path
-        
-      const url = `${baseUrl}/blog?slug=${slug}`;
-      const response = await fetch(url);
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          return data.data;
-        }
-      }
-    } catch (serverError) {
-      console.error(`Server API error for slug "${slug}", falling back to client-side:`, serverError);
-    }
-
-    // Client-side fallback
-    if (!firestore) {
-      return null;
-    }
-
-    // Try with exact slug match first
-    let blogQuery = query(
-      collection(firestore as Firestore, COLLECTION_NAME),
-      where('slug', '==', slug)
-    );
-    
-    let querySnapshot = await getDocs(blogQuery);
-
-    // If no results, try alternative known slug
-    if (querySnapshot.docs.length === 0) {
-      const alternativeSlugs = [
-        'building-my-personal-site-a-journey-from-not-a-programmer-to-web-developer-sort-of-',
-        'this-site'
-      ];
-      
-      for (const altSlug of alternativeSlugs) {
-        if (altSlug === slug) continue; // Skip if same as original
-        
-        blogQuery = query(
-          collection(firestore as Firestore, COLLECTION_NAME),
-          where('slug', '==', altSlug)
-        );
-        
-        querySnapshot = await getDocs(blogQuery);
-        if (querySnapshot.docs.length > 0) break;
+    const response = await fetch(`${API_BASE}/blog?slug=${slug}`);
+    if (response.ok) {
+      const data = await response.json();
+      if (data.success && data.data) {
+        return convertApiToBlogPost(data.data);
       }
     }
-    
-    if (querySnapshot.docs.length === 0) {
-      return null;
-    }
-
-    return convertDocToBlogPost(querySnapshot.docs[0]);
+    throw new Error('API did not return success');
   } catch (error) {
-    console.error(`Error fetching blog post with slug "${slug}":`, error);
+    console.error('Error fetching blog post by slug from API:', error);
     return null;
   }
 }
 
 /**
- * Add new blog post - tries server API first, falls back to client
+ * Add new blog post via API
  */
 export async function addBlogPost(post: Omit<BlogPost, 'id' | 'createdAt' | 'updatedAt'>): Promise<BlogPost | null> {
   try {
-    // Try server API first
     const token = await getCurrentUserToken();
-    if (token) {
-      try {
-        const response = await fetch(`${API_BASE}/blog`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(post)
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          return data.success ? data.data : null;
-        }
-        // If server API fails, log error and continue with client-side fallback
-        console.warn('Server API failed, falling back to client-side API');
-      } catch (serverError) {
-        console.error('Server API error, falling back to client-side:', serverError);
+    const response = await fetch(`${API_BASE}/blog`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify(post)
+    });
+    if (response.ok) {
+      const data = await response.json();
+      if (data.success && data.data) {
+        return convertApiToBlogPost(data.data);
       }
     }
-
-    // Client-side fallback
-    const now = new Date();
-
-    const postData = {
-      ...post,
-      publishedAt: post.published ? (post.publishedAt || now) : null,
-      createdAt: now,
-      updatedAt: now
-    };
-
-    if (!firestore) {
-      console.warn('Firestore not initialized, cannot add blog post');
-      return null;
-    }
-
-    const docRef = await addDoc(collection(firestore as Firestore, COLLECTION_NAME), postData);
-
-    return {
-      ...post,
-      id: docRef.id,
-      publishedAt: postData.publishedAt,
-      createdAt: postData.createdAt,
-      updatedAt: postData.updatedAt
-    };
+    throw new Error('API did not return success');
   } catch (error) {
-    console.error('API: Error adding blog post:', error);
+    console.error('Error adding blog post via API:', error);
     return null;
   }
 }
 
 /**
- * Update existing blog post - tries server API first, falls back to client
+ * Update existing blog post via API
  */
 export async function updateBlogPost(id: string, post: Partial<BlogPost>): Promise<boolean> {
   try {
-    console.log(`updateBlogPost (${id}): Attempting server API update...`);
     const token = await getCurrentUserToken();
-
-    // Log token status
-    console.log(`updateBlogPost (${id}): Token obtained?`, !!token);
-
-    if (token) {
-      try {
-        console.log(`updateBlogPost (${id}): Sending PUT request to /api/blog with data:`, JSON.stringify(post));
-        const response = await fetch(`${API_BASE}/blog?id=${id}`, {
-          method: 'PUT',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(post)
-        });
-
-        // Log server response status
-        console.log(`updateBlogPost (${id}): Server API response status: ${response.status}, ok: ${response.ok}`);
-
-        if (response.ok) {
-          const data = await response.json();
-          console.log(`updateBlogPost (${id}): Server API success. Response data:`, data);
-          return data.success;
-        }
-        // If server API fails, log error and continue with client-side fallback
-        console.warn(`updateBlogPost (${id}): Server API failed (status ${response.status}), falling back to client-side API`);
-      } catch (serverError) {
-        console.error(`updateBlogPost (${id}): Server API fetch error, falling back to client-side:`, serverError);
-      }
-    } else {
-      console.warn(`updateBlogPost (${id}): No token found, proceeding directly to client-side fallback.`);
+    const response = await fetch(`${API_BASE}/blog?id=${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify(post)
+    });
+    if (response.ok) {
+      const data = await response.json();
+      return !!data.success;
     }
-
-    // Client-side fallback
-    const now = new Date();
-
-    const postData = {
-      ...post,
-      // Update publishedAt if post is being published for the first time
-      ...(post.published && !post.publishedAt ? { publishedAt: now } : {}),
-      updatedAt: now
-    };
-
-    if (!firestore) {
-      console.warn('Firestore not initialized, cannot update blog post');
-      return false;
-    }
-
-    // Log the exact data being sent to Firestore in the fallback
-    console.log('API Fallback: Updating Firestore directly with data:', JSON.stringify(postData, null, 2));
-
-    const docRef = doc(firestore as Firestore, COLLECTION_NAME, id);
-    await updateDoc(docRef, postData);
-
-    return true;
+    throw new Error('API did not return success');
   } catch (error) {
-    // Log final catch block entry
-    console.error(`updateBlogPost (${id}): CAUGHT UNEXPECTED ERROR:`, error);
+    console.error('Error updating blog post via API:', error);
     return false;
   }
 }
 
 /**
- * Delete blog post - tries server API first, falls back to client
+ * Delete blog post via API
  */
 export async function deleteBlogPost(id: string): Promise<boolean> {
   try {
-    // Try server API first
     const token = await getCurrentUserToken();
-    if (token) {
-      try {
-        const response = await fetch(`${API_BASE}/blog?id=${id}`, {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          return data.success;
-        }
-        // If server API fails, log error and continue with client-side fallback
-        console.warn('Server API failed, falling back to client-side API');
-      } catch (serverError) {
-        console.error('Server API error, falling back to client-side:', serverError);
+    const response = await fetch(`${API_BASE}/blog?id=${id}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
       }
+    });
+    if (response.ok) {
+      const data = await response.json();
+      return !!data.success;
     }
-
-    // Client-side fallback
-    if (!firestore) {
-      console.warn('Firestore not initialized, cannot delete blog post');
-      return false;
-    }
-
-    const docRef = doc(firestore as Firestore, COLLECTION_NAME, id);
-    await deleteDoc(docRef);
-
-    return true;
+    throw new Error('API did not return success');
   } catch (error) {
-    console.error(`API: Error deleting blog post with ID ${id}:`, error);
+    console.error('Error deleting blog post via API:', error);
     return false;
   }
 }
 
 /**
- * Get posts by tag - tries server API first, falls back to client
+ * Get posts by tag from API
  */
 export async function getPostsByTag(tag: string): Promise<BlogPost[]> {
   try {
-    // Try server API first
-    try {
-      const response = await fetch(`${API_BASE}/blog?tag=${tag}`);
-
-      if (response.ok) {
-        const data = await response.json();
-        return data.success ? data.data : [];
+    const response = await fetch(`${API_BASE}/blog?tag=${tag}`);
+    if (response.ok) {
+      const data = await response.json();
+      if (data.success && Array.isArray(data.data)) {
+        return data.data.map(convertApiToBlogPost);
       }
-      // If server API fails, log error and continue with client-side fallback
-      console.warn('Server API failed, falling back to client-side API');
-    } catch (serverError) {
-      console.error('Server API error, falling back to client-side:', serverError);
     }
-
-    // Client-side fallback
-    if (!firestore) {
-      console.warn('Firestore not initialized, returning empty posts array for tag');
-      return [];
-    }
-
-    const blogQuery = query(
-      collection(firestore as Firestore, COLLECTION_NAME),
-      where('published', '==', true),
-      where('tags', 'array-contains', tag),
-      orderBy('publishedAt', 'desc')
-    );
+    throw new Error('API did not return success');
 
     const querySnapshot = await getDocs(blogQuery);
     return querySnapshot.docs.map(convertDocToBlogPost);
