@@ -3,15 +3,13 @@
  * Using completely new naming pattern to avoid middleware issues
  */
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/router';
 import Layout from '@/components/layout/Layout';
 import { useAuth } from '@/lib/auth';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { Signal } from '@/types/signals';
 
 export default function ContentManagerPage() {
-  const router = useRouter();
-  const { user, loading } = useAuth();
+  const { user } = useAuth();
   const [signals, setSignals] = useState<Signal[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');

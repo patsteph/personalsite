@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { auth as adminAuth, firestore } from '@/lib/firebase-admin';
+// Removed adminAuth and Firestore import. Use server-side API or remove logic.
 import { validateAuthToken } from '@/lib/api/server-auth';
 
 type MeResponse = {
@@ -55,14 +55,20 @@ export default async function handler(
         });
       }
       
-      // Get user record from Firebase Auth
-      const userRecord = await adminAuth.getUser(uid);
+      // TODO: Replace with server-side API call to fetch user info
+      // Stubbed user info for now
+      const userRecord = {
+        uid,
+        email: '',
+        displayName: undefined,
+        photoURL: undefined,
+      };
       debugInfo = { ...debugInfo, uid, email: userRecord.email };
       
-      // Check admin status
-      const adminDoc = await firestore.collection('admins').doc(uid).get();
-      const isAdmin = adminDoc.exists;
-      debugInfo = { ...debugInfo, isAdmin, adminDocExists: adminDoc.exists };
+      // TODO: Replace with server-side API call to check admin status
+      // Stubbed admin status for now
+      const isAdmin = false;
+      debugInfo = { ...debugInfo, isAdmin };
       
       // Return user info with admin status
       return res.status(200).json({

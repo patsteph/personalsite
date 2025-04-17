@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { firestore } from '@/lib/firebase-admin';
+// Removed Firestore import. Use server-side API or remove logic.
 
 type SignOutResponse = {
   success: boolean;
@@ -25,22 +25,9 @@ export default async function handler(
     
     if (token) {
       try {
-        // Remove token from Firestore
-        const tokenQuery = await firestore.collection('admin_tokens')
-          .where('token', '==', token)
-          .get();
-        
-        if (!tokenQuery.empty) {
-          // Delete all matching tokens
-          const batch = firestore.batch();
-          tokenQuery.docs.forEach(doc => {
-            batch.delete(doc.ref);
-          });
-          await batch.commit();
-          console.log('Tokens removed from Firestore during signout');
-        }
+        // TODO: Invalidate token via server-side API call. Firestore logic removed.
       } catch (error) {
-        console.error('Error removing token from Firestore:', error);
+        console.error('Error invalidating token:', error);
       }
     }
     

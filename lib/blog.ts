@@ -1,7 +1,8 @@
 /**
  * Blog module - Re-exports functions from the API layer for backward compatibility
  */
-import { blog as blogApi } from './api';
+import api from './api';
+const blogApi = api.blog;
 import { BlogPost } from '@/types/blog';
 
 // Re-export all functions from blog API

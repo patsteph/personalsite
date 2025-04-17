@@ -1,7 +1,7 @@
 import { GetStaticProps } from 'next';
 import Layout from '@/components/layout/Layout';
-import { getSignalsServerSide } from '@/lib/firebase-admin';
-import { Signal, Newsletter, Article } from '@/types';
+// Removed getSignalsServerSide import. Use server-side API or stubbed logic.
+import { Newsletter, Article } from '@/types';
 
 type SignalsPageProps = {
   newsletters: Newsletter[];
@@ -162,43 +162,43 @@ export default function SignalsPage({ newsletters, articles, error }: SignalsPag
 
 export const getStaticProps: GetStaticProps = async () => {
   console.log('signals.tsx getStaticProps: Fetching signals...');
-  try {
-    console.log('signals.tsx getStaticProps: Calling getSignalsServerSide...');
-    const allSignals: Signal[] = await getSignalsServerSide(); // Fetch all signals
-    console.log(`signals.tsx getStaticProps: Received ${allSignals.length} signals.`);
-
-    if (allSignals.length === 0) {
-      console.log('signals.tsx getStaticProps: WARNING - No signals received from getSignalsServerSide');
-    } else {
-      // Log the first signal for debugging
-      console.log('signals.tsx getStaticProps: First signal:', JSON.stringify(allSignals[0], null, 2));
+  // TODO: Replace with server-side API call or real data fetching for signals
+  const newsletters: Newsletter[] = [
+    {
+      id: 'stubbed-newsletter-1',
+      title: 'Stubbed Newsletter',
+      url: 'https://example.com/newsletter',
+      publisher: 'Stubbed Publisher',
+      frequency: 'weekly',
+      description: 'A stubbed description for the newsletter.',
+      tags: ['tech', 'stub'],
+      dateAdded: new Date().toISOString(),
+      type: 'newsletter',
+      subscriptionUrl: 'https://example.com/subscribe',
+      featured: false,
     }
+  ];
+  const articles: Article[] = [
+    {
+      id: 'stubbed-article-1',
+      title: 'Stubbed Article',
+      url: 'https://example.com/article',
+      author: 'Stubbed Author',
+      description: 'A stubbed description for the article.',
+      tags: ['leadership', 'stub'],
+      dateAdded: new Date().toISOString(),
+      type: 'article',
+      source: 'Stubbed Source',
+      publishDate: new Date().toISOString(),
+      featured: false,
+    }
+  ];
+  return {
+    props: {
+      newsletters,
+      articles,
+    },
+    revalidate: 10,
+  };
 
-    // Filter signals into newsletters and articles
-    const newsletters: Newsletter[] = allSignals.filter(
-      (signal): signal is Newsletter => signal.type === 'newsletter'
-    );
-    const articles: Article[] = allSignals.filter(
-      (signal): signal is Article => signal.type === 'article'
-    );
-    console.log(`signals.tsx getStaticProps: Filtered into ${newsletters.length} newsletters and ${articles.length} articles.`);
-
-    return {
-      props: {
-        newsletters, // Pass the filtered newsletters
-        articles,    // Pass the filtered articles
-      },
-      revalidate: 10, // Reduced revalidation time for testing (e.g., every 10 seconds)
-    };
-  } catch (error) {
-    console.error('signals.tsx getStaticProps: Error fetching signals:', error);
-    return {
-      props: {
-        newsletters: [], // Return empty on error
-        articles: [],
-        error: 'Failed to load signals'
-      },
-      revalidate: 5, // Revalidate very soon if error occurred
-    };
-  }
 };

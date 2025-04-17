@@ -7,13 +7,10 @@
 import { BlogPost } from '@/types/blog';
 import { getCurrentUserToken } from './auth';
 
-const API_BASE = '/api';
-import { BlogPost } from '@/types/blog';
-import { getCurrentUserToken } from './auth';
-
-// Firestore collection name
-const COLLECTION_NAME = 'blog-posts';
-const API_BASE = '/api';
+// Determine API base URL based on environment
+const API_BASE = typeof window === 'undefined' 
+  ? process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000' // Server-side needs full URL
+  : ''; // Client-side uses relative path starting with /api
 
 /**
  * Convert Firestore document to BlogPost type
@@ -30,9 +27,9 @@ function convertApiToBlogPost(data: any): BlogPost {
     coverImage: data.coverImage || '',
     tags: data.tags || [],
     published: data.published || false,
-    publishedAt: data.publishedAt?.toDate() || null,
-    createdAt: data.createdAt?.toDate() || new Date(),
-    updatedAt: data.updatedAt?.toDate() || new Date(),
+    publishedAt: data.publishedAt || null,
+    createdAt: data.createdAt || new Date().toISOString(),
+    updatedAt: data.updatedAt || new Date().toISOString(),
   };
 }
 
@@ -41,7 +38,7 @@ function convertApiToBlogPost(data: any): BlogPost {
  */
 export async function getPublishedPosts(maxPosts?: number): Promise<BlogPost[]> {
   try {
-    const response = await fetch(`${API_BASE}/blog?published=true${maxPosts ? `&limit=${maxPosts}` : ''}`);
+    const response = await fetch(`${API_BASE}/api/blog?published=true${maxPosts ? `&limit=${maxPosts}` : ''}`);
     if (response.ok) {
       const data = await response.json();
       if (data.success && Array.isArray(data.data)) {
@@ -61,7 +58,7 @@ export async function getPublishedPosts(maxPosts?: number): Promise<BlogPost[]> 
 export async function getAllPosts(): Promise<BlogPost[]> {
   try {
     const token = await getCurrentUserToken();
-    const response = await fetch(`${API_BASE}/blog?admin=true`, {
+    const response = await fetch(`${API_BASE}/api/blog?admin=true`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -86,7 +83,7 @@ export async function getAllPosts(): Promise<BlogPost[]> {
  */
 export async function getPostBySlug(slug: string): Promise<BlogPost | null> {
   try {
-    const response = await fetch(`${API_BASE}/blog?slug=${slug}`);
+    const response = await fetch(`${API_BASE}/api/blog?slug=${slug}`);
     if (response.ok) {
       const data = await response.json();
       if (data.success && data.data) {
@@ -106,7 +103,7 @@ export async function getPostBySlug(slug: string): Promise<BlogPost | null> {
 export async function addBlogPost(post: Omit<BlogPost, 'id' | 'createdAt' | 'updatedAt'>): Promise<BlogPost | null> {
   try {
     const token = await getCurrentUserToken();
-    const response = await fetch(`${API_BASE}/blog`, {
+    const response = await fetch(`${API_BASE}/api/blog`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -133,7 +130,7 @@ export async function addBlogPost(post: Omit<BlogPost, 'id' | 'createdAt' | 'upd
 export async function updateBlogPost(id: string, post: Partial<BlogPost>): Promise<boolean> {
   try {
     const token = await getCurrentUserToken();
-    const response = await fetch(`${API_BASE}/blog?id=${id}`, {
+    const response = await fetch(`${API_BASE}/api/blog?id=${id}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -158,7 +155,7 @@ export async function updateBlogPost(id: string, post: Partial<BlogPost>): Promi
 export async function deleteBlogPost(id: string): Promise<boolean> {
   try {
     const token = await getCurrentUserToken();
-    const response = await fetch(`${API_BASE}/blog?id=${id}`, {
+    const response = await fetch(`${API_BASE}/api/blog?id=${id}`, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
@@ -181,7 +178,7 @@ export async function deleteBlogPost(id: string): Promise<boolean> {
  */
 export async function getPostsByTag(tag: string): Promise<BlogPost[]> {
   try {
-    const response = await fetch(`${API_BASE}/blog?tag=${tag}`);
+    const response = await fetch(`${API_BASE}/api/blog?tag=${tag}`);
     if (response.ok) {
       const data = await response.json();
       if (data.success && Array.isArray(data.data)) {
@@ -189,11 +186,8 @@ export async function getPostsByTag(tag: string): Promise<BlogPost[]> {
       }
     }
     throw new Error('API did not return success');
-
-    const querySnapshot = await getDocs(blogQuery);
-    return querySnapshot.docs.map(convertDocToBlogPost);
   } catch (error) {
-    console.error(`API: Error fetching blog posts with tag ${tag}:`, error);
+    console.error('Error fetching posts by tag from API:', error);
     return [];
   }
 }

@@ -9,7 +9,7 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import { Signal, Newsletter, Article } from '@/types/signals';
 
 export default function ContentItemsPage() {
-  const { user, loading } = useAuth();
+  const { user } = useAuth();
   const [signals, setSignals] = useState<Signal[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');

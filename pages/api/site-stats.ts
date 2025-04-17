@@ -1,6 +1,36 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { firestore } from '@/lib/firebase-admin';
-import * as admin from 'firebase-admin';
+import { initializeAdminApp, getAdminFirestore } from '@/lib/firebase-admin';
+import { FieldValue, Timestamp } from 'firebase-admin/firestore';
+
+// Initialize Firebase Admin
+initializeAdminApp();
+const db = getAdminFirestore();
+
+const STATS_COLLECTION = 'site-stats'; // Corrected collection name
+const STATS_DOC_ID = 'stats';
+
+// Define a default structure for stats if the document doesn't exist
+const defaultStats = {
+  totalVisits: 0,
+  pageVisits: { // Example specific page counters
+    home: 0,
+    blog: 0,
+    books: 0,
+    contact: 0,
+    // Add more specific pages if needed
+  },
+  totalBlogPostVisits: 0, // Aggregate count for all blog posts
+  feedbackCount: 0,
+  reactions: { 
+    // Add specific reaction types as needed
+    thumbsUp: 0,
+    celebrate: 0,
+    insightful: 0,
+    meh: 0,
+    total: 0 // Sum of all reaction types
+  },
+  lastUpdated: null // Or Timestamp.now() on update
+};
 
 type SiteStatsResponse = {
   success: boolean;
@@ -14,232 +44,115 @@ export default async function handler(
   res: NextApiResponse<SiteStatsResponse>
 ) {
   console.log('Site Stats API received', req.method, 'request');
+  const statsDocRef = db.collection(STATS_COLLECTION).doc(STATS_DOC_ID);
   
-  // GET request to fetch site stats
+  // --- GET Request: Fetch Site Stats --- 
   if (req.method === 'GET') {
     try {
-      const statsRef = firestore.collection('site-stats').doc('global');
-      const statsSnapshot = await statsRef.get();
-      
-      if (statsSnapshot.exists) {
-        return res.status(200).json({
-          success: true,
-          data: statsSnapshot.data()
-        });
-      } else {
-        // Return empty stats if document doesn't exist
-        return res.status(200).json({
-          success: true,
-          data: {
-            visits: 0,
-            blogVisits: 0,
-            bookVisits: 0,
-            contactVisits: 0,
-            feedbackCount: 0,
-            reactions: {
-              thumbsUp: 0,
-              celebrate: 0,
-              insightful: 0,
-              meh: 0,
-              total: 0
+        console.log('Site Stats API: Processing GET request.');
+        const docSnap = await statsDocRef.get();
+
+        if (docSnap.exists) {
+            console.log('Site Stats API: Found stats document.');
+            const data = docSnap.data()!;
+            // Convert timestamp if needed, though might not be necessary for frontend
+            if (data.lastUpdated instanceof Timestamp) {
+                data.lastUpdated = data.lastUpdated.toDate().toISOString();
             }
-          }
-        });
-      }
-    } catch (error) {
-      console.error('Error fetching site stats:', error);
-      return res.status(500).json({
-        success: false,
-        error: `Error fetching site stats: ${error instanceof Error ? error.message : 'Unknown error'}`
-      });
+            return res.status(200).json({ success: true, data });
+        } else {
+            console.log('Site Stats API: Stats document not found, returning defaults.');
+            // Return default stats if document doesn't exist
+            return res.status(200).json({ success: true, data: defaultStats });
+        }
+    } catch (error: any) {
+        console.error('Site Stats API GET error:', error);
+        return res.status(500).json({ success: false, error: `Internal server error getting stats: ${error.message}` });
     }
   }
   
-  // POST request to track various site interactions
+  // --- POST Request: Track Site Interactions --- 
   if (req.method === 'POST') {
     try {
-      const { action, type, details } = req.body;
-      
-      if (!action) {
-        return res.status(400).json({
-          success: false,
-          error: 'Missing required field: action'
-        });
-      }
-      
-      // Reference to the stats document
-      const statsRef = firestore.collection('site-stats').doc('global');
-      const statsSnapshot = await statsRef.get();
-      
-      // Different actions to track
-      if (action === 'visit') {
-        // Track general site visit
-        if (statsSnapshot.exists) {
-          await statsRef.update({
-            'visits': admin.firestore.FieldValue.increment(1),
-            'lastVisit': admin.firestore.FieldValue.serverTimestamp(),
-            'lastUpdated': admin.firestore.FieldValue.serverTimestamp()
-          });
-        } else {
-          // Create new stats document
-          await statsRef.set({
-            'visits': 1,
-            'blogVisits': 0,
-            'bookVisits': 0,
-            'contactVisits': 0,
-            'feedbackCount': 0,
-            'lastVisit': admin.firestore.FieldValue.serverTimestamp(),
-            'lastUpdated': admin.firestore.FieldValue.serverTimestamp(),
-            'reactions': {
-              'thumbsUp': 0,
-              'celebrate': 0,
-              'insightful': 0,
-              'meh': 0,
-              'total': 0
-            }
-          });
+        console.log('Site Stats API: Processing POST request with body:', req.body);
+        const { action, ...payload } = req.body;
+
+        if (!action || typeof action !== 'string') {
+            return res.status(400).json({ success: false, error: 'Missing or invalid required field: action (string)' });
         }
-      } else if (action === 'pageView' && type) {
-        // Track specific page type views (blog, books, etc.)
-        if (statsSnapshot.exists) {
-          const updateField = `${type}Visits`;
-          const updateObj: Record<string, any> = {
-            'lastUpdated': admin.firestore.FieldValue.serverTimestamp()
-          };
-          updateObj[updateField] = admin.firestore.FieldValue.increment(1);
-          
-          await statsRef.update(updateObj);
-        } else {
-          // Create new stats document with the specific page type
-          const initialData: Record<string, any> = {
-            'visits': 0,
-            'blogVisits': 0,
-            'bookVisits': 0,
-            'contactVisits': 0,
-            'feedbackCount': 0,
-            'lastUpdated': admin.firestore.FieldValue.serverTimestamp(),
-            'reactions': {
-              'thumbsUp': 0,
-              'celebrate': 0,
-              'insightful': 0,
-              'meh': 0,
-              'total': 0
-            }
-          };
-          initialData[`${type}Visits`] = 1;
-          
-          await statsRef.set(initialData);
+
+        const increment = FieldValue.increment(1);
+        let updateData: { [key: string]: any } = { 
+            lastUpdated: FieldValue.serverTimestamp() // Update timestamp on any tracked action
+        };
+
+        switch (action) {
+            case 'trackPageVisit':
+                // Increment total visits
+                updateData['totalVisits'] = increment;
+                // Increment specific page counter if provided and valid
+                if (payload.page && typeof payload.page === 'string') {
+                    // Sanitize page key (e.g., replace '/' with '_' or use a map)
+                    // Simple example: use predefined keys like 'home', 'blog', 'books'
+                    const pageKey = payload.page.replace('/', '') || 'home'; // Treat '/' as 'home'
+                    if (defaultStats.pageVisits.hasOwnProperty(pageKey)) {
+                         updateData[`pageVisits.${pageKey}`] = increment;
+                         console.log(`Site Stats API: Incrementing pageVisits.${pageKey}`);
+                    } else {
+                        console.warn(`Site Stats API: Unknown page key for tracking: ${pageKey}`);
+                    }
+                } else if (payload.isBlogPost) {
+                    // Specific handling for blog posts if needed
+                    updateData['totalBlogPostVisits'] = increment;
+                    console.log(`Site Stats API: Incrementing totalBlogPostVisits`);
+                } else {
+                     console.warn(`Site Stats API: trackPageVisit called without valid 'page' or 'isBlogPost' flag.`);
+                }
+                break;
+
+            case 'trackReaction':
+                if (payload.type && typeof payload.type === 'string' && defaultStats.reactions.hasOwnProperty(payload.type)) {
+                    updateData[`reactions.${payload.type}`] = increment;
+                    updateData['reactions.total'] = increment; // Also increment total reactions
+                    console.log(`Site Stats API: Incrementing reactions.${payload.type} and reactions.total`);
+                } else {
+                    console.warn(`Site Stats API: trackReaction called with invalid or missing 'type': ${payload.type}`);
+                    // Don't fail the request, just log a warning
+                    return res.status(200).json({ success: true, message: `Action '${action}' processed, but reaction type invalid or missing.` });
+                }
+                break;
+            
+            case 'trackFeedbackSubmission':
+                updateData['feedbackCount'] = increment;
+                console.log(`Site Stats API: Incrementing feedbackCount`);
+                break;
+
+            // Add more actions as needed
+
+            default:
+                console.warn(`Site Stats API: Unknown action received: ${action}`);
+                return res.status(400).json({ success: false, error: `Unknown action: ${action}` });
         }
-      } else if (action === 'userAction') {
-        // Track user interactions (generic)
-        console.log('Tracking user action:', type, details);
-        
-        // Log the action to a user-actions collection for detailed tracking
-        await firestore.collection('user-actions').add({
-          type,
-          details,
-          timestamp: admin.firestore.FieldValue.serverTimestamp()
-        });
-        
-      } else if (action === 'bookInteraction') {
-        // Track book-specific interactions
-        console.log('Tracking book interaction:', details);
-        
-        // Increment book-specific counters
-        if (details?.interactionType === 'search') {
-          // Track searches in book-stats
-          const bookStatsRef = firestore.collection('book-stats').doc('global');
-          const bookStatsSnapshot = await bookStatsRef.get();
-          
-          if (bookStatsSnapshot.exists) {
-            await bookStatsRef.update({
-              'searchCount': admin.firestore.FieldValue.increment(1),
-              'lastUpdated': admin.firestore.FieldValue.serverTimestamp()
-            });
-          } else {
-            await bookStatsRef.set({
-              'searchCount': 1,
-              'filterCount': 0,
-              'lastUpdated': admin.firestore.FieldValue.serverTimestamp()
-            });
-          }
-        } else if (details?.interactionType === 'filter') {
-          // Track filters in book-stats
-          const bookStatsRef = firestore.collection('book-stats').doc('global');
-          const bookStatsSnapshot = await bookStatsRef.get();
-          
-          if (bookStatsSnapshot.exists) {
-            await bookStatsRef.update({
-              'filterCount': admin.firestore.FieldValue.increment(1),
-              'lastUpdated': admin.firestore.FieldValue.serverTimestamp()
-            });
-          } else {
-            await bookStatsRef.set({
-              'searchCount': 0,
-              'filterCount': 1,
-              'lastUpdated': admin.firestore.FieldValue.serverTimestamp()
-            });
-          }
-        } else if (details?.interactionType === 'detail' && details?.book_id) {
-          // Track book detail views
-          const bookRef = firestore.collection('books').doc(details.book_id);
-          await bookRef.update({
-            'detailViews': admin.firestore.FieldValue.increment(1),
-            'lastViewed': admin.firestore.FieldValue.serverTimestamp()
-          });
-        }
-        
-        // Log all book interactions for detailed analysis
-        await firestore.collection('book-interactions').add({
-          ...details,
-          timestamp: admin.firestore.FieldValue.serverTimestamp()
-        });
-        
-      } else if (action === 'blogInteraction') {
-        // Track blog-specific interactions
-        console.log('Tracking blog interaction:', details);
-        
-        // Log all blog interactions for detailed analysis
-        await firestore.collection('blog-interactions').add({
-          ...details,
-          timestamp: admin.firestore.FieldValue.serverTimestamp()
-        });
-        
-      } else if (action === 'contactInteraction') {
-        // Track contact-specific interactions
-        console.log('Tracking contact interaction:', details);
-        
-        // Increment the contactVisits counter in global stats
-        if (statsSnapshot.exists) {
-          await statsRef.update({
-            'contactVisits': admin.firestore.FieldValue.increment(1),
-            'lastUpdated': admin.firestore.FieldValue.serverTimestamp()
-          });
-        }
-        
-        // Log all contact interactions for detailed analysis
-        await firestore.collection('contact-interactions').add({
-          ...details,
-          timestamp: admin.firestore.FieldValue.serverTimestamp()
-        });
-      }
-      
-      return res.status(200).json({
-        success: true,
-        message: `${action} tracked successfully`
-      });
-    } catch (error) {
-      console.error('Error tracking site stats:', error);
-      return res.status(500).json({
-        success: false,
-        error: `Error tracking site stats: ${error instanceof Error ? error.message : 'Unknown error'}`
-      });
+
+        // Atomically update the document, creating it if it doesn't exist
+        console.log('Site Stats API: Updating stats document with:', updateData);
+        await statsDocRef.set(updateData, { merge: true });
+        console.log('Site Stats API: Stats document updated successfully.');
+
+        return res.status(200).json({ success: true, message: `Action '${action}' processed successfully.` });
+
+    } catch (error: any) {
+        console.error('Site Stats API POST error:', error);
+        // Check for specific Firestore errors if necessary
+        return res.status(500).json({ success: false, error: `Internal server error processing action: ${error.message}` });
     }
   }
   
-  // Handle other HTTP methods
+  // --- Method Not Allowed --- 
+  console.log(`Site Stats API: Method ${req.method} not allowed.`);
+  res.setHeader('Allow', ['GET', 'POST']); // Only allow GET and POST
   return res.status(405).json({
     success: false,
-    error: `Method ${req.method} not allowed`
+    error: `Method ${req.method} Not Allowed`
   });
 }

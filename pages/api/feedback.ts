@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { firestore } from '@/lib/firebase-admin';
+// Removed Firestore import. Use server-side API or stubbed logic.
 
 type FeedbackResponse = {
   success: boolean;
@@ -10,8 +10,6 @@ type FeedbackResponse = {
 type FeedbackData = {
   category: string;
   feedback: string;
-  page: string;
-  timestamp: string;
 };
 
 export default async function handler(
@@ -27,7 +25,7 @@ export default async function handler(
   }
 
   try {
-    const { category, feedback, page, timestamp } = req.body as FeedbackData;
+    const { category, feedback } = req.body as FeedbackData;
     
     // Validate required fields
     if (!category || !feedback) {
@@ -37,18 +35,11 @@ export default async function handler(
       });
     }
     
-    // Store in Firestore
-    await firestore.collection('feedback').add({
-      category,
-      feedback,
-      page: page || 'unknown',
-      timestamp: timestamp || new Date().toISOString(),
-      status: 'new',
-    });
-
+    // TODO: Replace with server-side API call to store feedback
+    // Placeholder: Simulate successful feedback submission
     return res.status(200).json({ 
       success: true, 
-      message: 'Feedback submitted successfully' 
+      message: 'Feedback submitted successfully (stub)' 
     });
   } catch (error: any) {
     console.error('Error processing feedback:', error);

@@ -1,5 +1,5 @@
-import { Book, BookSearchResult, BookStatus } from '@/types/book';
-import { auth } from '@/lib/firebase';
+import { Book, BookSearchResult } from '@/types/book';
+
 
 // Get authentication token
 const getAuthToken = async (): Promise<string | null> => {

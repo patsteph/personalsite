@@ -5,17 +5,10 @@
  * Server-side modules should be imported directly, not through this index.
  */
 
-// Re-export all functions from auth API
-export * as auth from './auth';
-
-// Re-export all functions from books API
-export * as books from './books';
-
-// Re-export all functions from blog API
-export * as blog from './blog';
-
-// Re-export all functions from signals API
-export * as signals from './signals';
+import * as auth from './auth';
+import * as books from './books';
+import * as blog from './blog';
+import * as signals from './signals';
 
 /**
  * Helper to get API URL - ensures we use relative URLs during development
@@ -43,10 +36,10 @@ export function getApiUrl(path: string): string {
 
 // Main API object for convenience (only include client-side modules)
 const api = {
-  auth: require('./auth'),
-  books: require('./books'),
-  blog: require('./blog'),
-  signals: require('./signals'),
+  auth,
+  books,
+  blog,
+  signals,
   getApiUrl
 };
 

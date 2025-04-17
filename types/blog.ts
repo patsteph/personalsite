@@ -19,9 +19,9 @@ export type BlogPost = {
   coverImage?: string;
   tags?: string[];
   published?: boolean;
-  publishedAt?: Date | null;
-  createdAt?: Date;
-  updatedAt?: Date;
+  publishedAt?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
   readingTime?: number;
   reactions?: Reactions;
   visits?: number;

@@ -141,10 +141,12 @@ export default function BlogEditor({ initialPost, onSave }: BlogEditorProps) {
     setIsSubmitting(true);
     
     try {
-      // If post is being published for the first time, set publishedAt
+      // If post is being published for the first time, set publishedAt to ISO string
       const postToSave = {
         ...post,
-        publishedAt: post.published && !post.publishedAt ? new Date() : post.publishedAt
+        publishedAt: post.published && !post.publishedAt 
+          ? new Date().toISOString() // Convert to ISO string
+          : post.publishedAt
       };
       
       await onSave(postToSave);

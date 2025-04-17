@@ -1,4 +1,6 @@
-import { getBasePath } from './firebase';
+
+
+import { basePath } from './config';
 
 type RuntimeConfig = {
   basePath: string;
@@ -7,7 +9,7 @@ type RuntimeConfig = {
 
 export function getConfig(): RuntimeConfig {
   return {
-    basePath: getBasePath(),
+    basePath: basePath,
     isProduction: process.env.NODE_ENV === 'production'
   };
 }

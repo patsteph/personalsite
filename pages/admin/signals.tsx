@@ -9,7 +9,7 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import SignalForm from '@/components/admin/SignalForm';
 import { Signal, Newsletter, Article } from '@/types';
 import { Signal as ApiSignal } from '@/lib/api/signals';
-import * as api from '@/lib/api';
+import api from '@/lib/api';
 
 interface SignalsAdminPageProps {
   signals: Signal[];

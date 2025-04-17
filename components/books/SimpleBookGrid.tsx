@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Book, BookStatus } from '@/types/book';
+import { Book } from '@/types/book';
 // Next Image import not used - using standard HTML img tags
 // Import Firebase modules directly at the top level
 import { getBooks } from '@/lib/books';

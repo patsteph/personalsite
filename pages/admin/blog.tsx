@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic';
 import Layout from '@/components/layout/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { BlogPost } from '@/types/blog';
-import * as api from '@/lib/api';
+import api from '@/lib/api';
 
 // Dynamically import the blog editor to reduce initial load size
 const BlogEditor = dynamic(() => import('@/components/admin/BlogEditor'), {
@@ -150,12 +150,29 @@ export default function AdminBlogPage() {
   });
   
   // Format date for display
-  const formatDate = (date: Date | undefined) => {
-    if (!date) return 'N/A';
-    return new Date(date).toLocaleDateString('en-US', {
+  const formatDate = (dateInput: string | Date | undefined | null): string => {
+    if (!dateInput) return 'N/A';
+    
+    let date: Date;
+    try {
+      // Attempt to parse the input as a Date
+      // Strings should be in ISO format, Date objects are used directly
+      date = new Date(dateInput);
+      
+      // Check if the date is valid after parsing
+      if (isNaN(date.getTime())) {
+        console.warn(`formatDate received an invalid date input: ${dateInput}`);
+        return 'Invalid Date';
+      }
+    } catch (e) {
+      console.error(`Error parsing date in formatDate: ${dateInput}`, e);
+      return 'Invalid Date';
+    }
+    
+    return date.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
-      day: 'numeric'
+      day: 'numeric',
     });
   };
   
@@ -327,16 +344,14 @@ export default function AdminBlogPage() {
                               </div>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
-                              <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                post.published
-                                  ? 'bg-green-100 text-green-800'
-                                  : 'bg-yellow-100 text-yellow-800'
-                              }`}>
+                              <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${post.published ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'} `}>
                                 {post.published ? 'Published' : 'Draft'}
                               </span>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                              {post.published ? formatDate(post.publishedAt as Date) : 'Not published'}
+                              {post.published && (
+                                <div className="text-xs text-gray-400 mt-1">
+                                  {formatDate(post.publishedAt)}
+                                </div>
+                              )}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                               {formatDate(post.updatedAt)}

@@ -1,7 +1,7 @@
 import { GetStaticProps } from 'next';
 import Layout from '@/components/layout/Layout';
 import BlogList from '@/components/blog/BlogList';
-import { getBlogPostsServerSide } from '@/lib/firebase-admin';
+// Removed getBlogPostsServerSide import. Use server-side API or stubbed logic.
 import { BlogPost } from '@/types/blog';
 import { useTranslation } from '@/lib/translations';
 
@@ -32,25 +32,25 @@ export default function BlogPage({ posts }: BlogPageProps) {
 
 // Fetch data at build time
 export const getStaticProps: GetStaticProps<BlogPageProps> = async () => {
-  try {
-    const posts = await getBlogPostsServerSide(); 
-    
-    // Filter for published posts only before passing to the page
-    const publishedPosts = posts.filter(post => post.published);
-
-    return {
-      props: {
-        posts: publishedPosts, // Pass only published posts
-      },
-      revalidate: 60, // Revalidate every minute
-    };
-  } catch (error) {
-    console.error('Error fetching blog posts:', error);
-    return {
-      props: {
-        posts: [], // Return empty on error
-      },
-      revalidate: 30, // Revalidate after 30 seconds on error
-    };
-  }
+  // TODO: Replace with server-side API call or real data fetching
+  const posts: BlogPost[] = [
+    {
+      id: 'stubbed-post-1',
+      title: 'Stubbed Blog Post',
+      slug: 'stubbed-blog-post',
+      content: 'This is a stubbed blog post content.',
+      published: true,
+      publishedAt: new Date().toISOString(),
+      author: 'Stubbed Author',
+      tags: ['stub'],
+      coverImage: '',
+      summary: 'This is a stubbed summary for the blog post.',
+    }
+  ];
+  return {
+    props: {
+      posts,
+    },
+    revalidate: 60,
+  };
 };

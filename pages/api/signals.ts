@@ -1,202 +1,254 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { getAdminFirestore, getFirebaseAuth } from '../../lib/firebase-admin';
+import { initializeAdminApp, getAdminFirestore } from '@/lib/firebase-admin'; // Using alias
+import { Timestamp, QueryDocumentSnapshot, DocumentData } from 'firebase-admin/firestore';
+import { getAuth } from 'firebase-admin/auth';
+
+// Initialize Firebase Admin
+initializeAdminApp();
+const db = getAdminFirestore();
+const auth = getAuth();
+
+const SIGNALS_COLLECTION = 'signals';
 
 type SignalResponse = {
   success: boolean;
-  data?: any;
+  data?: any; // Can be single signal or array
   error?: string;
-  socialShareResults?: Record<string, 'success' | 'error'>;
+  // socialShareResults might be handled separately or removed if not used by API
+  // socialShareResults?: Record<string, 'success' | 'error'>;
+}
+
+// Helper to convert Firestore doc data (with Timestamps) to API response format (with ISO strings)
+function convertFirestoreToApiResponse(docData: FirebaseFirestore.DocumentData): any {
+  const data = { ...docData };
+  for (const key in data) {
+    if (data[key] instanceof Timestamp) {
+      data[key] = data[key].toDate().toISOString();
+    }
+  }
+  return data;
+}
+
+// Helper to sanitize incoming data (undefined -> null)
+function sanitizeData(body: any): Record<string, any> {
+    return Object.entries(body).reduce((acc, [key, value]) => {
+        // Keep null values as null, convert undefined to null
+        acc[key] = value === undefined ? null : value;
+        return acc;
+    }, {} as Record<string, any>);
 }
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<SignalResponse>
 ) {
-  console.log('Signals API:', req.method, req.url);
+  console.log('Signals API received', req.method, 'request',
+    req.query ? `with query: ${JSON.stringify(req.query)}` : '',
+    req.body ? `with body: ${JSON.stringify(req.body)}` : ''
+  );
   
-  // Set CORS headers
+  // --- CORS Headers --- (Keep existing headers)
   res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Origin', '*'); // Adjust in production
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization');
   res.setHeader('Access-Control-Max-Age', '86400');
-  
-  // Initialize Firestore collection early to avoid potential initialization issues
-  console.log('Initializing signals collection');
-  const signalsCollection = getAdminFirestore().collection('signals');
 
-  switch (req.method) {
-    case 'OPTIONS':
-      // Handle CORS preflight
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+      console.log('Signals API: Handling OPTIONS preflight request.');
       return res.status(200).end();
+  }
 
-    case 'GET':
-      try {
-        console.log('Processing GET request for signals');
+  const signalsCollection = db.collection(SIGNALS_COLLECTION);
+
+  // --- Handle GET Requests (Publicly Accessible) --- 
+  if (req.method === 'GET') {
+    try {
+        console.log('Signals API: Processing GET request.');
         const { id, type } = req.query;
 
         if (id && typeof id === 'string') {
-          console.log(`Getting signal with ID: ${id}`);
-          const doc = await signalsCollection.doc(id).get();
-          if (!doc.exists) {
-            return res.status(404).json({ success: false, error: 'Signal not found' });
-          }
-          return res.status(200).json({ success: true, data: { id: doc.id, ...doc.data() } });
+            // Fetch single signal by ID
+            console.log(`Signals API: Fetching signal by ID: ${id}`);
+            const docRef = signalsCollection.doc(id);
+            const docSnap = await docRef.get();
+            if (docSnap.exists) {
+                console.log(`Signals API: Found signal ID: ${id}`);
+                return res.status(200).json({
+                    success: true,
+                    data: { id: docSnap.id, ...convertFirestoreToApiResponse(docSnap.data()!) }
+                });
+            } else {
+                console.log(`Signals API: Signal not found by ID: ${id}`);
+                return res.status(404).json({ success: false, error: 'Signal not found' });
+            }
         } else if (type && typeof type === 'string') {
-          console.log(`Getting signals with type: ${type}`);
-          const snapshot = await signalsCollection.where('type', '==', type).get();
-          const signals: any[] = [];
-          snapshot.forEach(doc => signals.push({ id: doc.id, ...doc.data() }));
-          return res.status(200).json({ success: true, data: signals });
+            // Fetch signals by type
+            console.log(`Signals API: Fetching signals by type: ${type}`);
+            // Consider adding ordering, e.g., .orderBy('createdAt', 'desc')
+            const querySnapshot = await signalsCollection.where('type', '==', type).get();
+            const signals = querySnapshot.docs.map((doc: QueryDocumentSnapshot<DocumentData>) => ({
+                id: doc.id,
+                ...convertFirestoreToApiResponse(doc.data())
+            }));
+            console.log(`Signals API: Found ${signals.length} signals of type: ${type}`);
+            return res.status(200).json({ success: true, data: signals });
         } else {
-          console.log('Getting all signals');
-          // Ensure Firestore index exists for dateAdded (desc)!
-          const snapshot = await signalsCollection.orderBy('dateAdded', 'desc').get();
-          const signals: any[] = [];
-          snapshot.forEach(doc => signals.push({ id: doc.id, ...doc.data() }));
-          return res.status(200).json({ success: true, data: signals });
+            // Fetch all signals
+            console.log('Signals API: Fetching all signals.');
+            // Consider adding ordering
+            const querySnapshot = await signalsCollection.get(); 
+            const signals = querySnapshot.docs.map((doc: QueryDocumentSnapshot<DocumentData>) => ({
+                id: doc.id,
+                ...convertFirestoreToApiResponse(doc.data())
+            }));
+            console.log(`Signals API: Found ${signals.length} total signals.`);
+            return res.status(200).json({ success: true, data: signals });
         }
-      } catch (error: any) {
-        console.error('API GET /signals error:', error);
-        // Specific check for index-related errors (requires more specific error code checking if available)
-        if (error.code === 'failed-precondition') {
-          console.error('API GET /signals: Possible missing Firestore index for orderBy clause.');
-          return res.status(500).json({ success: false, error: `Failed to get signals: ${error.message}. Check Firestore indexes.` });
-        }
-        return res.status(500).json({ success: false, error: `Failed to get signals: ${error.message}` });
-      }
-
-    case 'POST':
-    case 'PUT':
-    case 'DELETE':
-      // All mutating methods require authentication
-      try {
-        console.log(`Checking authentication for ${req.method} request`);
-        const authHeader = req.headers.authorization;
-
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
-          console.log('No valid authorization header found');
-          return res.status(401).json({ success: false, error: 'Unauthorized - No valid auth token' });
-        }
-
-        console.log(`API ${req.method} /signals: Attempting authentication...`);
-        const token = authHeader.split('Bearer ')[1];
-        await getFirebaseAuth().verifyIdToken(token);
-        console.log(`API ${req.method} /signals: Authentication successful`);
-      } catch (error: any) {
-        console.error(`API ${req.method} auth error:`, error);
-        return res.status(401).json({ success: false, error: `Authentication error: ${error.message}` });
-      }
-
-      // Proceed with method-specific logic after successful authentication
-      if (req.method === 'POST') {
-        try {
-          console.log('Processing POST request to create a signal');
-          const { shareToSocial, ...signalData } = req.body;
-          const sanitizedBody = Object.entries(signalData).reduce((acc, [key, value]) => {
-            acc[key] = value === undefined ? null : value;
-            return acc;
-          }, {} as Record<string, any>);
-
-          const now = new Date().toISOString();
-          const newSignalData = {
-            ...sanitizedBody,
-            dateAdded: now,
-            updatedAt: now
-          };
-
-          console.log('Adding signal with sanitized data', newSignalData);
-          const docRef = await signalsCollection.add(newSignalData);
-          console.log(`Signal created with ID: ${docRef.id}`);
-
-          let socialShareResults: Record<string, 'success' | 'error'> | undefined = undefined;
-          if (shareToSocial) {
-            socialShareResults = {};
-            // TODO: Implement actual social sharing logic
-            if (shareToSocial.linkedin) socialShareResults.linkedin = 'success';
-            if (shareToSocial.twitter) socialShareResults.twitter = 'success';
-            if (shareToSocial.bluesky) socialShareResults.bluesky = 'success';
-          }
-
-          return res.status(201).json({
-            success: true,
-            data: { id: docRef.id, ...newSignalData },
-            socialShareResults
-          });
-        } catch (error: any) {
-          console.error('API POST /signals error:', error);
-          return res.status(500).json({ success: false, error: `Failed to create signal: ${error.message}` });
-        }
-      } else if (req.method === 'PUT') {
-        try {
-          console.log('Processing PUT request to update a signal');
-          const { id, shareToSocial, ...signalData } = req.body;
-
-          if (!id) {
-            return res.status(400).json({ success: false, error: 'Signal ID is required for update' });
-          }
-
-          const sanitizedBody = Object.entries(signalData).reduce((acc, [key, value]) => {
-            acc[key] = value === undefined ? null : value;
-            return acc;
-          }, {} as Record<string, any>);
-
-          delete sanitizedBody.id; // Ensure ID isn't part of the update payload
-
-          const updateData = {
-            ...sanitizedBody,
-            updatedAt: new Date().toISOString()
-          };
-
-          await signalsCollection.doc(id).update(updateData);
-          console.log(`Signal with ID ${id} updated successfully`);
-
-          let socialShareResults: Record<string, 'success' | 'error'> | undefined = undefined;
-          if (shareToSocial) {
-            socialShareResults = {};
-            // TODO: Implement actual social sharing logic
-            if (shareToSocial.linkedin) socialShareResults.linkedin = 'success';
-            if (shareToSocial.twitter) socialShareResults.twitter = 'success';
-            if (shareToSocial.bluesky) socialShareResults.bluesky = 'success';
-          }
-
-          return res.status(200).json({
-            success: true,
-            data: { id, ...updateData },
-            socialShareResults
-          });
-        } catch (error: any) {
-          console.error('API PUT /signals error:', error);
-          return res.status(500).json({ success: false, error: `Failed to update signal: ${error.message}` });
-        }
-      } else if (req.method === 'DELETE') {
-        try {
-          console.log('Processing DELETE request');
-          const { id } = req.query;
-
-          if (!id || typeof id !== 'string') {
-            return res.status(400).json({ success: false, error: 'Signal ID is required in query params for delete' });
-          }
-
-          await signalsCollection.doc(id).delete();
-          console.log(`Signal with ID ${id} deleted successfully`);
-
-          return res.status(200).json({
-            success: true,
-            data: { message: 'Signal deleted successfully' }
-          });
-        } catch (error: any) {
-          console.error('API DELETE /signals error:', error);
-          return res.status(500).json({ success: false, error: `Failed to delete signal: ${error.message}` });
-        }
-      }
-      // Should not be reached if POST/PUT/DELETE
-      break;
-
-    default:
-      // If method is not OPTIONS, GET, POST, PUT, DELETE
-      console.log(`Method ${req.method} not allowed`);
-      res.setHeader('Allow', ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']);
-      return res.status(405).json({ success: false, error: `Method ${req.method} Not Allowed` });
+    } catch (error: any) {
+        console.error('Signals API GET error:', error);
+        return res.status(500).json({ success: false, error: `Internal server error getting signals: ${error.message}` });
+    }
   }
+
+  // --- Authentication Check for Mutating Methods (POST, PUT, DELETE) --- 
+  if (['POST', 'PUT', 'DELETE'].includes(req.method!)) {
+    try {
+        console.log(`Signals API: Checking authentication for ${req.method}.`);
+        const idToken = req.headers.authorization?.split('Bearer ')[1];
+        if (!idToken) {
+            console.log('Signals API: No token provided for mutation.');
+            return res.status(401).json({ success: false, error: 'No token provided' });
+        }
+        await auth.verifyIdToken(idToken);
+        console.log(`Signals API: Token verified for ${req.method}.`);
+    } catch (error: any) {
+        console.error(`Signals API auth error for ${req.method}:`, error.code, error.message);
+        if (error.code === 'auth/id-token-expired') {
+            return res.status(401).json({ success: false, error: 'Unauthorized - Token expired' });
+        }
+        return res.status(401).json({ success: false, error: 'Unauthorized - Invalid token' });
+    }
+  } 
+  // --- End Authentication Check ---
+
+  // --- Handle Authenticated POST --- 
+  if (req.method === 'POST') {
+    try {
+        console.log('Signals API: Handling POST request.');
+        const sanitizedBody = sanitizeData(req.body);
+        
+        // Basic validation (add more as needed)
+        if (!sanitizedBody.name || !sanitizedBody.type || !sanitizedBody.value) {
+            return res.status(400).json({ success: false, error: 'Missing required fields (name, type, value)' });
+        }
+
+        const now = Timestamp.now();
+        // Explicitly type to include potential 'id' and other fields from body
+        const signalData: { [key: string]: any } = {
+            ...sanitizedBody,
+            createdAt: now,
+            updatedAt: now,
+        };
+        delete signalData.id; // Firestore generates ID
+
+        console.log('Signals API: Adding document to Firestore:', signalData);
+        const docRef = await signalsCollection.add(signalData);
+        console.log('Signals API: Document added with ID:', docRef.id);
+
+        // Fetch and return the new document
+        const newDoc = await docRef.get();
+        if (!newDoc.exists) { 
+            console.error('Signals API: Failed to retrieve newly created signal document:', docRef.id);
+            return res.status(500).json({ success: false, error: 'Failed to retrieve signal after creation' });
+        }
+
+        return res.status(201).json({
+            success: true,
+            data: { id: newDoc.id, ...convertFirestoreToApiResponse(newDoc.data()!) }
+        });
+    } catch (error: any) {
+        console.error('Signals API POST error:', error);
+        return res.status(500).json({ success: false, error: `Internal server error creating signal: ${error.message}` });
+    }
+  }
+
+  // --- Handle Authenticated PUT --- 
+  if (req.method === 'PUT') {
+    try {
+        console.log('Signals API: Handling PUT request.');
+        const { id } = req.query;
+        if (!id || typeof id !== 'string') {
+            return res.status(400).json({ success: false, error: 'Signal ID is required in query parameters' });
+        }
+
+        const docRef = signalsCollection.doc(id);
+        const docSnap = await docRef.get();
+        if (!docSnap.exists) {
+            console.log(`Signals API: PUT failed, document not found: ${id}`);
+            return res.status(404).json({ success: false, error: 'Signal not found' });
+        }
+
+        const sanitizedBody = sanitizeData(req.body);
+        const updateData: { [key: string]: any } = { 
+            ...sanitizedBody,
+            updatedAt: Timestamp.now()
+        };
+        delete updateData.id;
+        delete updateData.createdAt;
+
+        console.log(`Signals API: Updating document ${id} with data:`, updateData);
+        await docRef.update(updateData);
+        console.log(`Signals API: Document ${id} updated successfully.`);
+
+        // Fetch and return the updated document
+        const updatedDoc = await docRef.get();
+        if (!updatedDoc.exists) { 
+           console.error(`Signals API: Signal document ${id} not found after update.`);
+           return res.status(404).json({ success: false, error: 'Signal not found after update' });
+        }
+
+        return res.status(200).json({
+            success: true,
+            data: { id: updatedDoc.id, ...convertFirestoreToApiResponse(updatedDoc.data()!) }
+        });
+    } catch (error: any) {
+        console.error(`Signals API PUT error for ID ${req.query.id}:`, error);
+        return res.status(500).json({ success: false, error: `Internal server error updating signal: ${error.message}` });
+    }
+  }
+
+  // --- Handle Authenticated DELETE --- 
+  if (req.method === 'DELETE') {
+    try {
+        console.log('Signals API: Handling DELETE request.');
+        const { id } = req.query;
+        if (!id || typeof id !== 'string') {
+            return res.status(400).json({ success: false, error: 'Signal ID is required in query parameters' });
+        }
+
+        const docRef = signalsCollection.doc(id);
+        const docSnap = await docRef.get();
+        if (!docSnap.exists) {
+            console.log(`Signals API: DELETE skipped, document not found: ${id}`);
+            return res.status(200).json({ success: true, data: { id, message: 'Already deleted or never existed' } });
+        }
+
+        console.log(`Signals API: Deleting document ${id}.`);
+        await docRef.delete();
+        console.log(`Signals API: Document ${id} deleted successfully.`);
+
+        return res.status(200).json({ success: true, data: { id } });
+    } catch (error: any) {
+        console.error(`Signals API DELETE error for ID ${req.query.id}:`, error);
+        return res.status(500).json({ success: false, error: `Internal server error deleting signal: ${error.message}` });
+    }
+  }
+
+  // --- Method Not Allowed --- 
+  // If we reach here, the method is not GET, POST, PUT, DELETE, or OPTIONS
+  console.log(`Signals API: Method ${req.method} not allowed.`);
+  res.setHeader('Allow', ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']);
+  return res.status(405).json({ success: false, error: `Method ${req.method} Not Allowed` });
 }

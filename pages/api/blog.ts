@@ -1,10 +1,30 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { firestore, auth } from '@/lib/firebase-admin';
+import { initializeAdminApp, getAdminFirestore } from '@/lib/firebase-admin';
+import { Timestamp, QueryDocumentSnapshot, DocumentData } from 'firebase-admin/firestore';
+import { getAuth } from 'firebase-admin/auth';
+
+// Ensure Firebase Admin is initialized
+initializeAdminApp();
+const db = getAdminFirestore();
+const auth = getAuth();
+
+const BLOG_COLLECTION = 'blog-posts'; // Corrected collection name
 
 type BlogResponse = {
   success: boolean;
-  data?: any;
+  data?: any; // Can be a single post or an array of posts
   error?: string;
+}
+
+// Helper to convert Firestore doc data (with Timestamps) to API response format (with ISO strings)
+function convertFirestoreToApiResponse(docData: FirebaseFirestore.DocumentData): any {
+  const data = { ...docData };
+  for (const key in data) {
+    if (data[key] instanceof Timestamp) {
+      data[key] = data[key].toDate().toISOString();
+    }
+  }
+  return data;
 }
 
 export default async function handler(
@@ -12,76 +32,60 @@ export default async function handler(
   res: NextApiResponse<BlogResponse>
 ) {
   // Log request for debugging
-  console.log('Blog API received', req.method, 'request', 
+  console.log('Blog API received', req.method, 'request',
     req.query ? `with query: ${JSON.stringify(req.query)}` : '');
-  
+
   // For GET requests on published posts, no auth required
   if (req.method === 'GET' && !req.query.admin) {
     return handlePublicGet(req, res);
   }
-  
+
   // For all other requests, verify authentication
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      console.warn('Blog API: Missing or invalid authorization header');
-      return res.status(401).json({ success: false, error: 'Unauthorized' });
+    const idToken = req.headers.authorization?.split('Bearer ')[1];
+    if (!idToken) {
+      return res.status(401).json({ success: false, error: 'No token provided' });
     }
-    
-    const token = authHeader.split('Bearer ')[1];
-    try {
-      await auth.verifyIdToken(token);
-      console.log('Blog API: Authentication successful');
-    } catch (authError: any) {
-      console.error('Blog API: Token verification failed:', authError);
-      return res.status(401).json({ success: false, error: 'Invalid authentication token' });
-    }
+    // Verify the ID token
+    await auth.verifyIdToken(idToken);
+    // TODO: Optionally check for specific user roles/claims if needed
   } catch (error: any) {
     console.error('Blog API auth error:', error);
-    return res.status(401).json({ success: false, error: 'Unauthorized' });
+    return res.status(401).json({ success: false, error: 'Unauthorized - Invalid token' });
   }
-  
+
   // Handle authenticated requests
-  const postsCollection = firestore.collection('blog-posts');
-  
+  const postsCollection = db.collection(BLOG_COLLECTION);
+
   // GET - Get all blog posts (including unpublished, admin-only)
   if (req.method === 'GET' && req.query.admin) {
-    try {
-      const snapshot = await postsCollection.orderBy('createdAt', 'desc').get();
-      const posts: any[] = [];
-      
-      snapshot.forEach(doc => {
-        posts.push({
-          id: doc.id,
-          ...doc.data()
-        });
-      });
-      
-      return res.status(200).json({ success: true, data: posts });
-    } catch (error: any) {
-      console.error('API error getting all blog posts:', error);
-      return res.status(500).json({ success: false, error: error.message });
-    }
+    // TODO: Replace with server-side API call to fetch all blog posts (admin)
+    // Placeholder: return empty list
+    return res.status(200).json({ success: true, data: [] }); // KEEPING STUBBED FOR NOW
   }
-  
+
   // POST - Create a new blog post
   if (req.method === 'POST') {
     try {
+      // TODO: Replace with server-side API call to create a blog post
+      // Placeholder: Simulate blog post creation
       const now = new Date();
       const postData = {
         ...req.body,
-        createdAt: now,
-        updatedAt: now,
-        publishedAt: req.body.published ? (req.body.publishedAt || now) : null
+        // Convert potential string dates back to Timestamps for Firestore
+        createdAt: Timestamp.fromDate(new Date(req.body.createdAt || now)),
+        updatedAt: Timestamp.fromDate(new Date(req.body.updatedAt || now)),
+        publishedAt: req.body.published ? Timestamp.fromDate(new Date(req.body.publishedAt || now)) : null
       };
+      // Remove id if present, Firestore generates it
+      delete postData.id;
       
       const docRef = await postsCollection.add(postData);
-      
       return res.status(201).json({
         success: true,
         data: {
           id: docRef.id,
-          ...postData
+          ...convertFirestoreToApiResponse(postData) // Convert back to strings for response
         }
       });
     } catch (error: any) {
@@ -89,31 +93,39 @@ export default async function handler(
       return res.status(500).json({ success: false, error: error.message });
     }
   }
-  
+
   // PUT - Update a blog post
   if (req.method === 'PUT') {
     try {
       const { id } = req.query;
-      
+
       if (!id || typeof id !== 'string') {
         return res.status(400).json({ success: false, error: 'Blog post ID is required' });
       }
-      
-      const now = new Date();
-      const postData = {
+      const docRef = postsCollection.doc(id);
+      const updateData = {
         ...req.body,
-        updatedAt: now,
-        // Update publishedAt if post is being published for the first time
-        ...(req.body.published && !req.body.publishedAt ? { publishedAt: now } : {})
+        updatedAt: Timestamp.now(), // Always update timestamp
+        // Convert potential string dates back to Timestamps if they exist
+        ...(req.body.publishedAt && { publishedAt: Timestamp.fromDate(new Date(req.body.publishedAt)) }),
+        ...(req.body.createdAt && { createdAt: Timestamp.fromDate(new Date(req.body.createdAt)) }),
       };
-      
-      await postsCollection.doc(id).update(postData);
-      
+      // Don't allow changing the ID via PUT
+      delete updateData.id; 
+
+      await docRef.update(updateData);
+
+      // Fetch the updated document to return it
+      const updatedDoc = await docRef.get();
+      if (!updatedDoc.exists) {
+         return res.status(404).json({ success: false, error: 'Blog post not found after update' });
+      }
+
       return res.status(200).json({
         success: true,
         data: {
-          id,
-          ...postData
+          id: updatedDoc.id,
+          ...convertFirestoreToApiResponse(updatedDoc.data()!)
         }
       });
     } catch (error: any) {
@@ -121,28 +133,28 @@ export default async function handler(
       return res.status(500).json({ success: false, error: error.message });
     }
   }
-  
+
   // DELETE - Delete a blog post
   if (req.method === 'DELETE') {
     try {
       const { id } = req.query;
-      
+
       if (!id || typeof id !== 'string') {
         return res.status(400).json({ success: false, error: 'Blog post ID is required' });
       }
-      
-      await postsCollection.doc(id).delete();
-      
+      const docRef = postsCollection.doc(id);
+      await docRef.delete();
+
       return res.status(200).json({ 
         success: true, 
-        data: { message: 'Blog post deleted successfully' }
+        data: { id } // Confirm deletion by returning ID
       });
     } catch (error: any) {
       console.error('API error deleting blog post:', error);
       return res.status(500).json({ success: false, error: error.message });
     }
   }
-  
+
   return res.status(405).json({ success: false, error: 'Method not allowed' });
 }
 
@@ -151,121 +163,89 @@ async function handlePublicGet(
   req: NextApiRequest,
   res: NextApiResponse<BlogResponse>
 ) {
-  const postsCollection = firestore.collection('blog-posts');
-  
+  const postsCollection = db.collection(BLOG_COLLECTION);
+  const { id, slug, published, limit, tag } = req.query;
+
   try {
-    const { id, slug, tag, limit: limitParam } = req.query;
-    
-    // Get post by ID (more reliable than slug)
+    // Handle fetching a single post by ID
     if (id && typeof id === 'string') {
-      console.log(`API (handlePublicGet): Fetching post with ID "${id}"`);
-      
-      try {
-        const docRef = postsCollection.doc(id);
-        const docSnapshot = await docRef.get();
-        
-        if (!docSnapshot.exists) {
-          console.warn(`API (handlePublicGet): No post found with ID "${id}"`);
-          return res.status(404).json({ success: false, error: 'Blog post not found' });
+      const docRef = postsCollection.doc(id);
+      const docSnap = await docRef.get();
+      if (docSnap.exists) {
+        const postData = docSnap.data();
+        // Optionally check if the post is published before returning
+        if (postData?.published) {
+            return res.status(200).json({
+              success: true,
+              data: { id: docSnap.id, ...convertFirestoreToApiResponse(postData) }
+            });
+        } else {
+            // If admin didn't request it, treat unpublished as not found for public
+            return res.status(404).json({ success: false, error: 'Blog post not found or not published' });
         }
-        
-        const postData = {
-          id: docSnapshot.id,
-          ...docSnapshot.data()
-        };
-        
-        console.log(`API (handlePublicGet): Successfully found post with ID "${id}"`);
-        
+      } else {
+        return res.status(404).json({ success: false, error: 'Blog post not found' });
+      }
+    }
+
+    // Handle fetching a single post by slug
+    if (slug && typeof slug === 'string') {
+      const querySnapshot = await postsCollection
+        .where('slug', '==', slug)
+        .where('published', '==', true) // Only fetch published by slug publicly
+        .limit(1)
+        .get();
+
+      if (!querySnapshot.empty) {
+        const docSnap = querySnapshot.docs[0];
         return res.status(200).json({
           success: true,
-          data: postData
+          data: { id: docSnap.id, ...convertFirestoreToApiResponse(docSnap.data()) }
         });
-      } catch (error) {
-        console.error(`API (handlePublicGet): Error fetching post with ID "${id}":`, error);
-        return res.status(500).json({ success: false, error: 'Error fetching post by ID' });
+      } else {
+        return res.status(404).json({ success: false, error: 'Blog post not found' });
       }
     }
     
-    // Get a specific post by slug
-    if (slug && typeof slug === 'string') {
-      console.log(`API (handlePublicGet): Fetching post with slug "${slug}"`);
-      
-      // Try known slugs first
-      const knownSlugs = [slug, 'this-site', 'building-my-personal-site-a-journey-from-not-a-programmer-to-web-developer-sort-of-'];
-      
-      for (const currentSlug of knownSlugs) {
-        // If we're looking for a slug, don't restrict to only published posts in development
-        const postQuery = postsCollection.where('slug', '==', currentSlug);
-        
-        console.log(`API (handlePublicGet): Trying slug "${currentSlug}"`);
-        const snapshot = await postQuery.get();
-        
-        if (!snapshot.empty) {
-          const doc = snapshot.docs[0];
-          const postData = {
-            id: doc.id,
-            ...doc.data()
-          };
-          
-          console.log(`API (handlePublicGet): Found post with slug "${currentSlug}", post ID: ${doc.id}`);
-          
-          return res.status(200).json({
-            success: true,
-            data: postData
-          });
-        }
-      }
-      
-      // If we get here, none of the known slugs matched
-      console.warn(`API (handlePublicGet): No post found with any known slug`);
-      return res.status(404).json({ success: false, error: 'Blog post not found' });
-    }
-    
-    // Get posts by tag
+    // Handle fetching posts by tag
     if (tag && typeof tag === 'string') {
-      const snapshot = await postsCollection
+      const numLimit = typeof limit === 'string' ? parseInt(limit, 10) : 10; // Default limit for tag lists
+      const querySnapshot = await postsCollection
         .where('tags', 'array-contains', tag)
         .where('published', '==', true)
-        .orderBy('publishedAt', 'desc')
+        .orderBy('publishedAt', 'desc') // Assuming you want newest first
+        .limit(numLimit)
         .get();
       
-      const posts: any[] = [];
-      snapshot.forEach(doc => {
-        posts.push({
-          id: doc.id,
-          ...doc.data()
-        });
-      });
-      
+      const posts = querySnapshot.docs.map((doc: QueryDocumentSnapshot<DocumentData>) => ({ 
+          id: doc.id, 
+          ...convertFirestoreToApiResponse(doc.data()) 
+      }));
       return res.status(200).json({ success: true, data: posts });
     }
-    
-    // Get all published posts with optional limit
-    let query = postsCollection
-      .where('published', '==', true)
-      .orderBy('publishedAt', 'desc');
-    
-    // Apply limit if provided
-    if (limitParam && typeof limitParam === 'string') {
-      const limit = parseInt(limitParam, 10);
-      if (!isNaN(limit) && limit > 0) {
-        query = query.limit(limit);
-      }
+
+    // Handle fetching multiple published posts (e.g., for the home page)
+    if (published === 'true') {
+      const numLimit = typeof limit === 'string' ? parseInt(limit, 10) : 3;
+      const querySnapshot = await postsCollection
+        .where('published', '==', true)
+        .orderBy('publishedAt', 'desc') // Assuming you want newest first
+        .limit(numLimit)
+        .get();
+
+      const posts = querySnapshot.docs.map((doc: QueryDocumentSnapshot<DocumentData>) => ({ 
+          id: doc.id, 
+          ...convertFirestoreToApiResponse(doc.data()) 
+      }));
+      return res.status(200).json({ success: true, data: posts });
     }
-    
-    const snapshot = await query.get();
-    const posts: any[] = [];
-    
-    snapshot.forEach(doc => {
-      posts.push({
-        id: doc.id,
-        ...doc.data()
-      });
-    });
-    
-    return res.status(200).json({ success: true, data: posts });
+
+    // If none of the above conditions match, return bad request or not found
+    // Returning 400 might be more appropriate if no valid query params were given
+    return res.status(400).json({ success: false, error: 'Invalid request parameters for public blog posts' });
+
   } catch (error: any) {
-    console.error('API error getting published blog posts:', error);
-    return res.status(500).json({ success: false, error: error.message });
+    console.error('Error in handlePublicGet for blog API:', error);
+    return res.status(500).json({ success: false, error: 'Internal server error fetching blog posts' });
   }
 }

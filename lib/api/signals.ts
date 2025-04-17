@@ -1,19 +1,12 @@
 // lib/api/signals.ts
-import { 
-  collection, 
-  getDocs, 
-  query, 
-  addDoc, 
-  deleteDoc, 
-  doc, 
-  updateDoc, 
-  Firestore 
-} from 'firebase/firestore';
-import { firestore } from '../firebase';
+
+
 import { getCurrentUserToken } from './auth';
 
-// API base URL
-const API_BASE = '/api';
+// Determine API base URL based on environment
+const API_BASE = typeof window === 'undefined' 
+  ? process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000' // Server-side needs full URL
+  : ''; // Client-side uses relative path starting with /api
 
 // Signal types
 export type SignalType = 'newsletter' | 'article';
@@ -58,14 +51,9 @@ export async function getAllSignals(): Promise<Signal[]> {
     // Try server API first
     const token = await getCurrentUserToken();
     
-    // Determine base URL based on environment
-    const baseUrl = typeof window === 'undefined' 
-      ? process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000' // Server-side needs full URL
-      : API_BASE; // Client-side uses relative path
-      
     if (token) {
       try {
-        const response = await fetch(`${baseUrl}/signals`, {
+        const response = await fetch(`${API_BASE}/api/signals`, {
           headers: {
             Authorization: `Bearer ${token}`
           }
@@ -81,20 +69,9 @@ export async function getAllSignals(): Promise<Signal[]> {
       }
     }
     
-    // Client-side fallback
-    if (!firestore) {
-      console.warn('Firestore not initialized, returning empty signals array');
-      return [];
-    }
-    
-    const signalsRef = collection(firestore as Firestore, 'signals');
-    const signalsQuery = query(signalsRef);
-    const querySnapshot = await getDocs(signalsQuery);
-    
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    } as Signal));
+    // No client-side fallback. All signal fetching must go through the server API.
+    return [];
+
   } catch (error) {
     console.error('Error getting signals:', error);
     return [];
@@ -108,7 +85,7 @@ export async function getSignalsByType(type: SignalType): Promise<Signal[]> {
     const token = await getCurrentUserToken();
     if (token) {
       try {
-        const response = await fetch(`${API_BASE}/signals?type=${type}`, {
+        const response = await fetch(`${API_BASE}/api/signals?type=${type}`, {
           headers: {
             Authorization: `Bearer ${token}`
           }
@@ -124,9 +101,9 @@ export async function getSignalsByType(type: SignalType): Promise<Signal[]> {
       }
     }
     
-    // Client-side fallback
-    const signals = await getAllSignals();
-    return signals.filter(signal => signal.type === type);
+    // No client-side fallback. All signal fetching must go through the server API.
+    return [];
+
   } catch (error) {
     console.error(`Error getting signals by type ${type}:`, error);
     return [];
@@ -140,7 +117,7 @@ export async function addSignal(signal: Signal): Promise<Signal | null> {
     const token = await getCurrentUserToken();
     if (token) {
       try {
-        const response = await fetch(`${API_BASE}/signals`, {
+        const response = await fetch(`${API_BASE}/api/signals`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -159,69 +136,9 @@ export async function addSignal(signal: Signal): Promise<Signal | null> {
       }
     }
     
-    // Client-side fallback
-    if (!firestore) {
-      console.warn('Firestore not initialized, cannot add signal');
-      return null;
-    }
-    
-    const signalsRef = collection(firestore as Firestore, 'signals');
-    const now = new Date().toISOString();
-    
-    // Clean up the signal object by removing undefined values
-    // Firestore accepts null but not undefined
-    const cleanedSignal: Record<string, any> = {};
-    
-    // Process all properties to replace undefined with null
-    Object.entries(signal).forEach(([key, value]) => {
-      cleanedSignal[key] = value === undefined ? null : value;
-    });
-    
-    // Ensure minimum required fields
-    if (!cleanedSignal.type) cleanedSignal.type = signal.type;
-    if (!cleanedSignal.title) cleanedSignal.title = '';
-    if (!cleanedSignal.description) cleanedSignal.description = '';
-    if (!cleanedSignal.url) cleanedSignal.url = '';
-    if (!cleanedSignal.source) cleanedSignal.source = '';
-    
-    // Add timestamp fields
-    const signalWithTimestamp = {
-      ...cleanedSignal,
-      dateAdded: now,
-      updatedAt: now
-    } as Record<string, any>;
-    
-    console.log('Adding signal to Firestore with cleaned data:', signalWithTimestamp);
-    
-    // Validate required fields specifically for null or undefined
-    const requiredFields = ['type', 'title', 'description', 'url', 'source'];
-    for (const field of requiredFields) {
-      if (signalWithTimestamp[field] === null || signalWithTimestamp[field] === undefined) {
-        console.error(`Missing or invalid required field ${field} in signal data`);
-        return null;
-      }
-    }
-    
-    const docRef = await addDoc(signalsRef, signalWithTimestamp);
-    
-    // Create a properly typed Signal object with all fields
-    const returnSignal: Signal = {
-      id: docRef.id,
-      type: signalWithTimestamp.type as SignalType,
-      title: signalWithTimestamp.title as string,
-      description: signalWithTimestamp.description as string,
-      url: signalWithTimestamp.url as string,
-      source: signalWithTimestamp.source as string,
-      // Include optional fields if present
-      ...(signalWithTimestamp.author !== undefined && { author: signalWithTimestamp.author as string }),
-      dateAdded: signalWithTimestamp.dateAdded as string,
-      ...(signalWithTimestamp.featured !== undefined && { featured: signalWithTimestamp.featured as boolean }),
-      ...(signalWithTimestamp.tags !== undefined && { tags: signalWithTimestamp.tags as string[] }),
-      ...(signalWithTimestamp.imageUrl !== undefined && { imageUrl: signalWithTimestamp.imageUrl as string }),
-      ...(signalWithTimestamp.socialShare !== undefined && { socialShare: signalWithTimestamp.socialShare as Signal['socialShare'] })
-    };
-    
-    return returnSignal;
+    // No client-side fallback. All signal creation must go through the server API.
+    return null;
+
   } catch (error) {
     console.error('Error adding signal:', error);
     return null;
@@ -237,7 +154,7 @@ export async function updateSignal(signal: Signal): Promise<boolean> {
     const token = await getCurrentUserToken();
     if (token) {
       try {
-        const response = await fetch(`${API_BASE}/signals`, {
+        const response = await fetch(`${API_BASE}/api/signals`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -251,37 +168,12 @@ export async function updateSignal(signal: Signal): Promise<boolean> {
         }
       } catch (error) {
         console.error('Server API error:', error);
-        // Continue with fallback
+        return false;
       }
     }
     
-    // Client-side fallback
-    if (!firestore) {
-      console.warn('Firestore not initialized, cannot update signal');
-      return false;
-    }
-    
-    // Clean up the signal object by removing undefined values
-    // Firestore accepts null but not undefined
-    const cleanedSignal: Record<string, any> = {};
-    
-    // Process all properties to replace undefined with null
-    Object.entries(signal).forEach(([key, value]) => {
-      if (key !== 'id') { // Skip the id field
-        cleanedSignal[key] = value === undefined ? null : value;
-      }
-    });
-    
-    const updatedSignal = {
-      ...cleanedSignal,
-      updatedAt: new Date().toISOString()
-    };
-    
-    console.log('Updating signal in Firestore with cleaned data:', updatedSignal);
-    
-    const signalRef = doc(firestore as Firestore, 'signals', signal.id);
-    await updateDoc(signalRef, updatedSignal);
-    return true;
+    return false;
+
   } catch (error) {
     console.error('Error updating signal:', error);
     return false;
@@ -295,7 +187,7 @@ export async function deleteSignal(id: string): Promise<boolean> {
     const token = await getCurrentUserToken();
     if (token) {
       try {
-        const response = await fetch(`${API_BASE}/signals?id=${id}`, {
+        const response = await fetch(`${API_BASE}/api/signals?id=${id}`, {
           method: 'DELETE',
           headers: {
             Authorization: `Bearer ${token}`
@@ -311,15 +203,9 @@ export async function deleteSignal(id: string): Promise<boolean> {
       }
     }
     
-    // Client-side fallback
-    if (!firestore) {
-      console.warn('Firestore not initialized, cannot delete signal');
-      return false;
-    }
-    
-    const signalRef = doc(firestore as Firestore, 'signals', id);
-    await deleteDoc(signalRef);
-    return true;
+    // No client-side fallback. All signal deletions must go through the server API.
+    return false;
+
   } catch (error) {
     console.error('Error deleting signal:', error);
     return false;

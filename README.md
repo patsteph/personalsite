@@ -28,10 +28,37 @@ A modern, responsive personal website built with Next.js, TypeScript, Tailwind C
 - **Next.js 15**: React framework for server-side rendering and static site generation
 - **TypeScript**: Type safety and improved developer experience
 - **Tailwind CSS**: Utility-first CSS framework for rapid UI development
-- **Firebase**: Authentication and Firestore database for dynamic content
+- **Firebase**: Authentication (client-side) and intended backend (Firestore) for API routes
 - **MDX**: Enhanced Markdown for blog content with component support
 
 ## 🏛️ Architecture Overview
+
+### API Pattern
+
+The application utilizes Next.js API routes for data fetching and manipulation. Client components interact with these APIs via dedicated modules in `lib/api/`.
+
+```mermaid
+flowchart TD
+    A[Client Component] --> B[API Client Module (lib/api/*)];
+    B --> C[fetch()];
+    C --> D[Next.js API Route (pages/api/*)];
+    subgraph Server-Side
+        D --> E{Process Request};
+        E --> F[Backend Interaction (e.g., Firestore)];
+        F --> G[Return Data/Status];
+    end
+    G --> C;
+    C --> B;
+    B --> A[Update UI];
+
+    style Server-Side fill:#f9f,stroke:#333,stroke-width:2px
+```
+
+Key aspects:
+- **Client Interaction**: UI components use functions from `lib/api/*` to request data or trigger actions.
+- **API Routes**: Logic resides in `pages/api/*`. These routes handle requests, perform necessary operations (currently stubbed, intended to interact with Firestore or other backends), and return standardized JSON responses.
+- **Data Fetching**: Server-side rendering (`getStaticProps`, `getServerSideProps`) also uses the `lib/api/*` modules to fetch data during build time or request time, requiring the `NEXT_PUBLIC_SITE_URL` environment variable to be set correctly for the build environment.
+- **No Direct Backend Access**: Client components do not interact directly with backend services like Firestore; all interactions are proxied through the API routes.
 
 ### Authentication Flow
 
@@ -55,27 +82,6 @@ graph TD
 2. **Client Protection**: ProtectedRoute component verifies authentication state
 3. **Server Verification**: API routes independently verify Firebase tokens
 4. **Automatic Session Management**: Token refresh and timeout handling
-
-### API Pattern
-
-The application follows a "server-first, client-fallback" pattern:
-
-```mermaid
-flowchart TD
-    A[Client] --> B[Server API]
-    B --> C{API Success?}
-    C -->|Yes| D[Fetch from Firestore]
-    D --> E[Return data to client]
-    C -->|No| F[Return error]
-    F --> G[Client fallback]
-    G --> H[Direct Firebase access]
-    H --> I[Return data to client]
-```
-
-This approach ensures:
-- Best performance in production environments with API routes
-- Fallback capability for static hosting environments
-- Consistent data access regardless of deployment context
 
 ## 🚀 Getting Started
 
@@ -101,10 +107,10 @@ This approach ensures:
    ```
 
 3. **Set up environment variables**
-   Create a `.env.local` file with the following variables:
+   Create a `.env.local` file by copying `.env.local.example` and filling in your Firebase credentials:
 
-   ```
-   # Firebase Configuration
+   ```env
+   # Firebase Client Configuration
    NEXT_PUBLIC_FIREBASE_API_KEY=your-api-key
    NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
    NEXT_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
@@ -113,13 +119,24 @@ This approach ensures:
    NEXT_PUBLIC_FIREBASE_APP_ID=your-app-id
    NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=your-measurement-id
 
-   # Firebase Admin SDK
+   # Firebase Admin SDK (for API routes - currently stubbed)
    FIREBASE_PROJECT_ID=your-project-id
    FIREBASE_CLIENT_EMAIL=firebase-adminsdk-xxxx@your-project-id.iam.gserviceaccount.com
    FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nYour private key here\n-----END PRIVATE KEY-----"
 
+   # Site URL (Important for Server-Side API Calls during Build)
+   # Use http://localhost:3000 for local development build
+   # Use your production domain (e.g., https://yourdomain.com) for production builds
+   NEXT_PUBLIC_SITE_URL=http://localhost:3000
+
    # Contact Info
    NEXT_PUBLIC_CONTACT_EMAIL=your-email@example.com
+
+   # Base Path (if deploying to a subdirectory, e.g., /personalsite)
+   NEXT_PUBLIC_BASE_PATH=
+   
+   # Content Security Policy (optional)
+   NEXT_PUBLIC_ENABLE_STRICT_CSP=false
    ```
 
 4. **Create an admin user in Firebase Authentication**
@@ -147,10 +164,10 @@ personal-website/
 │   └── ui/                # Reusable UI components
 ├── content/               # Static content (blog posts, CV data)
 ├── lib/                   # Utility functions and services
-│   ├── api/               # API client modules
-│   ├── auth.tsx           # Authentication context
-│   ├── firebase.ts        # Firebase client initialization
-│   └── firebase-admin.ts  # Firebase Admin SDK
+│   ├── api/               # API client modules (used by components and server-side props)
+│   ├── auth.tsx           # Authentication context and hooks (client-side)
+│   ├── firebase.ts        # Firebase client initialization (primarily for Auth)
+│   └── firebase-admin.ts  # Firebase Admin SDK initialization (intended for server-side API routes)
 ├── middleware.js          # Edge middleware for route protection
 ├── pages/                 # Next.js pages
 │   ├── admin/             # Admin pages (protected)
@@ -175,12 +192,11 @@ The bookshelf feature displays books I'm reading with:
 
 ### Blog Platform
 
-The blog system combines markdown files and Firestore:
-- Markdown for static content
-- Firestore for dynamic posts
-- MDX support for React components in blog content
-- Code syntax highlighting
-- Reading time estimation
+The blog system utilizes:
+- Markdown files (`content/blog`) for static post content.
+- Next.js API routes (`pages/api/blog*`) for dynamic operations like fetching post lists, retrieving single posts, and potentially handling comments or reactions in the future (currently stubbed).
+- MDX support allows embedding React components within blog content.
+- Features include code syntax highlighting and reading time estimation.
 
 ### Signals
 

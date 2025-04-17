@@ -1,10 +1,13 @@
 import { GetStaticProps } from 'next';
 import Layout from '@/components/layout/Layout';
-import { getRecentPosts } from '@/lib/blog';
 import { BlogPost } from '@/types/blog';
 import Link from 'next/link';
 import { useTranslation } from '@/lib/translations';
 import { format } from 'date-fns';
+
+// Imports for direct Firestore access
+import { getAdminFirestore } from '@/lib/firebase-admin';
+import { Timestamp, QueryDocumentSnapshot } from 'firebase-admin/firestore';
 
 // Props type definition
 type HomePageProps = {
@@ -179,19 +182,52 @@ export default function HomePage({ recentPosts }: HomePageProps) {
   );
 }
 
-// Fetch data at build time
+// Fetch data at build time directly from Firestore
 export const getStaticProps: GetStaticProps<HomePageProps> = async () => {
   try {
-    // Get recent blog posts
-    const recentPosts = await getRecentPosts(3);
-    
+    // Get Firestore instance
+    const db = getAdminFirestore();
+
+    // Create the query using Admin SDK pattern
+    const postsCollectionRef = db.collection('blog-posts');
+    const q = postsCollectionRef
+      .where('published', '==', true)
+      .orderBy('publishedAt', 'desc')
+      .limit(3);
+
+    const querySnapshot = await q.get();
+
+    const recentPosts: BlogPost[] = [];
+    querySnapshot.forEach((doc: QueryDocumentSnapshot) => {
+      const data = doc.data();
+      const post: BlogPost = {
+        id: doc.id,
+        slug: data.slug || '',
+        title: data.title || '',
+        summary: data.summary || '',
+        content: data.content || '',
+        author: data.author || '',
+        coverImage: data.coverImage || '',
+        tags: data.tags || [],
+        published: data.published || false,
+        date: data.date instanceof Timestamp ? data.date.toDate().toISOString() : data.date || null,
+        publishedAt: data.publishedAt instanceof Timestamp ? data.publishedAt.toDate().toISOString() : data.publishedAt || null,
+        createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate().toISOString() : new Date().toISOString(),
+        updatedAt: data.updatedAt instanceof Timestamp ? data.updatedAt.toDate().toISOString() : new Date().toISOString(),
+        readingTime: data.readingTime || undefined,
+      };
+      recentPosts.push(post);
+    });
+
+    console.log(`Fetched ${recentPosts.length} recent posts directly from Firestore for build.`);
+
     return {
       props: {
         recentPosts,
       },
     };
   } catch (error) {
-    console.error('Error fetching recent posts:', error);
+    console.error('Error in getStaticProps fetching recent posts from Firestore:', error);
     return {
       props: {
         recentPosts: [],

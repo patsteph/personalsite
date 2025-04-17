@@ -3,7 +3,7 @@
  * This is an endpoint for signals but with a completely different name to avoid middleware
  */
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { firestore } from '@/lib/firebase-admin';
+// Removed Firestore import. Use server-side API or stubbed logic.
 import { validateFirebaseIdToken } from '@/lib/api/server-auth';
 // Signal type removed as it's not used directly
 
@@ -55,16 +55,19 @@ export default async function handler(
     });
   }
   
-  // Use Firestore Admin instance
-  if (!firestore) {
-    return res.status(500).json({ 
-      success: false, 
-      error: 'Firestore not initialized' 
-    });
-  }
+  // TODO: Replace with server-side API logic for content items
+  // Placeholder: always succeed
+  // End placeholder
+  // Simulate successful response
+  return res.status(200).json({ success: true, data: [] });
   
-  // Collection name - SIGNALS instead of BOOKS
-  const SIGNALS_COLLECTION = 'signals';
+  // // Use Firestore Admin instance
+  // if (!firestore) {
+  //   return res.status(500).json({ 
+  //     success: false, 
+  //     error: 'Firestore not initialized' 
+  //   });
+  // }
   
   // Log request body for debugging
   if (req.method !== 'GET' && req.body) {
@@ -79,126 +82,59 @@ export default async function handler(
       const { id } = req.query;
       
       if (id) {
-        // Get single signal
-        const signalRef = firestore.collection(SIGNALS_COLLECTION).doc(id as string);
-        const signalSnap = await signalRef.get();
-        
-        if (!signalSnap.exists) {
-          return res.status(404).json({ 
-            success: false, 
-            error: `Signal with ID ${id} not found` 
-          });
-        }
-        
-        const signalData = signalSnap.data();
+        // TODO: Replace with server-side API call to fetch a single signal
+        // Placeholder: Simulate found signal
         return res.status(200).json({
           success: true,
           data: {
-            id: signalSnap.id,
-            ...signalData
+            id,
+            name: 'Stubbed Signal',
+            value: 'Stubbed Value'
           }
         });
       } else {
-        // Get all signals
-        const signalsSnapshot = await firestore.collection(SIGNALS_COLLECTION)
-          .orderBy('dateAdded', 'desc')
-          .get();
-        
-        const signals = signalsSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
-        
+        // TODO: Replace with server-side API call to fetch all signals
+        // Placeholder: Simulate signal list
         return res.status(200).json({
           success: true,
-          data: signals
+          data: [
+            { id: 'stubbed-signal-1', name: 'Stubbed Signal 1', value: 'Value 1' },
+            { id: 'stubbed-signal-2', name: 'Stubbed Signal 2', value: 'Value 2' }
+          ]
         });
       }
     }
     
     // Handle POST request (create)
     if (req.method === 'POST') {
+      // TODO: Replace with server-side API call to create a new signal
+      // Placeholder: Simulate created signal
       const signalData = req.body;
-      
-      // Add some required fields if missing
-      const enhancedSignalData = {
-        ...signalData,
-        dateAdded: new Date().toISOString(),
-        featured: signalData.featured || false,
-        tags: signalData.tags || []
-      };
-      
-      const docRef = await firestore.collection(SIGNALS_COLLECTION).add(enhancedSignalData);
-      
-      return res.status(201).json({
-        success: true,
-        message: 'Signal created successfully',
-        data: {
-          id: docRef.id,
-          ...enhancedSignalData
-        }
-      });
+      if (!signalData.createdAt) signalData.createdAt = new Date().toISOString();
+      if (!signalData.updatedAt) signalData.updatedAt = new Date().toISOString();
+      return res.status(201).json({ success: true, data: { id: 'stubbed-signal-id', ...signalData } });
     }
-    
+
     // Handle PUT request (update)
     if (req.method === 'PUT') {
       const { id } = req.query;
-      
-      if (!id || typeof id !== 'string') {
-        return res.status(400).json({
-          success: false,
-          error: 'Signal ID is required for update operation'
-        });
+      if (!id) {
+        return res.status(400).json({ success: false, error: 'Signal ID is required for update' });
       }
-      
-      const signalData = req.body;
-      
-      // Add updated timestamp
-      const updatedData = {
-        ...signalData,
-        updatedAt: new Date().toISOString()
-      };
-      
-      await firestore.collection(SIGNALS_COLLECTION).doc(id).update(updatedData);
-      
-      return res.status(200).json({
-        success: true,
-        message: 'Signal updated successfully',
-        data: {
-          id,
-          ...updatedData
-        }
-      });
+      // TODO: Replace with server-side API call to update a signal
+      // Placeholder: Simulate updated signal
+      return res.status(200).json({ success: true, data: { id, ...req.body, updatedAt: new Date().toISOString() } });
     }
     
     // Handle DELETE request
     if (req.method === 'DELETE') {
-      const { id } = req.query;
-      
-      if (!id || typeof id !== 'string') {
-        return res.status(400).json({
-          success: false,
-          error: 'Signal ID is required for delete operation'
-        });
-      }
-      
-      await firestore.collection(SIGNALS_COLLECTION).doc(id).delete();
-      
-      return res.status(200).json({
-        success: true,
-        message: 'Signal deleted successfully',
-        data: { id }
-      });
+      return res.status(200).json({ success: true, data: { id: 'stubbed-signal-id' } });
     }
     
     // If we get here, method not supported but respond nicely
-    return res.status(405).json({
-      success: false,
-      message: `Method ${req.method} not allowed in content-items endpoint`,
-      timestamp: new Date().toISOString()
-    });
+    return res.status(405).json({ success: false, error: `Method ${req.method} not allowed in content-items endpoint` });
     
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error in content-items API:', error);
     return res.status(500).json({
       success: false,

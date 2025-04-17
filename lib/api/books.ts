@@ -6,8 +6,10 @@
 import { Book } from '@/types/book';
 import { getCurrentUserToken } from './auth';
 
-// API endpoint base
-const API_BASE = '/api';
+// Determine API base URL based on environment
+const API_BASE = typeof window === 'undefined' 
+  ? process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000' // Server-side needs full URL
+  : ''; // Client-side uses relative path starting with /api
 
 /**
  * Get all books - always use server API
@@ -27,7 +29,7 @@ export async function getAllBooks(): Promise<Book[]> {
     // Try admin endpoint if authenticated
     if (token) {
       try {
-        const response = await fetch(`${API_BASE}/books`, {
+        const response = await fetch(`${API_BASE}/api/books`, {
           method: 'GET',
           headers
         });
@@ -43,7 +45,7 @@ export async function getAllBooks(): Promise<Book[]> {
     
     // Try public endpoint as fallback
     try {
-      const response = await fetch(`${API_BASE}/public-books`, {
+      const response = await fetch(`${API_BASE}/api/public-books`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' }
       });
@@ -83,7 +85,7 @@ export async function getBookById(id: string): Promise<Book | null> {
     // Try admin endpoint if authenticated
     if (token) {
       try {
-        const response = await fetch(`${API_BASE}/books?id=${id}`, {
+        const response = await fetch(`${API_BASE}/api/books?id=${id}`, {
           method: 'GET',
           headers
         });
@@ -99,7 +101,7 @@ export async function getBookById(id: string): Promise<Book | null> {
     
     // Try public endpoint as fallback
     try {
-      const response = await fetch(`${API_BASE}/public-books?id=${id}`, {
+      const response = await fetch(`${API_BASE}/api/public-books?id=${id}`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' }
       });
@@ -135,7 +137,7 @@ export async function addBook(book: Omit<Book, 'id'>): Promise<Book | null> {
       throw new Error('Authentication required to add books');
     }
     
-    const response = await fetch(`${API_BASE}/books`, {
+    const response = await fetch(`${API_BASE}/api/books`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -172,7 +174,7 @@ export async function updateBook(id: string, book: Partial<Book>): Promise<boole
       throw new Error('Authentication required to update books');
     }
     
-    const response = await fetch(`${API_BASE}/books?id=${id}`, {
+    const response = await fetch(`${API_BASE}/api/books?id=${id}`, {
       method: 'PUT',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -204,7 +206,7 @@ export async function deleteBook(id: string): Promise<boolean> {
       throw new Error('Authentication required to delete books');
     }
     
-    const response = await fetch(`${API_BASE}/books?id=${id}`, {
+    const response = await fetch(`${API_BASE}/api/books?id=${id}`, {
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -230,7 +232,7 @@ export async function deleteBook(id: string): Promise<boolean> {
 export async function getFavouriteBooks(): Promise<Book[]> {
   try {
     // Try public endpoint
-    const response = await fetch(`${API_BASE}/public-books?favourite=true`, {
+    const response = await fetch(`${API_BASE}/api/public-books?favourite=true`, {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' }
     });
@@ -253,7 +255,7 @@ export async function getFavouriteBooks(): Promise<Book[]> {
  */
 export async function lookupBookByIsbn(isbn: string): Promise<Partial<Book> | null> {
   try {
-    const response = await fetch(`${API_BASE}/books?isbn=${isbn}`, {
+    const response = await fetch(`${API_BASE}/api/books?isbn=${isbn}`, {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' }
     });
@@ -276,7 +278,7 @@ export async function lookupBookByIsbn(isbn: string): Promise<Partial<Book> | nu
  */
 export async function searchBooks(query: string, maxResults: number = 10): Promise<Partial<Book>[]> {
   try {
-    const response = await fetch(`${API_BASE}/books-search?q=${encodeURIComponent(query)}&maxResults=${maxResults}`, {
+    const response = await fetch(`${API_BASE}/api/books-search?q=${encodeURIComponent(query)}&maxResults=${maxResults}`, {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' }
     });

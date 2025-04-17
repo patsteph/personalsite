@@ -1,6 +1,6 @@
 // pages/api/public-books.ts
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { firestore } from '@/lib/firebase-admin';
+// Removed Firestore import. Use server-side API or stubbed logic.
 
 type BookResponse = {
   success: boolean;
@@ -20,67 +20,73 @@ export default async function handler(
     });
   }
   
-  const booksCollection = firestore.collection('books');
-  
+  // TODO: Replace with server-side API logic for public books
+  // Placeholder: Stubbed logic for fetching books
   try {
-    const { id, status } = req.query;
-    
+    const { id } = req.query;
     if (id && typeof id === 'string') {
-      // Get a specific book
-      const doc = await booksCollection.doc(id).get();
-      
-      if (!doc.exists) {
-        return res.status(404).json({ success: false, error: 'Book not found' });
-      }
-      
-      // Return the book data
+      // Simulate fetching a single book
       return res.status(200).json({
         success: true,
         data: {
-          id: doc.id,
-          ...doc.data()
+          id,
+          title: 'Stubbed Book Title',
+          authors: ['Stubbed Author'],
+          status: 'read',
+          dateAdded: new Date().toISOString(),
+          categories: [],
+          userRating: 5,
+          averageRating: 4.5,
+          description: 'Stubbed book description.',
+          isbn: '1234567890',
+          publisher: 'Stubbed Publisher',
+          publishedDate: '2020-01-01',
+          pageCount: 300,
+          notes: '',
+          imageLinks: {}
         }
       });
     } else {
-      // Get all books with optional filtering
-      let query = booksCollection.orderBy('title');
-      
-      // Add status filter if provided
-      if (status && typeof status === 'string') {
-        query = query.where('status', '==', status);
-      }
-      
-      const snapshot = await query.get();
-      const books: any[] = [];
-      
-      snapshot.forEach(doc => {
-        const data = doc.data();
-        
-        // Create a sanitized book object with proper fallbacks for all fields
-        books.push({
-          id: doc.id,
-          title: data.title || 'Untitled Book',
-          status: data.status || 'read',
-          dateAdded: data.dateAdded || new Date().toISOString(),
-          // Add fallbacks for all other properties to prevent undefined errors
-          authors: Array.isArray(data.authors) ? data.authors : 
-                   typeof data.authors === 'string' ? [data.authors] : 
-                   ['Unknown Author'],
-          categories: Array.isArray(data.categories) ? data.categories : [],
-          userRating: typeof data.userRating === 'number' ? data.userRating : undefined,
-          averageRating: typeof data.averageRating === 'number' ? data.averageRating : undefined,
-          description: data.description || '',
-          isbn: data.isbn || '',
-          publisher: data.publisher || '',
-          publishedDate: data.publishedDate || '',
-          pageCount: typeof data.pageCount === 'number' ? data.pageCount : undefined,
-          notes: data.notes || '',
-          // Handle nested imageLinks object safely
-          imageLinks: data.imageLinks || {}
-        });
+      // Simulate fetching all books
+      return res.status(200).json({
+        success: true,
+        data: [
+          {
+            id: 'stubbed-book-1',
+            title: 'Stubbed Book 1',
+            authors: ['Author 1'],
+            status: 'read',
+            dateAdded: new Date().toISOString(),
+            categories: [],
+            userRating: 4,
+            averageRating: 4.2,
+            description: 'Description for stubbed book 1.',
+            isbn: '1111111111',
+            publisher: 'Publisher 1',
+            publishedDate: '2021-01-01',
+            pageCount: 250,
+            notes: '',
+            imageLinks: {}
+          },
+          {
+            id: 'stubbed-book-2',
+            title: 'Stubbed Book 2',
+            authors: ['Author 2'],
+            status: 'want-to-read',
+            dateAdded: new Date().toISOString(),
+            categories: [],
+            userRating: 5,
+            averageRating: 4.8,
+            description: 'Description for stubbed book 2.',
+            isbn: '2222222222',
+            publisher: 'Publisher 2',
+            publishedDate: '2022-02-02',
+            pageCount: 320,
+            notes: '',
+            imageLinks: {}
+          }
+        ]
       });
-      
-      return res.status(200).json({ success: true, data: books });
     }
   } catch (error: any) {
     console.error('API error getting books:', error);

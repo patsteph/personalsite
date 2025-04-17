@@ -202,7 +202,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   };
 
   // Function to sign in
-  const signIn = async (email: string, password: string, _rememberMe = true): Promise<void> => {
+  const signIn = async (email: string, password: string): Promise<void> => {
     try {
       setLoading(true);
       setAuthError(null);
