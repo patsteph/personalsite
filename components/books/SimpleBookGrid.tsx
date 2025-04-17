@@ -2,8 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Book, BookStatus } from '@/types/book';
 // Next Image import not used - using standard HTML img tags
 // Import Firebase modules directly at the top level
-import { initializeApp, getApps } from 'firebase/app';
-import { getFirestore, collection, getDocs } from 'firebase/firestore';
+import { getBooks } from '@/lib/books';
 import { trackBookInteraction } from '@/lib/analytics';
 
 // No need to re-declare Window types - they're already defined in /types/window.d.ts
@@ -44,124 +43,19 @@ export default function SimpleBookGrid({ initialBooks }: SimpleBookGridProps) {
   }, [books.length]);
   
   useEffect(() => {
-    // Load books directly from Firebase client without dynamic imports
-    async function loadFirebaseBooks() {
+    // Fetch books from server-side API
+    async function fetchBooksFromApi() {
       try {
         setLoading(true);
-        console.log('Loading books directly from Firebase client');
-        
-        if (typeof window === 'undefined') {
-          console.log('Not in browser environment, skipping Firebase load');
-          setLoading(false);
-          return;
-        }
-        
-        // Get config from window
-        let firebaseConfig = null;
-        
-        // Try to use SECURE_CONFIG
-        if (window.SECURE_CONFIG?.firebase?.apiKey) {
-          console.log('Using Firebase config from SECURE_CONFIG');
-          firebaseConfig = window.SECURE_CONFIG.firebase;
-        } 
-        // Fallback to runtimeConfig
-        else if (window.runtimeConfig?.firebase?.apiKey) {
-          console.log('Using Firebase config from runtimeConfig');
-          firebaseConfig = window.runtimeConfig.firebase;
-        }
-        
-        if (!firebaseConfig?.apiKey) {
-          console.error('No Firebase config available');
-          setLoading(false);
-          return;
-        }
-        
-        // Initialize Firebase (or reuse existing)
-        let firestore;
-        if (getApps().length > 0) {
-          console.log('Firebase already initialized, reusing app');
-          firestore = getFirestore(getApps()[0]);
-        } else {
-          console.log('Initializing Firebase with config');
-          const app = initializeApp(firebaseConfig);
-          firestore = getFirestore(app);
-        }
-        
-        // Get books collection
-        try {
-          console.log('Querying books collection');
-          const booksCollection = collection(firestore, 'books');
-          const snapshot = await getDocs(booksCollection);
-          
-          if (snapshot.empty) {
-            console.log('No books found in collection');
-            setLoading(false);
-            return;
-          }
-          
-          // Convert data to books array
-          const firebaseBooks: Record<string, unknown>[] = [];
-          snapshot.forEach(doc => {
-            firebaseBooks.push({
-              id: doc.id,
-              ...doc.data()
-            });
-          });
-          
-          // Process the books
-          console.log(`Processing ${firebaseBooks.length} books from Firebase`);
-          
-          const validatedBooks: Book[] = firebaseBooks.map(rawBook => {
-            // Create a book object with proper types
-            const bookData = {...rawBook};
-            
-            // Create a properly typed book object
-            const book: Book = {
-              id: typeof bookData.id === 'string' ? bookData.id : `temp-${Math.random().toString(36).substring(2, 9)}`,
-              isbn: typeof bookData.isbn === 'string' ? bookData.isbn : '',
-              title: typeof bookData.title === 'string' ? bookData.title : 'Untitled Book',
-              authors: Array.isArray(bookData.authors) ? bookData.authors : 
-                       (typeof bookData.author === 'string' ? [bookData.author] : ['Unknown Author']),
-              status: ['read', 'reading', 'toRead'].includes(bookData.status as string) ? 
-                      bookData.status as BookStatus : 'read',
-              dateAdded: typeof bookData.dateAdded === 'string' ? bookData.dateAdded : new Date().toISOString(),
-              publisher: typeof bookData.publisher === 'string' ? bookData.publisher : undefined,
-              publishedDate: typeof bookData.publishedDate === 'string' ? bookData.publishedDate : undefined,
-              description: typeof bookData.description === 'string' ? bookData.description : undefined,
-              pageCount: typeof bookData.pageCount === 'number' ? bookData.pageCount : undefined,
-              notes: typeof bookData.notes === 'string' ? bookData.notes : undefined,
-              categories: Array.isArray(bookData.categories) ? bookData.categories : undefined,
-              userRating: typeof bookData.userRating === 'number' ? bookData.userRating : undefined,
-              averageRating: typeof bookData.averageRating === 'number' ? bookData.averageRating : undefined,
-            };
-            
-            // Handle imageLinks field
-            if (typeof bookData.imageLinks === 'object' && bookData.imageLinks !== null) {
-              const imgLinks = bookData.imageLinks as Record<string, unknown>;
-              book.imageLinks = {
-                thumbnail: typeof imgLinks.thumbnail === 'string' ? imgLinks.thumbnail : undefined,
-                smallThumbnail: typeof imgLinks.smallThumbnail === 'string' ? imgLinks.smallThumbnail : undefined
-              };
-            }
-            
-            // Book has already been properly typed with all required fields
-            return book;
-          });
-          
-          console.log(`Successfully processed ${validatedBooks.length} books`);
-          setBooks(validatedBooks);
-        } catch (error) {
-          console.error('Error querying books collection:', error);
-        }
+        const apiBooks = await getBooks();
+        setBooks(apiBooks);
       } catch (error) {
-        console.error('Error loading Firebase books:', error);
+        console.error('Error loading books from API:', error);
       } finally {
         setLoading(false);
       }
     }
-    
-    // Load the books
-    loadFirebaseBooks();
+    fetchBooksFromApi();
   }, []);
 
   // Simple book card component
