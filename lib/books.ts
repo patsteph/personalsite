@@ -1,73 +1,77 @@
-import { Book, BookSearchResult } from '@/types/book';
+import { Book, BookWithId } from '@/types/book';
+import { getCurrentUserToken } from '@/lib/api/auth';
 
-
-// Get authentication token
-const getAuthToken = async (): Promise<string | null> => {
+// Fetch book by ISBN using Google Books API via our server API
+export const fetchBookByISBN = async (isbn: string): Promise<BookWithId | null> => {
   try {
-    // Get token from localStorage instead of Firebase SDK
-    return localStorage.getItem('authToken');
+    const token = await getCurrentUserToken();
+    if (!token) {
+      throw new Error('Authentication required to fetch book by ISBN.');
+    }
+
+    // Use the new server API endpoint
+    const response = await fetch(`/api/google-books?isbn=${isbn}`, { 
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({})); // Try to get error details
+      console.error('Error fetching book by ISBN:', response.status, errorData);
+      throw new Error(`Failed to fetch book by ISBN. Status: ${response.status}`);
+    }
+
+    const result = await response.json();
+
+    if (result.success && result.data && result.data.length > 0) {
+      // Google Books API might return multiple editions, take the first one
+      // TODO: Consider if the returned structure from mapGoogleBookToBook needs adapting to BookWithId
+      return result.data[0] as BookWithId; // Assuming the structure is compatible enough
+    } else {
+      return null; // Not found or API error
+    }
   } catch (error) {
-    console.error('Error getting auth token:', error);
+    console.error('Error in fetchBookByISBN:', error);
     return null;
   }
 };
 
-// Fetch book by ISBN using Google Books API via our server API
-export const fetchBookByISBN = async (isbn: string): Promise<BookSearchResult | null> => {
-  try {
-    // Use server API instead of direct Google Books API access
-    const response = await fetch(`/api/books?isbn=${isbn}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      }
-    });
-    
-    if (!response.ok) {
-      console.warn(`No books found with ISBN: ${isbn}`);
-      return null;
-    }
-    
-    const data = await response.json();
-    
-    if (!data.success || !data.data) {
-      console.warn(`No books found with ISBN: ${isbn}`);
-      return null;
-    }
-    
-    return data.data;
-  } catch (error) {
-    console.error('Error fetching book:', error);
-    throw error;
-  }
-};
-
 // Search books by title or author using server API
-export const searchBooks = async (query: string, maxResults = 10): Promise<BookSearchResult[]> => {
+export const searchBooks = async (query: string, maxResults = 10): Promise<BookWithId[]> => {
   try {
-    // Use server API instead of direct Google Books API access
-    const response = await fetch(`/api/books-search?q=${encodeURIComponent(query)}&maxResults=${maxResults}`, {
+    const token = await getCurrentUserToken();
+    if (!token) {
+      throw new Error('Authentication required to search books.');
+    }
+    // Use the new server API endpoint
+    const response = await fetch(`/api/google-books?q=${encodeURIComponent(query)}&maxResults=${maxResults}`, { 
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
       }
     });
-    
+
     if (!response.ok) {
-      console.warn(`Error searching books: ${response.statusText}`);
-      return [];
+      const errorData = await response.json().catch(() => ({})); // Try to get error details
+      console.error('Error searching books:', response.status, errorData);
+      throw new Error(`Failed to search books. Status: ${response.status}`);
     }
-    
-    const data = await response.json();
-    
-    if (!data.success || !data.data || !Array.isArray(data.data)) {
-      console.warn(`No books found for query: ${query}`);
-      return [];
+
+    const result = await response.json();
+
+    if (result.success && result.data) {
+       // TODO: Consider if the returned structure needs adapting to BookWithId
+      return result.data as BookWithId[]; // Assuming the structure is compatible enough
+    } else {
+      return []; // No results or API error
     }
-    
-    return data.data;
+
   } catch (error) {
-    console.error('Error searching books:', error);
+    console.error('Error in searchBooks:', error);
     return [];
   }
 };
@@ -78,7 +82,7 @@ export const addBook = async (book: Book): Promise<string> => {
     console.log('Adding new book to collection:', book.title);
     
     // Use the server API endpoint
-    const token = await getAuthToken();
+    const token = await getCurrentUserToken();
     
     if (!token) {
       throw new Error('Authentication required to add books');
@@ -117,7 +121,7 @@ export const updateBook = async (id: string, updates: Partial<Book>): Promise<vo
     console.log('Updating book:', id);
     
     // Use the server API endpoint
-    const token = await getAuthToken();
+    const token = await getCurrentUserToken();
     
     if (!token) {
       throw new Error('Authentication required to update books');
@@ -155,7 +159,7 @@ export const deleteBook = async (id: string): Promise<void> => {
     console.log('Deleting book:', id);
     
     // Use the server API endpoint
-    const token = await getAuthToken();
+    const token = await getCurrentUserToken();
     
     if (!token) {
       throw new Error('Authentication required to delete books');
@@ -200,7 +204,7 @@ export const getBookStats = async (): Promise<{
     const total = books.length;
     const read = books.filter(book => book.status === 'read').length;
     const reading = books.filter(book => book.status === 'reading').length;
-    const toRead = books.filter(book => book.status === 'toRead').length;
+    const toRead = books.filter(book => book.status === 'to-read').length;
     
     return {
       total,
@@ -220,10 +224,10 @@ export const getBookStats = async (): Promise<{
 };
 
 // Get book by ID 
-export const getBookById = async (id: string): Promise<Book | null> => {
+export const getBookById = async (id: string): Promise<BookWithId | null> => {
   try {
     // Use the server API endpoint
-    const token = await getAuthToken();
+    const token = await getCurrentUserToken();
     
     // Headers object
     const headers: HeadersInit = {
@@ -259,78 +263,75 @@ export const getBookById = async (id: string): Promise<Book | null> => {
 };
 
 // Get all books
-export const getBooks = async (): Promise<Book[]> => {
-  try {
-    // Use the API endpoint
-    const token = await getAuthToken();
-    
-    // Headers object
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json'
-    };
-    
-    // Add authorization header if token exists
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-    
-    // Try public endpoint first
+export const getBooks = async (): Promise<BookWithId[]> => {
+  console.log('Attempting to fetch books...');
+
+  const token = await getCurrentUserToken();
+
+  // 1. Try fetching from the authenticated admin endpoint if token exists
+  if (token) {
     try {
-      const response = await fetch('/api/public-books', {
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      };
+      const response = await fetch('/api/books', {
         method: 'GET',
         headers
       });
-      
-      if (response.ok) {
-        const data = await response.json();
-        console.log(`Successfully fetched ${data.data?.length || 0} books from public API`);
-        if (data.success && Array.isArray(data.data)) {
-          return data.data;
+
+      if (!response.ok) {
+        // Don't throw yet, just log and fall back
+        console.error(`Admin book fetch failed: ${response.status} ${response.statusText}`);
+      } else {
+        const result = await response.json();
+        if (result.success && Array.isArray(result.data)) {
+          console.log(`Successfully fetched ${result.data.length} books from admin API`);
+          return result.data as BookWithId[];
         }
       }
-    } catch (publicError) {
-      console.error('Error fetching from public books API:', publicError);
+    } catch (error) {
+      console.error('Error fetching books from admin API:', error);
+      // Fall through to next attempt
     }
-    
-    // If public fails, try admin endpoint
-    if (token) {
-      try {
-        const response = await fetch('/api/books', {
-          method: 'GET',
-          headers
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          console.log(`Successfully fetched ${data.data?.length || 0} books from admin API`);
-          if (data.success && Array.isArray(data.data)) {
-            return data.data;
-          }
-        }
-      } catch (adminError) {
-        console.error('Error fetching from admin books API:', adminError);
-      }
-    }
-    
-    // If all endpoints fail, try debug API
-    try {
-      const response = await fetch('/api/books-debug');
-      if (response.ok) {
-        const data = await response.json();
-        console.log('Books retrieved from debug API as fallback');
-        if (data.data && data.data.length > 0) {
-          return data.data;
-        }
-      }
-    } catch (debugError) {
-      console.error('Error using debug API as fallback:', debugError);
-    }
-    
-    // If all else fails, return empty array
-    console.warn('All book API endpoints failed, returning empty array');
-    return [];
-  } catch (outerError) {
-    console.error('Unhandled error in getBooks:', outerError);
-    return [];
   }
+
+  // 2. Try fetching from the public endpoint (if no token or admin fetch failed)
+  try {
+    const response = await fetch('/api/public-books');
+    if (!response.ok) {
+      console.error(`Public book fetch failed: ${response.status} ${response.statusText}`);
+      // Fall through
+    } else {
+      const result = await response.json();
+      if (result.success && Array.isArray(result.data)) {
+        console.log(`Successfully fetched ${result.data.length} books from public API`);
+        return result.data as BookWithId[];
+      }
+    }
+  } catch (error) {
+    console.error('Error fetching books from public API:', error);
+    // Fall through to next attempt
+  }
+
+  // 3. Try fetching from the debug endpoint as a last resort
+  try {
+    const response = await fetch('/api/books-debug');
+    if (!response.ok) {
+      console.error(`Debug book fetch failed: ${response.status} ${response.statusText}`);
+      // Give up
+    } else {
+      const result = await response.json();
+      if (result.success && Array.isArray(result.data)) {
+        console.log(`Successfully fetched ${result.data.length} books from debug API`);
+        return result.data as BookWithId[];
+      }
+    }
+  } catch (error) {
+    console.error('Error fetching books from debug API:', error);
+  }
+
+  // If all attempts fail
+  console.error('All attempts to fetch books failed.');
+  return [];
 };

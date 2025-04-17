@@ -23,6 +23,7 @@
   },
   "books": {
     "title": "My Book Collection",
+    "intro": "Here's a look at the books I've read, am reading, and plan to tackle next.",
     "totalBooks": "Total Books: {{count}}",
     "status": {
       "read": "Read",

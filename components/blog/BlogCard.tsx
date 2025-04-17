@@ -64,13 +64,15 @@ export default function BlogCard({ post, expanded: propExpanded = false, onToggl
         {/* Blog header and summary */}
         <div className={`flex-1 px-6 pt-6 ${post.coverImage ? 'md:pl-6' : ''}`}>
           <div className="flex flex-col">
-            <h2 className="text-xl font-bold mb-2">{post.title}</h2>
+            {/* Apply consistent title style */}
+            <h2 className="text-xl font-bold text-steel-blue mb-2">{post.title}</h2>
             <div className="flex items-center text-gray-500 text-sm mb-3">
               <span>{formattedDate}</span>
               <span className="mx-2">•</span>
               <span>{post.readingTime} {t('blog.minuteRead', 'min read')}</span>
             </div>
-            <p className="text-steel-blue italic">
+            {/* Apply consistent body text style */}
+            <p className="text-gray-700">
               {post.summary}
             </p>
           </div>

@@ -1,12 +1,11 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { initializeAdminApp, getAdminFirestore } from '@/lib/firebase-admin';
+import { initializeAdminApp, getAdminFirestore, getAdminAuth } from '@/lib/firebase-admin';
 import { Timestamp, QueryDocumentSnapshot, DocumentData } from 'firebase-admin/firestore';
-import { getAuth } from 'firebase-admin/auth';
 
 // Ensure Firebase Admin is initialized
 initializeAdminApp();
 const db = getAdminFirestore();
-const auth = getAuth();
+const auth = getAdminAuth();
 
 const BLOG_COLLECTION = 'blog-posts'; // Corrected collection name
 
@@ -59,9 +58,24 @@ export default async function handler(
 
   // GET - Get all blog posts (including unpublished, admin-only)
   if (req.method === 'GET' && req.query.admin) {
-    // TODO: Replace with server-side API call to fetch all blog posts (admin)
-    // Placeholder: return empty list
-    return res.status(200).json({ success: true, data: [] }); // KEEPING STUBBED FOR NOW
+    try {
+      console.log(`Admin request: Fetching all documents from ${BLOG_COLLECTION}`);
+      const querySnapshot = await postsCollection.orderBy('updatedAt', 'desc').get(); // Fetch all, order by update time
+      const posts = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...convertFirestoreToApiResponse(doc.data())
+      }));
+      console.log(`Admin request: Found ${posts.length} posts.`);
+      return res.status(200).json({ success: true, data: posts });
+    } catch (error: any) {
+      console.error('API error fetching all blog posts (admin):', error);
+      console.error('Firestore Error Code:', error.code);
+      console.error('Firestore Error Message:', error.message);
+      const errorMessage = error.code === 'FAILED_PRECONDITION' && error.message.includes('index')
+        ? 'Firestore query requires an index. Please check Firebase console.'
+        : 'Failed to fetch blog posts due to a server error.';
+      return res.status(500).json({ success: false, error: errorMessage });
+    }
   }
 
   // POST - Create a new blog post

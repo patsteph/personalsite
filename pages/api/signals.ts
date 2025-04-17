@@ -1,13 +1,11 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { initializeAdminApp, getAdminFirestore } from '@/lib/firebase-admin'; // Using alias
+import { initializeAdminApp, getAdminFirestore, getAdminAuth } from '@/lib/firebase-admin'; // Using alias
 import { Timestamp, QueryDocumentSnapshot, DocumentData } from 'firebase-admin/firestore';
-import { getAuth } from 'firebase-admin/auth';
 
 // Initialize Firebase Admin
 initializeAdminApp();
 const db = getAdminFirestore();
-const auth = getAuth();
-
+const auth = getAdminAuth();
 const SIGNALS_COLLECTION = 'signals';
 
 type SignalResponse = {

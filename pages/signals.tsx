@@ -1,7 +1,9 @@
 import { GetStaticProps } from 'next';
 import Layout from '@/components/layout/Layout';
 // Removed getSignalsServerSide import. Use server-side API or stubbed logic.
-import { Newsletter, Article } from '@/types';
+import { Newsletter, Article, Signal } from '@/types';
+import { getAdminFirestore } from '@/lib/firebase-admin';
+import { Timestamp, QueryDocumentSnapshot } from 'firebase-admin/firestore';
 
 type SignalsPageProps = {
   newsletters: Newsletter[];
@@ -17,7 +19,7 @@ export default function SignalsPage({ newsletters, articles, error }: SignalsPag
     return (
       <Layout title="Signals - Recommendations" section="signals">
         <div className="container mx-auto px-4 py-8">
-          <h1 className="text-3xl font-bold mb-8">Signals</h1>
+          <h1 className="text-3xl md:text-4xl font-bold text-accent mb-8">Signals</h1>
           <p className="text-red-500">Error loading signals: {error}</p>
         </div>
       </Layout>
@@ -27,10 +29,10 @@ export default function SignalsPage({ newsletters, articles, error }: SignalsPag
   return (
     <Layout title="Signals - Recommendations" section="signals">
       <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-8">Signals</h1>
+        <h1 className="text-3xl md:text-4xl font-bold text-accent mb-8">Signals</h1>
         
         <section className="mb-12">
-          <h2 className="text-2xl font-semibold mb-4">Newsletters</h2>
+          <h2 className="text-2xl font-bold text-accent mb-6">Newsletters</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {newsletters.map(newsletter => (
               <div key={newsletter.id} className="signal-card-container">
@@ -92,7 +94,7 @@ export default function SignalsPage({ newsletters, articles, error }: SignalsPag
         </section>
         
         <section>
-          <h2 className="text-2xl font-semibold mb-4">Articles</h2>
+          <h2 className="text-2xl font-bold text-accent mb-6">Articles</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {articles.map(article => (
               <div key={article.id} className="signal-card-container">
@@ -160,45 +162,94 @@ export default function SignalsPage({ newsletters, articles, error }: SignalsPag
   );
 }
 
-export const getStaticProps: GetStaticProps = async () => {
-  console.log('signals.tsx getStaticProps: Fetching signals...');
-  // TODO: Replace with server-side API call or real data fetching for signals
-  const newsletters: Newsletter[] = [
-    {
-      id: 'stubbed-newsletter-1',
-      title: 'Stubbed Newsletter',
-      url: 'https://example.com/newsletter',
-      publisher: 'Stubbed Publisher',
-      frequency: 'weekly',
-      description: 'A stubbed description for the newsletter.',
-      tags: ['tech', 'stub'],
-      dateAdded: new Date().toISOString(),
-      type: 'newsletter',
-      subscriptionUrl: 'https://example.com/subscribe',
-      featured: false,
-    }
-  ];
-  const articles: Article[] = [
-    {
-      id: 'stubbed-article-1',
-      title: 'Stubbed Article',
-      url: 'https://example.com/article',
-      author: 'Stubbed Author',
-      description: 'A stubbed description for the article.',
-      tags: ['leadership', 'stub'],
-      dateAdded: new Date().toISOString(),
-      type: 'article',
-      source: 'Stubbed Source',
-      publishDate: new Date().toISOString(),
-      featured: false,
-    }
-  ];
-  return {
-    props: {
-      newsletters,
-      articles,
-    },
-    revalidate: 10,
-  };
+export const getStaticProps: GetStaticProps<SignalsPageProps> = async () => {
+  console.log('signals.tsx getStaticProps: Fetching signals from Firestore...');
+  try {
+    const firestore = getAdminFirestore();
+    const signalsRef = firestore.collection('signals');
+    // Fetch all signals, order by dateAdded descending
+    const snapshot = await signalsRef.orderBy('dateAdded', 'desc').get();
 
+    let newsletters: Newsletter[] = [];
+    let articles: Article[] = [];
+
+    if (!snapshot.empty) {
+      snapshot.docs.forEach((doc: QueryDocumentSnapshot) => {
+        // Use Record<string, any> for safer property access before specific typing
+        const data = doc.data() as Record<string, any>; 
+        const id = doc.id;
+
+        // Helper function to safely convert potential Timestamp object to ISO string
+        const toISOString = (dateValue: any): string | null => {
+          if (!dateValue) return null;
+          // Check for Firestore Timestamp structure (Admin SDK might use _seconds)
+          const seconds = dateValue.seconds ?? dateValue._seconds;
+          const nanoseconds = dateValue.nanoseconds ?? dateValue._nanoseconds;
+          if (typeof seconds === 'number' && typeof nanoseconds === 'number') {
+            return new Date(seconds * 1000 + nanoseconds / 1000000).toISOString();
+          }
+          // Check if it's already a Date object or ISO string
+          if (dateValue instanceof Date) return dateValue.toISOString();
+          if (typeof dateValue === 'string') return dateValue; // Assume it's already ISO
+          return null; // Cannot convert
+        };
+
+        // Basic common serialization
+        const serializedData = {
+          id,
+          title: data.title || 'Untitled Signal',
+          url: data.url || '#',
+          description: data.description || 'No description provided.',
+          tags: data.tags || [],
+          // Use helper for safe Timestamp conversion
+          dateAdded: toISOString(data.dateAdded),
+          featured: data.featured || false,
+          type: data.type || 'article', // Default to article if type is missing
+        };
+
+        // Type-specific data and casting
+        if (serializedData.type === 'newsletter') {
+          newsletters.push({
+            ...serializedData,
+            // Access properties directly from 'data' now it's Record<string, any>
+            publisher: data.publisher || 'Unknown Publisher',
+            frequency: data.frequency || 'unknown',
+            subscriptionUrl: data.subscriptionUrl,
+            type: 'newsletter', // Ensure type is correct
+          } as Newsletter);
+        } else if (serializedData.type === 'article') {
+          articles.push({
+            ...serializedData,
+            author: data.author || 'Unknown Author',
+            source: data.source || 'Unknown Source',
+            // Use helper for safe Timestamp conversion
+            publishDate: toISOString(data.publishDate),
+            // Ensure readingTime is null if undefined, otherwise keep its value
+            readingTime: data.readingTime === undefined ? null : data.readingTime,
+            type: 'article', // Ensure type is correct
+          } as Article);
+        }
+      });
+    }
+
+    console.log(`signals.tsx getStaticProps: Fetched ${newsletters.length} newsletters and ${articles.length} articles.`);
+
+    return {
+      props: {
+        newsletters,
+        articles,
+      },
+      revalidate: 3600, // Revalidate every hour
+    };
+  } catch (error: any) {
+    console.error('signals.tsx getStaticProps: Error fetching signals:', error);
+    return {
+      props: {
+        newsletters: [],
+        articles: [],
+        error: `Failed to load signals: ${error.message || 'Unknown error'}`, // Pass error message
+      },
+      revalidate: 60, // Revalidate quickly after error
+    };
+  }
 };

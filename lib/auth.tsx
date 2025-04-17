@@ -1,6 +1,13 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
-import * as authApi from './api/auth';
-import { AppUser } from './api/auth';
+import { getCurrentUserToken, AppUser } from './api/auth';
+import { auth } from '@/lib/firebase-client';
+import {
+  signInWithEmailAndPassword,
+  signOut as firebaseSignOut,
+  onAuthStateChanged,
+  getIdToken,
+  User as FirebaseUser
+} from 'firebase/auth';
 
 // Constants for auth timeouts
 const TOKEN_REFRESH_INTERVAL = 10 * 60 * 1000; // 10 minutes
@@ -102,7 +109,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
       
       // If we reach here, either there was no token or it was invalid
-      return await authApi.getCurrentUserToken(true);
+      return await getCurrentUserToken(true);
     } catch (error) {
       console.error('Failed to refresh token:', error);
       return null;
@@ -146,99 +153,80 @@ export function AuthProvider({ children }: AuthProviderProps) {
     };
   }, [isAuthenticated, refreshToken, updateLastActivity, checkInactivity]);
 
-  // Check for existing auth token on mount
-  useEffect(() => {
-    const checkExistingAuth = async () => {
-      try {
-        setLoading(true);
-        // Check for existing token in localStorage
-        const token = localStorage.getItem('authToken');
-        
-        if (token) {
-          // Verify token with server
-          try {
-            const currentUser = await authApi.getCurrentUser();
-            if (currentUser) {
-              setUser(currentUser);
-              setIsAuthenticated(true);
-              updateLastActivity();
-            } else {
-              // Invalid token, clear it
-              localStorage.removeItem('authToken');
-            }
-          } catch (error) {
-            console.error('Error restoring authentication:', error);
-            localStorage.removeItem('authToken');
-          }
-        }
-      } catch (error) {
-        console.error('Auth restoration error:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    checkExistingAuth();
-  }, [updateLastActivity]);
-
-  // Function to reset auth error
-  const resetAuthError = () => {
-    setAuthError(null);
-  };
-
-  // Function to recheck auth state
-  const recheckAuthState = async (): Promise<boolean> => {
-    if (user) {
-      try {
-        // Try to refresh the token to verify auth state is still valid
-        const token = await refreshToken();
-        return !!token;
-      } catch (error) {
-        console.error('Auth state check failed:', error);
-        return false;
-      }
-    }
-    return false;
-  };
-
   // Function to sign in
   const signIn = async (email: string, password: string): Promise<void> => {
+    // Check if auth is initialized
+    if (!auth) {
+        const error = new Error("Firebase Auth is not initialized. Check firebase-client.ts and environment variables.");
+        console.error(error.message);
+        setAuthError(error);
+        throw error;
+    }
+    
     try {
       setLoading(true);
       setAuthError(null);
-      
-      // Use the auth API to sign in
-      const authCredential = await authApi.signInWithEmailAndPassword(email, password);
-      setUser(authCredential.user);
+
+      // --- Use Firebase Client SDK directly ---
+      console.log(`Attempting Firebase client sign-in for: ${email}`);
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const firebaseUser = userCredential.user;
+      console.log('Firebase client sign-in successful:', firebaseUser.uid);
+
+      // Map Firebase User to our AppUser type
+      const appUser: AppUser = {
+        uid: firebaseUser.uid,
+        email: firebaseUser.email || undefined,
+        displayName: firebaseUser.displayName || undefined,
+        photoURL: firebaseUser.photoURL || undefined,
+      };
+      setUser(appUser);
       setIsAuthenticated(true);
-      
-      // Token is already stored in localStorage by the auth API function
-      
+
+      // --- Get and store ID token ---
+      const token = await firebaseUser.getIdToken();
+      if (typeof window !== 'undefined') {
+          localStorage.setItem('authToken', token); // Store token for API calls
+          console.log('Auth token stored in localStorage');
+      }
+      // -----------------------------
+
       // Reset activity timestamp
       updateLastActivity();
-      
-      // Store auth success in both sessionStorage and a cookie for better persistence
+
+      // Store auth success state (optional, might be redundant now)
       if (typeof window !== 'undefined') {
-        // Session storage for current tab
         sessionStorage.setItem('auth_success', 'true');
         sessionStorage.setItem('auth_timestamp', new Date().toISOString());
-        
-        // Set a cookie as backup
         document.cookie = `auth_success=true; path=/; max-age=3600; SameSite=Strict`;
-        
-        console.log('Auth state saved to session and cookies');
+        console.log('Auth success state saved to session and cookies');
       }
-    } catch (error) {
-      console.error('Authentication error:', error);
-      setAuthError(error instanceof Error ? error : new Error('Authentication failed'));
-      throw error;
+
+    } catch (error: any) {
+      console.error('Firebase client sign-in error:', error);
+      // Provide more specific error messages if possible
+      let errorMessage = 'Authentication failed. Please check your credentials.';
+      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+        errorMessage = 'Invalid email or password.';
+      } else if (error.code === 'auth/too-many-requests') {
+          errorMessage = 'Access temporarily disabled due to too many failed login attempts. Please reset your password or try again later.'
+      } else if (error.code === 'auth/network-request-failed') {
+          errorMessage = 'Network error. Please check your connection and try again.'
+      }
+      setAuthError(new Error(errorMessage));
+      throw new Error(errorMessage); // Re-throw formatted error for LoginForm
     } finally {
       setLoading(false);
     }
   };
 
-  // Function to sign out
+  // --- Update signOut to use firebaseSignOut ---
   const signOut = async (): Promise<void> => {
+     if (!auth) {
+        console.error("Firebase Auth is not initialized. Cannot sign out.");
+        // Optionally set an error state
+        return;
+    }
     try {
       setLoading(true);
       
@@ -253,8 +241,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         sessionTimeoutRef.current = null;
       }
       
-      // Use the auth API to sign out
-      await authApi.signOut();
+      await firebaseSignOut(auth); // <-- Use Firebase sign out
       setUser(null);
       setIsAuthenticated(false);
       
@@ -278,6 +265,76 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } finally {
       setLoading(false);
     }
+  };
+
+  // --- Update onAuthStateChanged ---
+  // Replace previous checkExistingAuth useEffect with onAuthStateChanged listener
+  useEffect(() => {
+      if (!auth) {
+          console.warn("Firebase Auth not initialized. Skipping auth state listener.");
+          setLoading(false); // Ensure loading state is false if auth isn't set up
+          return;
+      }
+      console.log("Setting up onAuthStateChanged listener...");
+      const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+          setLoading(true); // Set loading true while processing auth state change
+          if (firebaseUser) {
+              console.log("onAuthStateChanged: User is signed in:", firebaseUser.uid);
+              const appUser: AppUser = {
+                  uid: firebaseUser.uid,
+                  email: firebaseUser.email || undefined,
+                  displayName: firebaseUser.displayName || undefined,
+                  photoURL: firebaseUser.photoURL || undefined,
+              };
+              setUser(appUser);
+              setIsAuthenticated(true);
+              try {
+                  const token = await firebaseUser.getIdToken(true); // Force refresh token
+                  if (typeof window !== 'undefined') {
+                    localStorage.setItem('authToken', token);
+                    console.log("Auth token refreshed and stored.");
+                  }
+              } catch (tokenError) {
+                   console.error("Error getting ID token on auth state change:", tokenError);
+                   // Handle token error, maybe sign out user
+                   await signOut();
+              }
+          } else {
+              console.log("onAuthStateChanged: User is signed out.");
+              setUser(null);
+              setIsAuthenticated(false);
+               if (typeof window !== 'undefined') {
+                  localStorage.removeItem('authToken');
+                  console.log("Auth token removed.");
+               }
+          }
+          setLoading(false); // Set loading false after processing
+      });
+      // Cleanup listener on unmount
+      return () => {
+        console.log("Cleaning up onAuthStateChanged listener.");
+        unsubscribe();
+      };
+  }, [auth]); // Add auth as dependency
+
+  // Function to reset auth error
+  const resetAuthError = () => {
+    setAuthError(null);
+  };
+
+  // Function to recheck auth state
+  const recheckAuthState = async (): Promise<boolean> => {
+    if (user) {
+      try {
+        // Try to refresh the token to verify auth state is still valid
+        const token = await refreshToken();
+        return !!token;
+      } catch (error) {
+        console.error('Auth state check failed:', error);
+        return false;
+      }
+    }
+    return false;
   };
 
   return (

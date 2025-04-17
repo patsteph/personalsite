@@ -1,33 +1,38 @@
 // types/book.ts
-export type BookStatus = 'read' | 'reading' | 'toRead';
+export type BookStatus = 'to-read' | 'reading' | 'read' | 'did-not-finish' | 'on-hold';
 
 export type BookFilter = 'all' | BookStatus;
 
 export type BookSortOption = 'title' | 'author' | 'genre' | 'rating';
 
-export interface Book {
+// Represents the structure of a book object in the application
+export type Book = {
   id: string;
-  isbn: string;
   title: string;
   authors: string[];
-  publisher?: string;
+  googleBooksId?: string; // Optional: Google Books Volume ID
+  status: BookStatus;
+  dateAdded: string | null;
+  lastUpdated: string | null;
+  isbn?: string;
   publishedDate?: string;
   description?: string;
   pageCount?: number;
-  categories?: string[];
-  imageLinks?: {
-    thumbnail?: string;
-    smallThumbnail?: string;
-  };
+  genres?: string[];
   averageRating?: number;
-  ratingsCount?: number;
-  status: BookStatus;
+  userRating?: number | null;
+  imageLinks?: {
+    smallThumbnail?: string;
+    thumbnail?: string;
+  };
   notes?: string;
-  userRating?: number; // 1-5 stars
-  dateAdded: string;
-}
+  publisher?: string;
+};
+
+export type BookWithId = Book & { id: string };
 
 export interface BookSearchResult {
+  id: string;
   title: string;
   authors: string[];
   publisher?: string;

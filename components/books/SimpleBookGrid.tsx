@@ -1,628 +1,299 @@
-import { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Book } from '@/types/book';
-// Next Image import not used - using standard HTML img tags
-// Import Firebase modules directly at the top level
-import { getBooks } from '@/lib/books';
 import { trackBookInteraction } from '@/lib/analytics';
+// Import Firebase client SDK modules - ADD where for query building
+import { getFirestore, collection, query, orderBy, startAfter, limit, getDocs, DocumentSnapshot, DocumentData, Timestamp, where, QueryConstraint } from 'firebase/firestore'; // Add where, QueryConstraint
+import { app, db } from '@/lib/firebase-client'; // Lint error 6b40f28f persists here
+import BookModal from '@/components/books/BookModal'; // Corrected import path
+import Image from 'next/image'; // Use Next Image for optimization
 
-// No need to re-declare Window types - they're already defined in /types/window.d.ts
+const BOOKS_PER_PAGE = 24; // Must match getStaticProps
 
+// --- Update Props Type ---
 type SimpleBookGridProps = {
   initialBooks: Book[];
+  totalBooks: number; // Total unfiltered count from getStaticProps
+  statusFilter: string;
+  ratingFilter: number | '';
+  genreFilter: string;
 };
 
-export default function SimpleBookGrid({ initialBooks }: SimpleBookGridProps) {
+export default function SimpleBookGrid({
+  initialBooks,
+  totalBooks: initialTotalBooks, // Rename to avoid confusion with filtered total
+  statusFilter,
+  ratingFilter,
+  genreFilter,
+}: SimpleBookGridProps) {
   const [books, setBooks] = useState<Book[]>(initialBooks);
+  const [loading, setLoading] = useState<boolean>(false);
+  // Use DocumentSnapshot<DocumentData> for more specific typing
+  const [lastVisible, setLastVisible] = useState<DocumentSnapshot<DocumentData> | null>(null);
+  const [hasMore, setHasMore] = useState<boolean>(initialBooks.length < initialTotalBooks && initialBooks.length > 0); // Initial check based on props
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
-  const [loading, setLoading] = useState(!initialBooks.length);
-  
-  // Analytics for book views - consolidated at component level to avoid hook rule violations
-  useEffect(() => {
-    if (selectedBook) {
-      try {
-        trackBookInteraction('detail', selectedBook.id, {
-          book_title: selectedBook.title
-        });
-      } catch (error) {
-        console.error('Error tracking book detail view:', error);
-      }
-    }
-  }, [selectedBook]);
-  
-  // Log when books are loaded/displayed
-  useEffect(() => {
-    if (books.length > 0) {
-      try {
-        trackBookInteraction('view', undefined, {
-          book_count: books.length
-        });
-      } catch (error) {
-        console.error('Error tracking books view:', error);
-      }
-    }
-  }, [books.length]);
-  
-  useEffect(() => {
-    // Fetch books from server-side API
-    async function fetchBooksFromApi() {
-      try {
-        setLoading(true);
-        const apiBooks = await getBooks();
-        setBooks(apiBooks);
-      } catch (error) {
-        console.error('Error loading books from API:', error);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchBooksFromApi();
-  }, []);
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
 
-  // Simple book card component
-  const BookCard = ({ book }: { book: Book }) => {
-    // Safety check for book object
-    if (!book) {
-      console.error('Received undefined book in BookCard');
-      return null;
+  // Ref for intersection observer
+  const observerTarget = useRef<HTMLDivElement | null>(null);
+
+  // --- Reset and Load on Filter Change ---
+  useEffect(() => {
+    console.log('Filters changed:', { statusFilter, ratingFilter, genreFilter });
+    // Reset state when filters change to trigger a fresh load
+    setBooks([]); // Clear current books
+    setLastVisible(null); // Reset pagination cursor
+    setHasMore(true); // Assume there might be books with the new filter
+    setLoading(true); // Set loading state
+    // Immediately call loadMoreBooks to fetch the first page with new filters
+    // Note: This call happens after the state resets have been queued.
+    loadMoreBooks(true); // Pass a flag to indicate it's a reset load
+  }, [statusFilter, ratingFilter, genreFilter]); // Dependencies: run when filters change
+
+  // --- Updated Load More Books Function ---
+  const loadMoreBooks = useCallback(async (isFilterReset = false) => {
+    // --- Add null check for db ---
+    if (!db) {
+        console.warn("Firestore client (db) not initialized, cannot load books.");
+        setLoading(false); // Ensure loading state is reset
+        setHasMore(false); // Cannot load more if db is missing
+        return;
     }
-    
-    // Analytics logging moved out of conditional block
-    
-    // Ultra-safe author text handling with fallbacks at every level
-    let authorText = 'Unknown Author';
-    
+    // --- End null check ---
+
+    // Prevent loading if already loading or no more books expected
+    // Allow loading if it's triggered by a filter reset, even if hasMore was previously false
+    if (loading && !isFilterReset) return;
+    if (!hasMore && !isFilterReset) {
+      console.log("LoadMoreBooks: No more books to load.");
+      return;
+    }
+
+    // Set loading state only if it's not a filter reset (already set in useEffect)
+    if (!isFilterReset) {
+      setLoading(true);
+    }
+    console.log("LoadMoreBooks: Fetching...", { lastVisible: lastVisible?.id, hasMore, isFilterReset });
+
     try {
-      // First, ensure authors exists
-      if (book.authors !== undefined && book.authors !== null) {
-        // Handle string case
-        if (typeof book.authors === 'string') {
-          authorText = book.authors;
-        }
-        // Handle array case with additional safety
-        else if (Array.isArray(book.authors)) {
-          // Additional safety: check if every element is a string
-          const validAuthors = book.authors.filter(author => 
-            author !== undefined && author !== null && typeof author === 'string'
-          );
-          
-          if (validAuthors.length > 0) {
-            authorText = validAuthors.join(', ');
-          }
-        }
+      // Base query reference (not the query itself yet)
+      const booksCollRef = collection(db, 'books');
+
+      // Array to hold query constraints (where clauses, orderBy, limit, startAfter)
+      const constraints: QueryConstraint[] = [];
+
+      // --- Dynamically add WHERE clauses based on filters ---
+      if (statusFilter) {
+        constraints.push(where('status', '==', statusFilter));
       }
-    } catch (error) {
-      console.error('Error formatting author text:', error);
-      // Fallback to unknown author on any error
+      if (ratingFilter !== '') {
+        // Ensure ratingFilter is treated as a number for comparison
+        constraints.push(where('userRating', '>=', Number(ratingFilter)));
+      }
+      if (genreFilter) {
+        // Assumes 'genres' field in Firestore is an array - renamed from categories
+        constraints.push(where('genres', 'array-contains', genreFilter));
+      }
+      // --- End WHERE clauses ---
+
+      // Add default sorting (e.g., by title) - adjust if needed
+      // IMPORTANT: Any field used in orderBy must also be the first field in an inequality filter (<, <=, >, >=) if one exists.
+      // If filtering by rating (>=), we might need to order by rating first, then title.
+      // Let's keep title for now, but be aware index might be needed or order adjusted.
+      constraints.push(orderBy('title', 'asc'));
+
+      // Add pagination limit
+      constraints.push(limit(BOOKS_PER_PAGE));
+
+      // Add cursor for pagination if lastVisible exists
+      // Only add startAfter if it's NOT a filter reset load
+      if (lastVisible && !isFilterReset) {
+        constraints.push(startAfter(lastVisible));
+      }
+
+      // Construct the final query
+      const finalQuery = query(booksCollRef, ...constraints);
+
+      const documentSnapshots = await getDocs(finalQuery);
+
+      const newBooks: Book[] = [];
+      documentSnapshots.forEach((doc) => {
+        // Basic serialization, assuming Firestore data matches Book type closely
+        const data = doc.data();
+        const book: Book = {
+          id: doc.id,
+          // Map fields, ensuring correct types and handling potential undefined/null
+          title: data.title || 'Untitled',
+          authors: data.authors || [],
+          googleBooksId: data.googleBooksId || undefined, // Use undefined if not present
+          // isbn: data.isbn || '', // Use optional fields from type
+          // publisher: data.publisher || '',
+          // publishedDate: data.publishedDate || '',
+          // description: data.description || '',
+          // pageCount: data.pageCount || 0,
+          // thumbnailUrl: data.thumbnailUrl || '/placeholder-book.png', // Use imageLinks instead
+          status: data.status || 'To Read', // Ensure this matches BookStatus type ('Read', 'Currently Reading', 'To Read')
+          dateAdded: data.dateAdded instanceof Timestamp ? data.dateAdded.toDate().toISOString() : null,
+          // Add mapping for other fields defined in the Book type
+          lastUpdated: data.lastUpdated instanceof Timestamp ? data.lastUpdated.toDate().toISOString() : null,
+          isbn: data.isbn || undefined,
+          publishedDate: data.publishedDate || undefined,
+          description: data.description || undefined,
+          pageCount: data.pageCount || undefined,
+          // --- Corrected Image Handling ---
+          imageLinks: {
+              smallThumbnail: data.imageLinks?.smallThumbnail || data.thumbnailUrl || undefined,
+              thumbnail: data.imageLinks?.thumbnail || data.thumbnailUrl || undefined,
+          },
+          // --- End Corrected Image Handling ---
+          genres: data.genres || [], // Ensure this matches Firestore field name ('genres' not 'categories')
+          averageRating: data.averageRating || undefined,
+          userRating: data.userRating === undefined ? null : data.userRating,
+          notes: data.notes || null,
+          publisher: data.publisher || undefined,
+        };
+        newBooks.push(book);
+      });
+
+      // Update lastVisible document for pagination
+      const lastDoc = documentSnapshots.docs[documentSnapshots.docs.length - 1];
+      setLastVisible(lastDoc || null);
+
+      // Update books state: replace on filter reset, append otherwise
+      setBooks(prevBooks => isFilterReset ? newBooks : [...prevBooks, ...newBooks]);
+
+      // Determine if there are more books to load
+      setHasMore(documentSnapshots.docs.length === BOOKS_PER_PAGE);
+
+      console.log(`LoadMoreBooks: Fetched ${newBooks.length} books. HasMore: ${documentSnapshots.docs.length === BOOKS_PER_PAGE}`);
+
+    } catch (error) { 
+      console.error("Error loading more books:", error);
+      // Optionally, set an error state to display to the user
+      setHasMore(false); // Stop trying to load more on error
+    } finally {
+      setLoading(false);
     }
-    
-    // Default cover handling
-    const coverImage = book.imageLinks?.thumbnail || 
-                       book.imageLinks?.smallThumbnail || 
-                       'https://placehold.co/200x300/e0e0e0/808080?text=No+Cover';
-    
-    // Status badge color
-    const statusColor = {
-      read: 'bg-green-100 text-green-800',
-      reading: 'bg-blue-100 text-blue-800',
-      toRead: 'bg-yellow-100 text-yellow-800'
-    }[book.status] || 'bg-gray-100 text-gray-800';
-    
-    // Format book status
-    const formatStatus = (status: string) => {
-      switch (status) {
-        case 'read': return 'Read';
-        case 'reading': return 'Reading';
-        case 'toRead': return 'To Read';
-        default: return status;
+    // Add filters to useCallback dependencies
+  }, [loading, hasMore, lastVisible, statusFilter, ratingFilter, genreFilter, initialBooks]);
+
+  // --- Intersection Observer Logic (mostly unchanged) ---
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loading) {
+          console.log("Intersection observer triggered loadMoreBooks");
+          loadMoreBooks();
+        }
+      },
+      { threshold: 0.8 } // Trigger when 80% visible
+    );
+
+    const currentTarget = observerTarget.current;
+    if (currentTarget) {
+      observer.observe(currentTarget);
+    }
+
+    return () => {
+      if (currentTarget) {
+        observer.unobserve(currentTarget);
       }
     };
-    
-    return (
-      <div 
-        className="bg-white rounded-lg shadow-md overflow-hidden cursor-pointer transform transition-transform hover:-translate-y-1 hover:shadow-lg"
-        onClick={() => setSelectedBook(book)}
-      >
-        <div className="relative h-48 bg-gray-200">
-          {/* Using div with background image for more reliable display */}
-          <div 
-            className="absolute inset-0 bg-cover bg-center"
-            style={{ backgroundImage: `url(${coverImage})` }}
-          >
-            {/* Empty image for sizing */}
-            <img src={coverImage} alt="" className="opacity-0 w-full h-full" />
-          </div>
-          
-          {/* Status badge */}
-          <div className="absolute top-2 right-2">
-            <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusColor}`}>
-              {formatStatus(book.status)}
-            </span>
-          </div>
-        </div>
-        
-        <div className="p-4">
-          <h3 className="font-medium text-gray-900 line-clamp-1">{book.title}</h3>
-          <p className="text-sm text-gray-600 line-clamp-1">{authorText}</p>
-          
-          {/* Rating if available */}
-          {(book.userRating || book.averageRating) && (
-            <div className="mt-2 flex items-center">
-              <div className="flex">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <svg 
-                    key={star}
-                    className={`w-4 h-4 ${(book.userRating || book.averageRating || 0) >= star ? 'text-yellow-400' : 'text-gray-300'}`}
-                    xmlns="http://www.w3.org/2000/svg" 
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                  </svg>
-                ))}
-              </div>
-              <span className="ml-1 text-xs text-gray-600">
-                {book.userRating || book.averageRating}
-              </span>
-            </div>
-          )}
-        </div>
-      </div>
-    );
+  }, [hasMore, loading, loadMoreBooks]); // Ensure loadMoreBooks is stable or included
+
+  // --- Modal Handling (modified) ---
+  const handleBookClick = (book: Book) => {
+    setSelectedBook(book);
+    // Track the interaction type. Currently doesn't support passing extra properties.
+    trackBookInteraction('detail'); 
   };
-  
-  // Book details modal
-  const BookDetailsModal = ({ book, onClose }: { book: Book, onClose: () => void }) => {
-    // Safety check for book object
-    if (!book) {
-      console.error('Received undefined book in BookDetailsModal');
-      return null;
-    }
-    
-    // Analytics logging moved out of conditional block
-    
-    // Ultra-safe author text handling with fallbacks at every level
-    let authorText = 'Unknown Author';
-    
-    try {
-      // First, ensure authors exists
-      if (book.authors !== undefined && book.authors !== null) {
-        // Handle string case
-        if (typeof book.authors === 'string') {
-          authorText = book.authors;
-        }
-        // Handle array case with additional safety
-        else if (Array.isArray(book.authors)) {
-          // Additional safety: check if every element is a string
-          const validAuthors = book.authors.filter(author => 
-            author !== undefined && author !== null && typeof author === 'string'
-          );
-          
-          if (validAuthors.length > 0) {
-            authorText = validAuthors.join(', ');
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Error formatting author text in modal:', error);
-      // Fallback to unknown author on any error
-    }
-    
-    const coverImage = book.imageLinks?.thumbnail || 
-                       book.imageLinks?.smallThumbnail || 
-                       'https://placehold.co/200x300/e0e0e0/808080?text=No+Cover';
-                       
-    // Ultra-safe category text handling with fallbacks at every level
-    let categories = '';
-    
-    try {
-      // First, ensure categories exists
-      if (book.categories !== undefined && book.categories !== null) {
-        // Handle string case
-        if (typeof book.categories === 'string') {
-          categories = book.categories;
-        }
-        // Handle array case with additional safety
-        else if (Array.isArray(book.categories)) {
-          // Additional safety: filter out invalid categories
-          const validCategories = book.categories.filter(category => 
-            category !== undefined && category !== null && typeof category === 'string'
-          );
-          
-          if (validCategories.length > 0) {
-            categories = validCategories.join(', ');
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Error formatting categories text:', error);
-      // Empty string fallback on any error
-    }
-    
-    return (
-      <div 
-        className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 animate-fadeIn"
-        onClick={onClose}
-        style={{ backdropFilter: 'blur(5px)' }}
-      >
-        <div 
-          className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto transform animate-scaleIn"
-          onClick={e => e.stopPropagation()}
-        >
-          {/* Close button - positioned absolute in top-right */}
-          <button 
-            onClick={onClose}
-            className="absolute top-3 right-3 bg-gray-200 hover:bg-gray-300 rounded-full p-2 text-gray-700 transition-colors z-10"
-            aria-label="Close modal"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-          
-          <div className="flex flex-col md:flex-row">
-            {/* Book cover */}
-            <div className="md:w-1/3 p-6 flex justify-center">
-              <div className="w-48 h-64 relative bg-gray-200 shadow-lg">
-                <div
-                  className="absolute inset-0 bg-cover bg-center"
-                  style={{ backgroundImage: `url(${coverImage})` }}
-                />
-              </div>
-            </div>
-            
-            {/* Book details */}
-            <div className="md:w-2/3 p-6 pt-10 md:pt-6"> {/* Add padding-top on mobile for close button */}
-              <div className="flex justify-between items-start">
-                <h2 className="text-2xl font-bold text-gray-900">{book.title}</h2>
-              </div>
-              
-              <div className="text-lg text-gray-700 mb-4">by {authorText}</div>
-              
-              {/* Rating */}
-              {(book.userRating || book.averageRating) && (
-                <div className="mb-4 flex items-center">
-                  <div className="flex">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <svg 
-                        key={star}
-                        className={`w-5 h-5 ${(book.userRating || book.averageRating || 0) >= star ? 'text-yellow-400' : 'text-gray-300'}`}
-                        xmlns="http://www.w3.org/2000/svg" 
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                      >
-                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                      </svg>
-                    ))}
-                  </div>
-                  <span className="ml-2 text-gray-600">
-                    {book.userRating || book.averageRating}/5
-                  </span>
-                </div>
-              )}
-              
-              {/* Categories */}
-              {categories && (
-                <div className="mb-4">
-                  <span className="text-gray-600 text-sm">{categories}</span>
-                </div>
-              )}
-              
-              {/* Description */}
-              {book.description && (
-                <div className="mb-4">
-                  <h3 className="font-semibold text-gray-800 mb-2">Description</h3>
-                  <p className="text-gray-700">{book.description}</p>
-                </div>
-              )}
-              
-              {/* Book details grid */}
-              <div className="grid grid-cols-2 gap-4 mt-6">
-                {book.publisher && (
-                  <div>
-                    <span className="font-medium text-gray-700">Publisher:</span>{' '}
-                    <span className="text-gray-600">{book.publisher}</span>
-                  </div>
-                )}
-                
-                {book.publishedDate && (
-                  <div>
-                    <span className="font-medium text-gray-700">Published:</span>{' '}
-                    <span className="text-gray-600">{book.publishedDate}</span>
-                  </div>
-                )}
-                
-                {book.pageCount && (
-                  <div>
-                    <span className="font-medium text-gray-700">Pages:</span>{' '}
-                    <span className="text-gray-600">{book.pageCount}</span>
-                  </div>
-                )}
-                
-                {book.isbn && (
-                  <div>
-                    <span className="font-medium text-gray-700">ISBN:</span>{' '}
-                    <span className="text-gray-600">{book.isbn}</span>
-                  </div>
-                )}
-              </div>
-              
-              {/* Notes */}
-              {book.notes && (
-                <div className="mt-6 bg-gray-50 p-4 rounded-lg">
-                  <h3 className="font-semibold text-gray-800 mb-2">My Notes</h3>
-                  <p className="text-gray-700 italic">{book.notes}</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
-  
-  // Filter and search controls
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [genreFilter, setGenreFilter] = useState('all');
-  const [ratingFilter, setRatingFilter] = useState('all');
-  const [searchQuery, setSearchQuery] = useState('');
-  
-  // Extra safety checks for filtering books
-  const safeBooksArray = Array.isArray(books) ? books : [];
-  
-  // Additional safety: thoroughly validate books before filtering
-  const validBooks = safeBooksArray.filter(book => {
-    // Must have a defined book object
-    if (!book) return false;
-    
-    // Must have an authors property that is an array (even if empty)
-    // This is critical since we call .join() on authors
-    if (book.authors === undefined || book.authors === null) return false;
-    
-    // Convert string authors to array if needed
-    if (typeof book.authors === 'string') {
-      book.authors = [book.authors];
-    }
-    
-    // Ensure it's an array at this point (strict check)
-    if (!Array.isArray(book.authors)) return false;
-    
-    return true;
-  });
-  
-  // Extract all unique genres from books
-  const genres = useMemo(() => {
-    const genreSet = new Set<string>();
-    genreSet.add('all'); // Always include "all" option
-    
-    validBooks.forEach(book => {
-      if (book.categories && Array.isArray(book.categories)) {
-        book.categories.forEach(category => {
-          if (typeof category === 'string' && category.trim()) {
-            genreSet.add(category.trim());
-          }
-        });
-      }
-    });
-    
-    return Array.from(genreSet).sort();
-  }, [validBooks]);
-  
-  // Apply filters (status, genre, rating, and search query)
-  const filteredBooks = validBooks.filter(book => {
-    // Apply status filter
-    const statusMatch = statusFilter === 'all' || book.status === statusFilter;
-    
-    // Apply genre filter
-    const genreMatch = genreFilter === 'all' || 
-      (Array.isArray(book.categories) && book.categories.some(
-        category => category === genreFilter
-      ));
-    
-    // Apply rating filter
-    let ratingMatch = true;
-    if (ratingFilter !== 'all') {
-      const rating = book.userRating || book.averageRating || 0;
-      const ratingVal = parseInt(ratingFilter, 10);
-      ratingMatch = rating >= ratingVal && rating < (ratingVal + 1);
-    }
-    
-    // Apply search filter if query exists
-    let searchMatch = true;
-    if (searchQuery.trim() !== '') {
-      const query = searchQuery.toLowerCase();
-      
-      // Search in title
-      const titleMatch = book.title ? book.title.toLowerCase().includes(query) : false;
-      
-      // Search in authors
-      const authorMatch = Array.isArray(book.authors) && book.authors.some(
-        author => typeof author === 'string' && author.toLowerCase().includes(query)
-      );
-      
-      // Search in categories
-      const categoryMatch = Array.isArray(book.categories) && book.categories.some(
-        category => typeof category === 'string' && category.toLowerCase().includes(query)
-      );
-      
-      // Search in description
-      const descriptionMatch = book.description ? book.description.toLowerCase().includes(query) : false;
-      
-      // Book matches if any field contains the search query
-      searchMatch = !!(titleMatch || authorMatch || categoryMatch || descriptionMatch);
-    }
-    
-    // Book must match all filters
-    return statusMatch && genreMatch && ratingMatch && searchMatch;
-  });
-  
+
+  // --- Render Logic (minor adjustments for filter info) ---
   return (
     <div>
-      {/* Search bar */}
-      <div className="mb-6">
-        <div className="relative">
-          <input
-            type="text"
-            placeholder="Search by title, author, or genre..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full p-3 pl-10 pr-4 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
-          />
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-          </div>
-          {searchQuery && (
-            <button 
-              onClick={() => setSearchQuery('')}
-              className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          )}
-        </div>
-      </div>
-      
-      {/* Filter controls with three rows: Status, Rating, and Genre */}
-      <div className="mb-8 space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Status filter */}
-          <div>
-            <h3 className="text-sm text-gray-600 font-semibold mb-2">Reading Status</h3>
-            <div className="flex flex-wrap gap-2">
-              <button 
-                onClick={() => setStatusFilter('all')}
-                className={`px-3 py-1 rounded text-xs font-medium ${
-                  statusFilter === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                }`}
-              >
-                All Books
-              </button>
-              <button 
-                onClick={() => setStatusFilter('read')}
-                className={`px-3 py-1 rounded text-xs font-medium ${
-                  statusFilter === 'read' ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                }`}
-              >
-                Read
-              </button>
-              <button 
-                onClick={() => setStatusFilter('reading')}
-                className={`px-3 py-1 rounded text-xs font-medium ${
-                  statusFilter === 'reading' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                }`}
-              >
-                Reading
-              </button>
-              <button 
-                onClick={() => setStatusFilter('toRead')}
-                className={`px-3 py-1 rounded text-xs font-medium ${
-                  statusFilter === 'toRead' ? 'bg-yellow-600 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                }`}
-              >
-                Want to Read
-              </button>
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 2xl:grid-cols-8 gap-4">
+        {books.map((book) => (
+          <div
+            key={book.id}
+            className="group relative flex flex-col bg-white border shadow-sm rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-300 cursor-pointer"
+            onClick={() => handleBookClick(book)}
+            role="button" // Accessibility
+            aria-label={`View details for ${book.title}`}
+          >
+            {/* Status Badge */}
+            {book.status && (
+              <span className={`absolute top-2 right-2 text-xs font-semibold px-2 py-0.5 rounded-full z-10 ${ 
+                book.status === 'read' ? 'bg-green-100 text-green-800' : 
+                book.status === 'reading' ? 'bg-yellow-100 text-yellow-800' : 
+                'bg-purple-100 text-purple-800' // To Read or default
+              }`}> 
+                {book.status}
+              </span>
+            )}
+            {/* --- Apply Aspect Ratio to Image Container --- */}
+            <div className="relative w-full bg-gray-200 aspect-[2/3]"> {/* Remove h-48/h-64, add aspect-[2/3] */}
+              <Image
+                // Use book.id for key if googleBooksId might not be unique or present
+                key={book.id || book.googleBooksId}
+                src={book.imageLinks?.thumbnail || book.imageLinks?.smallThumbnail || '/placeholder-book.png'} // Use imageLinks with fallback
+                alt={book.title}
+                layout="fill"
+                objectFit="cover" // Change back to cover
+                className="transition-transform duration-300 ease-in-out group-hover:scale-105"
+                onError={(e) => {
+                  // Optional: Handle image load errors, e.g., set to placeholder
+                }}
+              />
             </div>
-          </div>
-          
-          {/* Rating filter */}
-          <div>
-            <h3 className="text-sm text-gray-600 font-semibold mb-2">Rating</h3>
-            <div className="flex flex-wrap gap-2">
-              <button 
-                onClick={() => setRatingFilter('all')}
-                className={`px-3 py-1 rounded text-xs font-medium ${
-                  ratingFilter === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                }`}
-              >
-                All Ratings
-              </button>
-              {[5, 4, 3, 2, 1].map(rating => (
-                <button 
-                  key={rating}
-                  onClick={() => setRatingFilter(rating.toString())}
-                  className={`px-3 py-1 rounded text-xs font-medium ${
-                    ratingFilter === rating.toString() ? 'bg-yellow-500 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                  }`}
-                >
-                  {rating} Star{rating !== 1 && 's'}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-        
-        {/* Genre filter */}
-        <div>
-          <h3 className="text-sm text-gray-600 font-semibold mb-2">Genre</h3>
-          <div className="flex flex-wrap gap-2">
-            {genres.map(genre => (
-              <button 
-                key={genre}
-                onClick={() => setGenreFilter(genre)}
-                className={`px-3 py-1 rounded text-xs font-medium ${
-                  genreFilter === genre ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                }`}
-              >
-                {genre === 'all' ? 'All Genres' : genre}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-      
-      {loading ? (
-        <div className="flex flex-col justify-center items-center py-12 bg-white rounded-lg shadow">
-          <div className="inline-block h-10 w-10 animate-spin rounded-full border-4 border-solid border-blue-600 border-r-transparent mb-3"></div>
-          <span className="text-lg text-gray-700">Loading books from Firebase...</span>
-          <p className="mt-2 text-sm text-gray-500">This may take a moment to connect securely...</p>
-        </div>
-      ) : (
-        <>
-          {filteredBooks.length > 0 ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
-              {filteredBooks.map(book => 
-                book ? <BookCard key={book.id || `book-${Math.random()}`} book={book} /> : null
+            {/* --- End Image Container --- */}
+            <div className="p-4 flex flex-col flex-grow">
+              {/* Remove h-10, add line-clamp-2 */}
+              <h3 className="text-md font-semibold mb-1 text-steel-blue leading-tight line-clamp-2 group-hover:line-clamp-none"> {/* Show full title on hover */}
+                {book.title}
+              </h3>
+              {/* Remove h-8, add line-clamp-1 */}
+              <p className="text-sm text-gray-600 mb-2 flex-grow line-clamp-1">
+                {book.authors?.join(', ') || 'Unknown Author'}
+              </p>
+              {/* User Rating */}
+              {book.userRating && book.userRating > 0 && (
+                <div className="mt-2 flex items-center">
+                  {[...Array(5)].map((_, i) => (
+                    <svg
+                      key={i}
+                      className={`w-3 h-3 ${book.userRating! > i ? 'text-yellow-400' : 'text-gray-300'}`}
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                    </svg>
+                  ))}
+                  {/* Optional: Display notes indicator */}
+                  {book.notes && <span className="ml-2 text-xs text-blue-500" title="Has notes">📝</span>}
+                </div>
               )}
             </div>
-          ) : (
-            <div className="text-center py-12 bg-white rounded-lg shadow">
-              <p className="text-xl text-gray-700">No books found.</p>
-              <p className="mt-2 text-gray-600">
-                {statusFilter === 'all' && genreFilter === 'all'
-                  ? 'Firebase connection may have failed. Please check your network connection and try again.'
-                  : `No books match your current filters. Try adjusting your selections.`}
-              </p>
-              <div className="mt-4">
-                {statusFilter === 'all' && genreFilter === 'all' ? (
-                  <button 
-                    onClick={() => window.location.reload()}
-                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-                  >
-                    Reload Page
-                  </button>
-                ) : (
-                  <button 
-                    onClick={() => {
-                      setStatusFilter('all');
-                      setGenreFilter('all');
-                    }}
-                    className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors"
-                  >
-                    Reset Filters
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
-          
-          {/* Book details modal */}
-          {selectedBook && (
-            <BookDetailsModal book={selectedBook} onClose={() => setSelectedBook(null)} />
-          )}
-        </>
+          </div>
+        ))}
+      </div>
+
+      {/* Loading Indicator */}
+      {loading && <div className="text-center py-4 text-gray-500">Loading more books...</div>}
+
+      {/* Observer Target */}
+      {!loading && hasMore && (
+         <div ref={observerTarget} style={{ height: '50px', margin: '20px 0' }}></div>
+      )}
+       {!hasMore && books.length > 0 && (
+         <div className="text-center py-8 text-gray-500 italic">End of bookshelf.</div>
+       )}
+       {books.length === 0 && (
+         <div className="text-center py-8 text-gray-500 italic">No books match the current filters.</div>
+       )}
+
+      {/* Book Modal */}
+      {selectedBook && (
+        <BookModal book={selectedBook} onClose={() => setSelectedBook(null)} />
       )}
     </div>
   );

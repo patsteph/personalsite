@@ -1,5 +1,6 @@
 import { initializeApp, getApps, getApp, ServiceAccount, cert } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
+import { getAuth } from 'firebase-admin/auth';
 
 // Ensure environment variables are loaded (typically handled by Next.js)
 // You need to set these in your .env.local file
@@ -49,5 +50,16 @@ function getAdminFirestore() {
   }
 }
 
+function getAdminAuth() {
+  initializeAdminApp();
+  try {
+    const adminApp = getApp(ADMIN_APP_NAME);
+    return getAuth(adminApp);
+  } catch (error) {
+    console.error('Error getting Auth instance:', error);
+    throw new Error('Could not get Auth instance. Admin app might not be initialized correctly.');
+  }
+}
+
 // Export the functions needed by API routes
-export { initializeAdminApp, getAdminFirestore };
+export { initializeAdminApp, getAdminFirestore, getAdminAuth };
