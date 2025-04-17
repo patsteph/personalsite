@@ -66,3 +66,38 @@ next-env.d.ts
 /.deprecated/
 scripts/analyze-project.js
 scripts/cleanup.sh
+
+# Ignore macOS system files
+.DS_Store
+
+# Ignore debug and build artifacts
+personal-website@0.1.0
+npm
+
+.env.test.local
+.env.production
+.env.production.local
+# Include example/template files though
+!.env.*.example
+!.env.*.template
+
+# Generated secure config
+/public/secure-config.js
+/out/secure-config.js
+
+# Do not ignore runtime config
+!/public/runtime-config.js
+!/out/runtime-config.js
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# archived and deprecated files
+/to_archive/
+/.deprecated/
+scripts/analyze-project.js
+scripts/cleanup.sh
