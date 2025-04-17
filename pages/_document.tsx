@@ -39,18 +39,8 @@ export default function Document() {
         {/* Prevent clickjacking */}
         <meta httpEquiv="X-Frame-Options" content="DENY" />
         
-        {/* Viewport settings for better mobile experience */}
-        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, viewport-fit=cover" />
-        
         {/* Add runtime configuration scripts with proper async/defer attributes */}
         <script src={`${basePath}/runtime-config.js`} async />
-        
-        {/* Additional fixes only for development */}
-        {!isProduction && (
-          <>
-            <script src={`${basePath}/fix-api-url.js`} async />
-          </>
-        )}
         
         {/* Stylesheet */}
         <link 

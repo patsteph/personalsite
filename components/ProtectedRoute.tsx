@@ -1,10 +1,6 @@
 // components/ProtectedRoute.tsx
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useAuth } from '@/lib/auth';
-// getBasePath not used
-
-// For debugging
-console.log('Auth hooks loaded:', useAuth);
 
 // Simple inline loading component
 function SimpleLoading({ message = 'Loading...' }: { message?: string }) {
@@ -22,34 +18,26 @@ type ProtectedRouteProps = {
 
 export default function ProtectedRoute({ children }: ProtectedRouteProps) {
   const auth = useAuth();
-  const { user, loading } = auth;
-  // Use a computed property instead of directly destructuring isAuthenticated
-  const isAuthenticated = !!user;
-  // Router not used - redirect handled by window.location.href
-  // const router = useRouter();
-  
-  // State to track if we've started the redirect
-  const [redirectInProgress, setRedirectInProgress] = useState(false);
-  
+  const { isAuthenticated, loading } = auth;
+
   useEffect(() => {
-    // Add debug logging
-    console.log('ProtectedRoute - Auth state:', { isAuthenticated, loading, redirectInProgress });
-    
-    // If auth is finished loading and user is not authenticated, redirect to login
-    if (!loading && !isAuthenticated && !redirectInProgress) {
-      console.log('No authenticated user found, redirecting to login');
-      setRedirectInProgress(true);
-      
+    console.log('ProtectedRoute - Auth state:', { isAuthenticated, loading });
+
+    // Only redirect *after* loading is complete and if not authenticated
+    if (!loading && !isAuthenticated) {
+      console.log('ProtectedRoute: Not authenticated after loading, redirecting to login...');
       // Use hard navigation to avoid client-side routing issues
       window.location.href = '/admin/login';
     }
-  }, [user, loading, isAuthenticated, redirectInProgress]);
-  
+  }, [isAuthenticated, loading]); // Depend only on loading and isAuthenticated
+
   // Show loading indicator while checking auth status
-  if (loading || redirectInProgress) {
-    return <SimpleLoading message={loading ? "Checking authentication..." : "Redirecting to login..."} />;
+  if (loading) {
+    return <SimpleLoading message="Checking authentication..." />;
   }
-  
+
   // Only render children if user is authenticated
+  // If not loading and not authenticated, the useEffect will have already initiated the redirect,
+  // so rendering null here prevents a flash of content before redirect completes.
   return isAuthenticated ? <>{children}</> : null;
 }

@@ -1,81 +1,67 @@
-import { useState } from 'react';
+import React, { useState, FormEvent } from 'react';
 import { useAuth } from '@/lib/auth';
 
-type LoginFormProps = {
-  onSuccess?: () => void;
-};
-
-export default function LoginForm({ onSuccess }: LoginFormProps) {
+export default function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { signIn } = useAuth();
-  
-  const [isRedirecting, setIsRedirecting] = useState(false);
-  
-  const handleSubmit = async (e: React.FormEvent) => {
+
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    
+
+    console.log('>>> handleSubmit function entered <<<');
+
     // Prevent double-submission
-    if (loading || isRedirecting) {
+    if (loading) {
       console.log('Form submission blocked - already processing');
       return;
     }
-    
+
     console.log('Login form submit triggered');
-    
+
     if (!email || !password) {
       setError('Please enter both email and password');
       return;
     }
-    
+
     setLoading(true);
     setError('');
-    
+
     try {
       // Log before authentication attempt
       console.log('Attempting authentication...');
-      
+
       // Perform authentication
       await signIn(email, password);
       console.log('LoginForm: Sign in successful');
-      
-      // Mark as redirecting to prevent double submissions
-      setIsRedirecting(true);
-      
-      // Disable the form to prevent further input
-      document.getElementById('admin-login-form')?.setAttribute('disabled', 'true');
-      
-      // Call onSuccess with a small delay to ensure state updates have completed
-      console.log('Calling onSuccess redirect callback');
-      setTimeout(() => {
-        if (onSuccess) {
-          onSuccess();
-        }
-      }, 200);
+
+      // No longer need to handle redirect here or call onSuccess.
+      // The parent component's useEffect will handle redirect based on useAuth state.
+      setLoading(false); // Set loading false on success too
     } catch (error) {
       console.error('Login error:', error);
-      setError('Invalid email or password');
+      // Ensure error is a string for display
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred during login.';
+      setError(errorMessage);
       setLoading(false);
     }
-    // Note: We don't set loading=false here if successful, 
-    // as we're redirecting away from this page
   };
-  
+
   return (
     <div className="max-w-md mx-auto bg-white rounded-lg shadow p-4 sm:p-8">
       <h2 className="text-2xl font-bold text-accent mb-6">
         Admin Login
       </h2>
-      
+
       <form onSubmit={handleSubmit} id="admin-login-form">
         {error && (
           <div className="bg-red-100 text-red-700 p-3 rounded mb-4" role="alert">
             <span className="font-medium">Error: </span>{error}
           </div>
         )}
-        
+
         <div className="mb-4">
           <label 
             htmlFor="email" 
@@ -99,7 +85,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
             placeholder="your@email.com"
           />
         </div>
-        
+
         <div className="mb-6">
           <label 
             htmlFor="password" 
@@ -120,19 +106,24 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
             minLength={6}
           />
         </div>
-        
+
         <button
-          type="submit"
-          disabled={loading || isRedirecting}
+          type="button"
+          onClick={e => {
+            e.preventDefault();
+            console.log('🔥 button clicked');
+            handleSubmit(e as unknown as FormEvent<HTMLFormElement>);
+          }}
+          disabled={loading}
           className={`
             w-full h-12 bg-steel-blue hover:bg-accent text-white font-medium py-3 px-4 rounded
             transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-steel-blue
-            ${(loading || isRedirecting) ? 'opacity-70 cursor-not-allowed' : ''}
+            ${loading ? 'opacity-70 cursor-not-allowed' : ''}
             text-base sm:text-lg
           `}
-          aria-label={loading ? 'Signing in...' : (isRedirecting ? 'Redirecting...' : 'Sign In')}
+          aria-label={loading ? 'Signing in...' : 'Sign In'}
         >
-          {loading ? 'Signing in...' : (isRedirecting ? 'Redirecting...' : 'Sign In')}
+          {loading ? 'Signing in...' : 'Debug'}
         </button>
       </form>
     </div>

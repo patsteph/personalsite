@@ -20,11 +20,11 @@ export async function middleware(req) {
       !pathname.includes('/admin/login')) {
     
     // Check for the auth session cookie
-    const authCookie = req.cookies.get('auth_session');
     const sessionStorageAuth = req.cookies.get('auth_success');
     
-    // Redirect to login if no auth cookie found
-    if (!authCookie && !sessionStorageAuth) {
+    // Redirect to login if the 'auth_success' cookie is not found
+    // Removed check for 'auth_session' as it's not set by client-side auth
+    if (!sessionStorageAuth) {
       return NextResponse.redirect(new URL('/admin/login', req.url));
     }
   }

@@ -277,38 +277,41 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
       console.log("Setting up onAuthStateChanged listener...");
       const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-          setLoading(true); // Set loading true while processing auth state change
-          if (firebaseUser) {
-              console.log("onAuthStateChanged: User is signed in:", firebaseUser.uid);
-              const appUser: AppUser = {
-                  uid: firebaseUser.uid,
-                  email: firebaseUser.email || undefined,
-                  displayName: firebaseUser.displayName || undefined,
-                  photoURL: firebaseUser.photoURL || undefined,
-              };
-              setUser(appUser);
-              setIsAuthenticated(true);
-              try {
-                  const token = await firebaseUser.getIdToken(true); // Force refresh token
-                  if (typeof window !== 'undefined') {
-                    localStorage.setItem('authToken', token);
-                    console.log("Auth token refreshed and stored.");
-                  }
-              } catch (tokenError) {
-                   console.error("Error getting ID token on auth state change:", tokenError);
-                   // Handle token error, maybe sign out user
-                   await signOut();
-              }
-          } else {
-              console.log("onAuthStateChanged: User is signed out.");
-              setUser(null);
-              setIsAuthenticated(false);
-               if (typeof window !== 'undefined') {
-                  localStorage.removeItem('authToken');
-                  console.log("Auth token removed.");
+          console.log(`>>> onAuthStateChanged triggered. Firebase user: ${firebaseUser ? firebaseUser.uid : 'null'}`);
+           if (firebaseUser) {
+               console.log("onAuthStateChanged: User is signed in:", firebaseUser.uid);
+               const appUser: AppUser = {
+                   uid: firebaseUser.uid,
+                   email: firebaseUser.email || undefined,
+                   displayName: firebaseUser.displayName || undefined,
+                   photoURL: firebaseUser.photoURL || undefined,
+               };
+               console.log('>>> Setting user and isAuthenticated=true');
+               setUser(appUser);
+               setIsAuthenticated(true);
+               try {
+                   const token = await firebaseUser.getIdToken(true); // Force refresh token
+                   if (typeof window !== 'undefined') {
+                     localStorage.setItem('authToken', token);
+                     console.log("Auth token refreshed and stored.");
+                   }
+               } catch (tokenError) {
+                    console.error("Error getting ID token on auth state change:", tokenError);
+                    // Handle token error, maybe sign out user
+                    await signOut();
                }
-          }
-          setLoading(false); // Set loading false after processing
+           } else {
+               console.log("onAuthStateChanged: User is signed out.");
+               console.log('>>> Setting user=null and isAuthenticated=false');
+               setUser(null);
+               setIsAuthenticated(false);
+                if (typeof window !== 'undefined') {
+                   localStorage.removeItem('authToken');
+                   console.log("Auth token removed.");
+                }
+           }
+           console.log('>>> Setting loading=false');
+           setLoading(false); // Set loading false after processing
       });
       // Cleanup listener on unmount
       return () => {

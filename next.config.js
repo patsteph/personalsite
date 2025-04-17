@@ -42,56 +42,62 @@ const nextConfig = {
   
   // Custom headers for CORS and security
   async headers() {
-    return [
-      {
-        // Apply these headers to all routes
-        source: '/:path*',
-        headers: [
-          {
-            key: 'X-DNS-Prefetch-Control',
-            value: 'on',
-          },
-          {
-            key: 'Strict-Transport-Security',
-            value: 'max-age=63072000; includeSubDomains; preload',
-          },
-          {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff',
-          },
-          {
-            key: 'Referrer-Policy',
-            value: 'origin-when-cross-origin',
-          },
-        ],
-      },
-      {
-        // Apply special headers to API routes for CORS
-        source: '/api/:path*',
-        headers: [
-          {
-            key: 'Access-Control-Allow-Credentials',
-            value: 'true',
-          },
-          {
-            key: 'Access-Control-Allow-Origin',
-            value: '*',
-          },
-          {
-            key: 'Access-Control-Allow-Methods',
-            value: 'GET,POST,PUT,DELETE,OPTIONS',
-          },
-          {
-            key: 'Access-Control-Allow-Headers',
-            value: 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization',
-          },
-          {
-            key: 'Access-Control-Max-Age',
-            value: '86400',
-          },
-        ],
-      },
-    ];
+    // Only apply custom headers in production
+    if (isProd) {
+      return [
+        {
+          // Apply these headers to all routes
+          source: '/:path*',
+          headers: [
+            {
+              key: 'X-DNS-Prefetch-Control',
+              value: 'on',
+            },
+            {
+              key: 'Strict-Transport-Security',
+              value: 'max-age=63072000; includeSubDomains; preload',
+            },
+            {
+              key: 'X-Content-Type-Options',
+              value: 'nosniff',
+            },
+            {
+              key: 'Referrer-Policy',
+              value: 'origin-when-cross-origin',
+            },
+          ],
+        },
+        {
+          // Apply special headers to API routes for CORS
+          source: '/api/:path*',
+          headers: [
+            {
+              key: 'Access-Control-Allow-Credentials',
+              value: 'true',
+            },
+            {
+              key: 'Access-Control-Allow-Origin',
+              value: '*',
+            },
+            {
+              key: 'Access-Control-Allow-Methods',
+              value: 'GET,POST,PUT,DELETE,OPTIONS',
+            },
+            {
+              key: 'Access-Control-Allow-Headers',
+              value: 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization',
+            },
+            {
+              key: 'Access-Control-Max-Age',
+              value: '86400',
+            },
+          ],
+        },
+      ];
+    }
+    
+    // Return empty array in development to use default headers
+    return [];
   },
   
   // Image configuration
