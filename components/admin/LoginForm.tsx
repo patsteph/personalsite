@@ -123,7 +123,7 @@ export default function LoginForm() {
           `}
           aria-label={loading ? 'Signing in...' : 'Sign In'}
         >
-          {loading ? 'Signing in...' : 'Debug'}
+          {loading ? 'Signing in...' : 'Sign In'}
         </button>
       </form>
     </div>

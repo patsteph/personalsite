@@ -196,9 +196,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       // Store auth success state (optional, might be redundant now)
       if (typeof window !== 'undefined') {
-        sessionStorage.setItem('auth_success', 'true');
+        
         sessionStorage.setItem('auth_timestamp', new Date().toISOString());
-        document.cookie = `auth_success=true; path=/; max-age=3600; SameSite=Strict`;
+        
         console.log('Auth success state saved to session and cookies');
       }
 
@@ -248,14 +248,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Clear auth data from sessionStorage, localStorage and cookies
       if (typeof window !== 'undefined') {
         // Clear session storage
-        sessionStorage.removeItem('auth_success');
+        
         sessionStorage.removeItem('auth_timestamp');
         
         // Clear localStorage
         localStorage.removeItem('authToken');
         
         // Clear cookies by setting expiration to past date
-        document.cookie = 'auth_success=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Strict';
+        
         
         console.log('Auth state cleared from session, localStorage, and cookies');
       }
