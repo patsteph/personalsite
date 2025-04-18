@@ -17,7 +17,7 @@ export default function BookDetails({ book, onClose }: BookDetailsProps) {
         return t('books.read', 'Read');
       case 'reading':
         return t('books.reading', 'Currently Reading');
-      case 'toRead':
+      case 'to-read':
         return t('books.toRead', 'Want to Read');
       default:
         return status;
@@ -96,10 +96,11 @@ export default function BookDetails({ book, onClose }: BookDetailsProps) {
               {t('books.status', 'Status:')}
             </span>
             <span className={`
-              px-3 py-1 rounded-full text-xs font-medium
+              px-2 py-1 text-xs font-semibold rounded-full
               ${book.status === 'read' ? 'bg-green-100 text-green-800' : ''}
               ${book.status === 'reading' ? 'bg-blue-100 text-blue-800' : ''}
-              ${book.status === 'toRead' ? 'bg-yellow-100 text-yellow-800' : ''}
+              ${book.status === 'to-read' ? 'bg-yellow-100 text-yellow-800' : ''}
+              ${book.status === 'did-not-finish' ? 'bg-red-100 text-red-800' : ''}
             `}>
               {formatStatus(book.status)}
             </span>

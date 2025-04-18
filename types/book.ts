@@ -17,9 +17,11 @@ export type Book = {
   isbn?: string;
   publishedDate?: string;
   description?: string;
+  categories?: string[]; // Added to align with BookSearchResult and usage
   pageCount?: number;
   genres?: string[];
   averageRating?: number;
+  ratingsCount?: number; // Added to align with BookSearchResult and usage
   userRating?: number | null;
   imageLinks?: {
     smallThumbnail?: string;

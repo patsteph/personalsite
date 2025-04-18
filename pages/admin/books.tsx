@@ -100,7 +100,7 @@ export default function AdminBooksPage() {
           {t('admin.login', 'Admin Login')}
         </h1>
         
-        <LoginForm onSuccess={handleLoginSuccess} />
+        <LoginForm />
       </Layout>
     );
   }
@@ -166,9 +166,9 @@ export default function AdminBooksPage() {
                         <div className="flex mt-1">
                           <span className={`
                             text-xs px-2 py-0.5 rounded-full
-                            ${book.status === 'read' ? 'bg-green-100 text-green-800' : ''}
+                            ${book.status === 'to-read' ? 'bg-yellow-100 text-yellow-800' : ''}
                             ${book.status === 'reading' ? 'bg-blue-100 text-blue-800' : ''}
-                            ${book.status === 'toRead' ? 'bg-yellow-100 text-yellow-800' : ''}
+                            ${book.status === 'read' ? 'bg-green-100 text-green-800' : ''}
                           `}>
                             {book.status === 'read' ? 'Read' : 
                              book.status === 'reading' ? 'Reading' : 'To Read'}

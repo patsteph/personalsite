@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Book } from '@/types/book';
+import React, { useState, ChangeEvent, FormEvent } from 'react';
+import { Book, BookStatus } from '@/types/book';
 import { fetchBookByISBN, searchBooks, addBook, updateBook, deleteBook } from '@/lib/books';
 import { useTranslation } from '@/lib/translations';
 
@@ -11,7 +11,7 @@ type BookFormProps = {
 export default function BookForm({ existingBook, onSuccess }: BookFormProps) {
   const [isbn, setIsbn] = useState(existingBook?.isbn || '');
   const [searchQuery, setSearchQuery] = useState('');
-  const [status, setStatus] = useState(existingBook?.status || 'toRead');
+  const [status, setStatus] = useState<BookStatus>(existingBook?.status || 'to-read');
   const [notes, setNotes] = useState(existingBook?.notes || '');
   const [bookData, setBookData] = useState<Partial<Book> | null>(existingBook || null);
   const [searchResults, setSearchResults] = useState<Partial<Book>[]>([]);
@@ -144,7 +144,7 @@ export default function BookForm({ existingBook, onSuccess }: BookFormProps) {
       
       // Reset form
       setIsbn('');
-      setStatus('toRead');
+      setStatus('to-read');
       setNotes('');
       setBookData(null);
       
@@ -219,6 +219,49 @@ export default function BookForm({ existingBook, onSuccess }: BookFormProps) {
     }
   };
   
+  const handleIsbnChange = (e: ChangeEvent<HTMLInputElement>) => {
+    setIsbn(e.target.value);
+  };
+
+  const handleSearchQueryChange = (e: ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+  };
+
+  const handleSearchSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!searchQuery) {
+      setError('Please enter a search term');
+      return;
+    }
+    
+    setLoading(true);
+    setError('');
+    setBookData(null);
+    
+    try {
+      const results = await searchBooks(searchQuery);
+      if (results && results.length > 0) {
+        setSearchResults(results);
+      } else {
+        setSearchResults([]);
+        setError('No books found. Please try a different search term.');
+      }
+    } catch (error) {
+      console.error('Error searching books:', error);
+      setError('Error searching books. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleStatusChange = (e: ChangeEvent<HTMLSelectElement>) => {
+    setStatus(e.target.value as BookStatus);
+  };
+
+  const handleNotesChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
+    setNotes(e.target.value);
+  };
+
   return (
     <div className="bg-white rounded-lg shadow p-6">
       <h2 className="text-xl font-bold text-accent mb-6">
@@ -275,7 +318,7 @@ export default function BookForm({ existingBook, onSuccess }: BookFormProps) {
             <input
               type="text"
               value={isbn}
-              onChange={(e) => setIsbn(e.target.value)}
+              onChange={handleIsbnChange}
               disabled={!!existingBook}
               className={`
                 flex-grow px-3 py-2 border border-gray-300 rounded-l-md 
@@ -299,32 +342,33 @@ export default function BookForm({ existingBook, onSuccess }: BookFormProps) {
           </div>
         </div>
       ) : (!existingBook && (
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            {t('admin.searchQuery', 'Title or Author:')}
-          </label>
-          <div className="flex">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="flex-grow px-3 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-steel-blue focus:border-steel-blue"
-              placeholder="Enter title or author name"
-            />
-            <button
-              type="button"
-              onClick={handleSearch}
-              disabled={loading || !searchQuery}
-              className={`
-                bg-steel-blue hover:bg-accent text-white font-medium py-2 px-4 rounded-r-md
-                transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-steel-blue
-                ${(loading || !searchQuery) ? 'opacity-70 cursor-not-allowed' : ''}
-              `}
-            >
-              {loading ? 'Searching...' : t('admin.search', 'Search')}
-            </button>
+        <form onSubmit={handleSearchSubmit}>
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {t('admin.searchQuery', 'Title or Author:')}
+            </label>
+            <div className="flex">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={handleSearchQueryChange}
+                className="flex-grow px-3 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-steel-blue focus:border-steel-blue"
+                placeholder="Enter title or author name"
+              />
+              <button
+                type="submit"
+                disabled={loading || !searchQuery}
+                className={`
+                  bg-steel-blue hover:bg-accent text-white font-medium py-2 px-4 rounded-r-md
+                  transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-steel-blue
+                  ${(loading || !searchQuery) ? 'opacity-70 cursor-not-allowed' : ''}
+                `}
+              >
+                {loading ? 'Searching...' : t('admin.search', 'Search')}
+              </button>
+            </div>
           </div>
-        </div>
+        </form>
       ))}
       
       {/* Display search results if we have them */}
@@ -403,12 +447,12 @@ export default function BookForm({ existingBook, onSuccess }: BookFormProps) {
         <select
           id="status"
           value={status}
-          onChange={(e) => setStatus(e.target.value as any)}
+          onChange={handleStatusChange}
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-steel-blue focus:border-steel-blue"
         >
           <option value="read">{t('books.read', 'Read')}</option>
           <option value="reading">{t('books.reading', 'Currently Reading')}</option>
-          <option value="toRead">{t('books.toRead', 'Want to Read')}</option>
+          <option value="to-read">{t('books.toRead', 'Want to Read')}</option>
         </select>
       </div>
       
@@ -447,7 +491,7 @@ export default function BookForm({ existingBook, onSuccess }: BookFormProps) {
         <textarea
           id="notes"
           value={notes}
-          onChange={(e) => setNotes(e.target.value)}
+          onChange={handleNotesChange}
           rows={4}
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-steel-blue focus:border-steel-blue"
           placeholder="Your thoughts about this book..."
