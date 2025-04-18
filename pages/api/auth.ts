@@ -21,6 +21,8 @@ type AuthResponse = {
  * Server-side authentication endpoint
  * Uses Firebase Admin SDK to authenticate users without exposing API keys
  */
+import { serialize } from 'cookie';
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<AuthResponse>
@@ -72,6 +74,14 @@ async function handleLogin(
         const isAdmin = true;
         // Stubbed custom token
         const customToken = 'stub-custom-token';
+        // Set the auth_success cookie for SSR/middleware
+        res.setHeader('Set-Cookie', serialize('auth_success', 'true', {
+          path: '/',
+          httpOnly: false, // Set to true if you do not need to access in client JS
+          maxAge: 60 * 60, // 1 hour
+          sameSite: 'strict',
+          secure: process.env.NODE_ENV === 'production',
+        }));
         // TODO: Replace with server-side API call to store token
         // Skipping token storage, just return stubbed token
         return res.status(200).json({
