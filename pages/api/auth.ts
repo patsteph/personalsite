@@ -60,44 +60,41 @@ async function handleLogin(
     try {
       console.log(`Attempting to authenticate user: ${email}`);
 
-      // First check if user exists in Firebase Auth
-      // TODO: Replace with server-side API call to get user by email and check password
-      // Stubbed logic for authentication
-      if (email === 'admin@example.com' && password === 'password') {
-        const userRecord = {
-          uid: 'stub-uid',
-          email,
-          displayName: 'Admin User',
-          photoURL: ''
-        };
-        // Stubbed admin check
-        const isAdmin = true;
-        // Stubbed custom token
-        const customToken = 'stub-custom-token';
-        // Set the auth_success cookie for SSR/middleware
-        res.setHeader('Set-Cookie', serialize('auth_success', 'true', {
-          path: '/',
-          httpOnly: false, // Set to true if you do not need to access in client JS
-          maxAge: 60 * 60, // 1 hour
-          sameSite: 'strict',
-          secure: process.env.NODE_ENV === 'production',
-        }));
-        // TODO: Replace with server-side API call to store token
-        // Skipping token storage, just return stubbed token
-        return res.status(200).json({
-          success: true,
-          token: customToken,
-          user: {
-            uid: userRecord.uid,
-            email: userRecord.email,
-            displayName: userRecord.displayName,
-            photoURL: userRecord.photoURL,
-            isAdmin
-          }
-        });
-      } else {
-        return res.status(401).json({ success: false, error: 'Invalid credentials' });
+      // Server-side Firebase Auth via REST API
+      const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
+      if (!apiKey) {
+        return res.status(500).json({ success: false, error: 'Server misconfiguration: missing Firebase API key' });
       }
+      const firebaseRes = await fetch(
+        `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password, returnSecureToken: true }),
+        }
+      );
+      const firebaseData = await firebaseRes.json();
+      if (!firebaseRes.ok) {
+        console.error('Firebase sign-in error:', firebaseData.error);
+        return res.status(401).json({ success: false, error: firebaseData.error?.message || 'Invalid credentials' });
+      }
+      const customToken = firebaseData.idToken;
+      const userRecord = {
+        uid: firebaseData.localId,
+        email: firebaseData.email,
+        displayName: firebaseData.displayName || '',
+        photoURL: firebaseData.photoUrl || ''
+      };
+      const isAdmin = (process.env.ADMIN_EMAILS?.split(',') || []).includes(email);
+      // Set the auth_success cookie for SSR/middleware
+      res.setHeader('Set-Cookie', serialize('auth_success', 'true', {
+        path: '/',
+        httpOnly: false,
+        maxAge: 60 * 60,
+        sameSite: 'strict',
+        secure: process.env.NODE_ENV === 'production',
+      }));
+      return res.status(200).json({ success: true, token: customToken, user: { ...userRecord, isAdmin } });
     } catch (error: any) {
       console.error('Server authentication error:', error);
       return res.status(401).json({
