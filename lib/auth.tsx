@@ -1,10 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
-import { getCurrentUserToken, signInWithEmailAndPassword as apiSignIn, AppUser } from './api/auth';
-import { auth } from '@/lib/firebase-client';
-import {
-  signOut as firebaseSignOut,
-  onAuthStateChanged,
-} from 'firebase/auth';
+import { getCurrentUserToken, signInWithEmailAndPassword as apiSignIn, signOut as apiSignOut, getCurrentUser, AppUser } from './api/auth';
 
 // Constants for auth timeouts
 const TOKEN_REFRESH_INTERVAL = 10 * 60 * 1000; // 10 minutes
@@ -55,7 +50,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [loading, setLoading] = useState<boolean>(true);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [authError, setAuthError] = useState<Error | null>(null);
-  
+
   // Refs for tracking activity and intervals
   const lastActivityRef = useRef(Date.now());
   const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -150,135 +145,60 @@ export function AuthProvider({ children }: AuthProviderProps) {
     };
   }, [isAuthenticated, refreshToken, updateLastActivity, checkInactivity]);
 
+  // Initialize auth state on mount
+  useEffect(() => {
+    (async () => {
+      setLoading(true);
+      const token = await getCurrentUserToken();
+      if (token) {
+        const currentUser = await getCurrentUser();
+        if (currentUser) {
+          setUser(currentUser);
+          setIsAuthenticated(true);
+        } else {
+          setIsAuthenticated(false);
+        }
+      } else {
+        setIsAuthenticated(false);
+      }
+      setLoading(false);
+    })();
+  }, []);
+
   // Function to sign in
   const signIn = async (email: string, password: string): Promise<void> => {
-    // Check if auth is initialized
-    if (!auth) {
-        const error = new Error("Firebase Auth is not initialized. Check firebase-client.ts and environment variables.");
-        console.error(error.message);
-        setAuthError(error);
-        throw error;
-    }
-    
+    setLoading(true);
+    setAuthError(null);
     try {
-      setLoading(true);
-      setAuthError(null);
-
-      // --- Use server-side API for authentication ---
-      console.log(`Attempting API sign-in for: ${email}`);
       const credential = await apiSignIn(email, password);
-      const appUser: AppUser = credential.user;
-      const token = credential.token;
-      console.log('API client sign-in successful:', appUser.uid);
-      setUser(appUser);
+      setUser(credential.user);
       setIsAuthenticated(true);
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('authToken', token);
-      }
-
-      // Reset activity timestamp
-      updateLastActivity();
-
-      // Store auth success state timestamp
-      if (typeof window !== 'undefined') {
-        sessionStorage.setItem('auth_timestamp', new Date().toISOString());
-        console.log('Auth success state saved to session');
-      }
-
-    } catch (error: any) {
-      console.error('API client sign-in error:', error);
-      // Provide more specific error messages if possible
-      let errorMessage = 'Authentication failed. Please check your credentials.';
-      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-        errorMessage = 'Invalid email or password.';
-      } else if (error.code === 'auth/too-many-requests') {
-          errorMessage = 'Access temporarily disabled due to too many failed login attempts. Please reset your password or try again later.'
-      } else if (error.code === 'auth/network-request-failed') {
-          errorMessage = 'Network error. Please check your connection and try again.'
-      }
-      setAuthError(new Error(errorMessage));
-      throw new Error(errorMessage); // Re-throw formatted error for LoginForm
+      if (typeof window !== 'undefined') localStorage.setItem('authToken', credential.token);
+    } catch (error:any) {
+      setAuthError(error instanceof Error ? error : new Error('Authentication failed'));
+      throw error;
     } finally {
       setLoading(false);
     }
   };
 
-  // --- Update signOut to use firebaseSignOut ---
+  // Function to sign out
   const signOut = async (): Promise<void> => {
-     if (!auth) {
-        console.error("Firebase Auth is not initialized. Cannot sign out.");
-        // Optionally set an error state
-        return;
-    }
+    setLoading(true);
     try {
-      setLoading(true);
-      
-      // Clear intervals
-      if (refreshIntervalRef.current) {
-        clearInterval(refreshIntervalRef.current);
-        refreshIntervalRef.current = null;
+      await apiSignOut();
+      document.cookie = 'auth_success=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('authToken');
       }
-      
-      if (sessionTimeoutRef.current) {
-        clearInterval(sessionTimeoutRef.current);
-        sessionTimeoutRef.current = null;
-      }
-      
-      await firebaseSignOut(auth); // <-- Use Firebase sign out
       setUser(null);
       setIsAuthenticated(false);
-      
-      // Clear auth data from sessionStorage, localStorage and cookies
-      if (typeof window !== 'undefined') {
-        // Clear session storage
-        sessionStorage.removeItem('auth_timestamp');
-        
-        // Clear localStorage
-        localStorage.removeItem('authToken');
-        
-        console.log('Auth state cleared from session, localStorage, and cookies');
-      }
     } catch (error) {
-      console.error('Sign out error:', error);
       setAuthError(error instanceof Error ? error : new Error('Sign out failed'));
     } finally {
       setLoading(false);
     }
   };
-
-  // --- Update onAuthStateChanged listener ---
-  useEffect(() => {
-      if (!auth) {
-          console.warn("Firebase Auth not initialized. Skipping auth state listener.");
-          setLoading(false);
-          return;
-      }
-      console.log("Setting up onAuthStateChanged listener...");
-      const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-          console.log(`>>> onAuthStateChanged triggered. Firebase user: ${firebaseUser ? firebaseUser.uid : 'null'}`);
-          if (firebaseUser) {
-              console.log("onAuthStateChanged: User is signed in:", firebaseUser.uid);
-              const appUser: AppUser = {
-                  uid: firebaseUser.uid,
-                  email: firebaseUser.email || undefined,
-                  displayName: firebaseUser.displayName || undefined,
-                  photoURL: firebaseUser.photoURL || undefined,
-              };
-              setUser(appUser);
-              setIsAuthenticated(true);
-          } else {
-              console.log("onAuthStateChanged: User is signed out");
-              setUser(null);
-              setIsAuthenticated(false);
-          }
-          setLoading(false);
-      });
-      // Cleanup listener on unmount
-      return () => {
-        console.log("Cleaning up onAuthStateChanged listener.");
-        unsubscribe();
-      };
-  }, [auth]); // Add auth as dependency
 
   // Function to reset auth error
   const resetAuthError = () => {
