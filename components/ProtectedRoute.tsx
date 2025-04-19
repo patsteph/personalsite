@@ -23,11 +23,13 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
   useEffect(() => {
     console.log('ProtectedRoute - Auth state:', { isAuthenticated, loading });
 
-    // Only redirect *after* loading is complete and if not authenticated
-    if (!loading && !isAuthenticated) {
-      console.log('ProtectedRoute: Not authenticated after loading, redirecting to login...');
-      // Use hard navigation to avoid client-side routing issues
-      window.location.href = '/admin/login';
+    if (!loading) {
+      // Check for server-set auth_success cookie
+      const hasAuthCookie = document.cookie.split(';').some(c => c.trim().startsWith('auth_success='));
+      if (!isAuthenticated && !hasAuthCookie) {
+        console.log('ProtectedRoute: No auth cookie and not authenticated, redirecting to login...');
+        window.location.href = '/admin/login';
+      }
     }
   }, [isAuthenticated, loading]); // Depend only on loading and isAuthenticated
 

@@ -43,6 +43,7 @@ export async function signInWithEmailAndPassword(
     // Call our server API for authentication
     const response = await fetch('/api/auth', {
       method: 'POST',
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json'
       },
