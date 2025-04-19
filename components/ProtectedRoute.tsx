@@ -38,8 +38,12 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
     return <SimpleLoading message="Checking authentication..." />;
   }
 
-  // Only render children if user is authenticated
-  // If not loading and not authenticated, the useEffect will have already initiated the redirect,
-  // so rendering null here prevents a flash of content before redirect completes.
-  return isAuthenticated ? <>{children}</> : null;
+  // Allow access if server-set auth_success cookie is present
+  const hasAuthCookie = typeof window !== 'undefined' && document.cookie.split(';').some(c => c.trim().startsWith('auth_success='));
+
+  // Render children if authenticated or cookie present
+  if (isAuthenticated || hasAuthCookie) {
+    return <>{children}</>;
+  }
+  return null;
 }
