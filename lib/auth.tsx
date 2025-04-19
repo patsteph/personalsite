@@ -1,12 +1,9 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
-import { getCurrentUserToken, AppUser } from './api/auth';
+import { getCurrentUserToken, signInWithEmailAndPassword as apiSignIn, AppUser } from './api/auth';
 import { auth } from '@/lib/firebase-client';
 import {
-  signInWithEmailAndPassword,
   signOut as firebaseSignOut,
   onAuthStateChanged,
-  getIdToken,
-  User as FirebaseUser
 } from 'firebase/auth';
 
 // Constants for auth timeouts
@@ -167,43 +164,29 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setLoading(true);
       setAuthError(null);
 
-      // --- Use Firebase Client SDK directly ---
-      console.log(`Attempting Firebase client sign-in for: ${email}`);
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const firebaseUser = userCredential.user;
-      console.log('Firebase client sign-in successful:', firebaseUser.uid);
-
-      // Map Firebase User to our AppUser type
-      const appUser: AppUser = {
-        uid: firebaseUser.uid,
-        email: firebaseUser.email || undefined,
-        displayName: firebaseUser.displayName || undefined,
-        photoURL: firebaseUser.photoURL || undefined,
-      };
+      // --- Use server-side API for authentication ---
+      console.log(`Attempting API sign-in for: ${email}`);
+      const credential = await apiSignIn(email, password);
+      const appUser: AppUser = credential.user;
+      const token = credential.token;
+      console.log('API client sign-in successful:', appUser.uid);
       setUser(appUser);
       setIsAuthenticated(true);
-
-      // --- Get and store ID token ---
-      const token = await firebaseUser.getIdToken();
       if (typeof window !== 'undefined') {
-          localStorage.setItem('authToken', token); // Store token for API calls
-          console.log('Auth token stored in localStorage');
+        localStorage.setItem('authToken', token);
       }
-      // -----------------------------
 
       // Reset activity timestamp
       updateLastActivity();
 
-      // Store auth success state (optional, might be redundant now)
+      // Store auth success state timestamp
       if (typeof window !== 'undefined') {
-        
         sessionStorage.setItem('auth_timestamp', new Date().toISOString());
-        
-        console.log('Auth success state saved to session and cookies');
+        console.log('Auth success state saved to session');
       }
 
     } catch (error: any) {
-      console.error('Firebase client sign-in error:', error);
+      console.error('API client sign-in error:', error);
       // Provide more specific error messages if possible
       let errorMessage = 'Authentication failed. Please check your credentials.';
       if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
@@ -248,14 +231,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Clear auth data from sessionStorage, localStorage and cookies
       if (typeof window !== 'undefined') {
         // Clear session storage
-        
         sessionStorage.removeItem('auth_timestamp');
         
         // Clear localStorage
         localStorage.removeItem('authToken');
-        
-        // Clear cookies by setting expiration to past date
-        
         
         console.log('Auth state cleared from session, localStorage, and cookies');
       }
@@ -267,51 +246,32 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
-  // --- Update onAuthStateChanged ---
-  // Replace previous checkExistingAuth useEffect with onAuthStateChanged listener
+  // --- Update onAuthStateChanged listener ---
   useEffect(() => {
       if (!auth) {
           console.warn("Firebase Auth not initialized. Skipping auth state listener.");
-          setLoading(false); // Ensure loading state is false if auth isn't set up
+          setLoading(false);
           return;
       }
       console.log("Setting up onAuthStateChanged listener...");
-      const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
           console.log(`>>> onAuthStateChanged triggered. Firebase user: ${firebaseUser ? firebaseUser.uid : 'null'}`);
-           if (firebaseUser) {
-               console.log("onAuthStateChanged: User is signed in:", firebaseUser.uid);
-               const appUser: AppUser = {
-                   uid: firebaseUser.uid,
-                   email: firebaseUser.email || undefined,
-                   displayName: firebaseUser.displayName || undefined,
-                   photoURL: firebaseUser.photoURL || undefined,
-               };
-               console.log('>>> Setting user and isAuthenticated=true');
-               setUser(appUser);
-               setIsAuthenticated(true);
-               try {
-                   const token = await firebaseUser.getIdToken(true); // Force refresh token
-                   if (typeof window !== 'undefined') {
-                     localStorage.setItem('authToken', token);
-                     console.log("Auth token refreshed and stored.");
-                   }
-               } catch (tokenError) {
-                    console.error("Error getting ID token on auth state change:", tokenError);
-                    // Handle token error, maybe sign out user
-                    await signOut();
-               }
-           } else {
-               console.log("onAuthStateChanged: User is signed out.");
-               console.log('>>> Setting user=null and isAuthenticated=false');
-               setUser(null);
-               setIsAuthenticated(false);
-                if (typeof window !== 'undefined') {
-                   localStorage.removeItem('authToken');
-                   console.log("Auth token removed.");
-                }
-           }
-           console.log('>>> Setting loading=false');
-           setLoading(false); // Set loading false after processing
+          if (firebaseUser) {
+              console.log("onAuthStateChanged: User is signed in:", firebaseUser.uid);
+              const appUser: AppUser = {
+                  uid: firebaseUser.uid,
+                  email: firebaseUser.email || undefined,
+                  displayName: firebaseUser.displayName || undefined,
+                  photoURL: firebaseUser.photoURL || undefined,
+              };
+              setUser(appUser);
+              setIsAuthenticated(true);
+          } else {
+              console.log("onAuthStateChanged: User is signed out");
+              setUser(null);
+              setIsAuthenticated(false);
+          }
+          setLoading(false);
       });
       // Cleanup listener on unmount
       return () => {

@@ -36,9 +36,6 @@ export default function Document() {
         <meta httpEquiv="X-Content-Type-Options" content="nosniff" />
         <meta httpEquiv="Referrer-Policy" content="strict-origin-when-cross-origin" />
         
-        {/* Prevent clickjacking */}
-        <meta httpEquiv="X-Frame-Options" content="DENY" />
-        
         {/* Add runtime configuration scripts with proper async/defer attributes */}
         <script src={`${basePath}/runtime-config.js`} async />
         
