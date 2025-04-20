@@ -64,9 +64,10 @@ export default async function handler(
 
   const signalsCollection = db.collection(SIGNALS_COLLECTION);
 
-  // --- Handle GET Requests (Publicly Accessible) --- 
-  if (req.method === 'GET') {
-    try {
+  try {
+    // --- Handle GET Requests (Publicly Accessible) --- 
+    if (req.method === 'GET') {
+      try {
         console.log('Signals API: Processing GET request.');
         const { id, type } = req.query;
 
@@ -108,15 +109,15 @@ export default async function handler(
             console.log(`Signals API: Found ${signals.length} total signals.`);
             return res.status(200).json({ success: true, data: signals });
         }
-    } catch (error: any) {
+      } catch (error: any) {
         console.error('Signals API GET error:', error);
         return res.status(500).json({ success: false, error: `Internal server error getting signals: ${error.message}` });
+      }
     }
-  }
 
-  // --- Authentication Check for Mutating Methods (POST, PUT, DELETE) --- 
-  if (['POST', 'PUT', 'DELETE'].includes(req.method!)) {
-    try {
+    // --- Authentication Check for Mutating Methods (POST, PUT, DELETE) --- 
+    if (['POST', 'PUT', 'DELETE'].includes(req.method!)) {
+      try {
         console.log(`Signals API: Checking authentication for ${req.method}.`);
         const idToken = req.headers.authorization?.split('Bearer ')[1];
         if (!idToken) {
@@ -125,19 +126,19 @@ export default async function handler(
         }
         await auth.verifyIdToken(idToken);
         console.log(`Signals API: Token verified for ${req.method}.`);
-    } catch (error: any) {
+      } catch (error: any) {
         console.error(`Signals API auth error for ${req.method}:`, error.code, error.message);
         if (error.code === 'auth/id-token-expired') {
             return res.status(401).json({ success: false, error: 'Unauthorized - Token expired' });
         }
         return res.status(401).json({ success: false, error: 'Unauthorized - Invalid token' });
-    }
-  } 
-  // --- End Authentication Check ---
+      }
+    } 
+    // --- End Authentication Check ---
 
-  // --- Handle Authenticated POST --- 
-  if (req.method === 'POST') {
-    try {
+    // --- Handle Authenticated POST --- 
+    if (req.method === 'POST') {
+      try {
         console.log('Signals API: Handling POST request.');
         const sanitizedBody = sanitizeData(req.body);
         
@@ -170,15 +171,20 @@ export default async function handler(
             success: true,
             data: { id: newDoc.id, ...convertFirestoreToApiResponse(newDoc.data()!) }
         });
-    } catch (error: any) {
+      } catch (error: any) {
         console.error('Signals API POST error:', error);
+        console.error('Detailed error:', { 
+            message: error.message,
+            code: error.code,
+            stack: error.stack,
+        });
         return res.status(500).json({ success: false, error: `Internal server error creating signal: ${error.message}` });
+      }
     }
-  }
 
-  // --- Handle Authenticated PUT --- 
-  if (req.method === 'PUT') {
-    try {
+    // --- Handle Authenticated PUT --- 
+    if (req.method === 'PUT') {
+      try {
         console.log('Signals API: Handling PUT request.');
         const { id } = req.query;
         if (!id || typeof id !== 'string') {
@@ -215,15 +221,20 @@ export default async function handler(
             success: true,
             data: { id: updatedDoc.id, ...convertFirestoreToApiResponse(updatedDoc.data()!) }
         });
-    } catch (error: any) {
+      } catch (error: any) {
         console.error(`Signals API PUT error for ID ${req.query.id}:`, error);
+        console.error('Detailed error:', { 
+            message: error.message,
+            code: error.code,
+            stack: error.stack,
+        });
         return res.status(500).json({ success: false, error: `Internal server error updating signal: ${error.message}` });
+      }
     }
-  }
 
-  // --- Handle Authenticated DELETE --- 
-  if (req.method === 'DELETE') {
-    try {
+    // --- Handle Authenticated DELETE --- 
+    if (req.method === 'DELETE') {
+      try {
         console.log('Signals API: Handling DELETE request.');
         const { id } = req.query;
         if (!id || typeof id !== 'string') {
@@ -242,15 +253,37 @@ export default async function handler(
         console.log(`Signals API: Document ${id} deleted successfully.`);
 
         return res.status(200).json({ success: true, data: { id } });
-    } catch (error: any) {
+      } catch (error: any) {
         console.error(`Signals API DELETE error for ID ${req.query.id}:`, error);
+        console.error('Detailed error:', { 
+            message: error.message,
+            code: error.code,
+            stack: error.stack,
+        });
         return res.status(500).json({ success: false, error: `Internal server error deleting signal: ${error.message}` });
+      }
     }
-  }
 
-  // --- Method Not Allowed --- 
-  // If we reach here, the method is not GET, POST, PUT, DELETE, or OPTIONS
-  console.log(`Signals API: Method ${req.method} not allowed.`);
-  res.setHeader('Allow', ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']);
-  return res.status(405).json({ success: false, error: `Method ${req.method} Not Allowed` });
+    // --- Method Not Allowed --- 
+    // If we reach here, the method is not GET, POST, PUT, DELETE, or OPTIONS
+    console.log(`Signals API: Method ${req.method} not allowed.`);
+    res.setHeader('Allow', ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']);
+    return res.status(405).json({ success: false, error: `Method ${req.method} Not Allowed` });
+  } catch (error: any) {
+    // --- Catch any errors that occurred anywhere in the handler --- 
+    console.error('Signals API: UNCAUGHT ERROR IN HANDLER:', error);
+    console.error('Error Name:', error.name);
+    console.error('Error Message:', error.message);
+    console.error('Error Stack:', error.stack);
+    if (error.cause) {
+      console.error('Error Cause:', error.cause);
+    }
+    // Ensure a 500 response is sent, consistent with type
+    if (!res.headersSent) {
+      return res.status(500).json({ success: false, error: 'Internal Server Error occurred in handler.' });
+    } else {
+      // If headers already sent, we can't send another response, but log it.
+      console.error('Signals API: Headers already sent, could not send 500 response for uncaught error.');
+    }
+  } // --- End Top-Level Try-Catch Block ---
 }
