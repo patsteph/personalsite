@@ -116,8 +116,8 @@ export default async function handler(
   
   // POST - Create a new book
   if (req.method === 'POST') {
+    console.log('Books API: Handling POST request.');
     try {
-      console.log('Books API: Handling POST request.');
       const sanitizedBody = sanitizeData(req.body);
       
       // Basic validation (add more as needed)
@@ -126,36 +126,47 @@ export default async function handler(
       }
 
       // --- Duplicate Check --- 
-      const { isbn, googleBooksId } = sanitizedBody;
-      let duplicateQuery = booksCollection.limit(1);
-      const queryConditions: FirebaseFirestore.Filter[] = [];
+      try {
+        const { isbn, googleBooksId } = sanitizedBody;
+        let duplicateQuery = booksCollection.limit(1);
+        const queryConditions: FirebaseFirestore.Filter[] = [];
 
-      if (isbn) {
-        queryConditions.push(FirebaseFirestore.Filter.where('isbn', '==', isbn));
-      }
-      if (googleBooksId) {
-        queryConditions.push(FirebaseFirestore.Filter.where('googleBooksId', '==', googleBooksId));
-      }
-
-      // Only run query if at least one identifier is present
-      if (queryConditions.length > 0) {
-        duplicateQuery = duplicateQuery.where(FirebaseFirestore.Filter.or(...queryConditions));
-        
-        console.log('Books API: Checking for duplicates with query...');
-        const duplicateSnapshot = await duplicateQuery.get();
-
-        if (!duplicateSnapshot.empty) {
-          const duplicateDoc = duplicateSnapshot.docs[0];
-          console.log(`Books API: Duplicate found (ID: ${duplicateDoc.id}) based on ISBN/GoogleBooksID.`);
-          return res.status(409).json({ 
-            success: false, 
-            error: `Duplicate book found (ID: ${duplicateDoc.id}). A book with this ISBN or Google Books ID already exists.`,
-            data: { duplicateId: duplicateDoc.id }
-          });
+        if (isbn) {
+          queryConditions.push(FirebaseFirestore.Filter.where('isbn', '==', isbn));
         }
-        console.log('Books API: No duplicates found.');
-      } else {
-        console.log('Books API: Skipping duplicate check as no ISBN or GoogleBooksID provided.');
+        if (googleBooksId) {
+          queryConditions.push(FirebaseFirestore.Filter.where('googleBooksId', '==', googleBooksId));
+        }
+
+        // Only run query if at least one identifier is present
+        if (queryConditions.length > 0) {
+          duplicateQuery = duplicateQuery.where(FirebaseFirestore.Filter.or(...queryConditions));
+          
+          console.log('Books API: Checking for duplicates with query...');
+          const duplicateSnapshot = await duplicateQuery.get();
+
+          if (!duplicateSnapshot.empty) {
+            const duplicateDoc = duplicateSnapshot.docs[0];
+            console.log(`Books API: Duplicate found (ID: ${duplicateDoc.id}) based on ISBN/GoogleBooksID.`);
+            return res.status(409).json({ 
+              success: false, 
+              error: `Duplicate book found (ID: ${duplicateDoc.id}). A book with this ISBN or Google Books ID already exists.`,
+              data: { duplicateId: duplicateDoc.id }
+            });
+          }
+          console.log('Books API: No duplicates found.');
+        } else {
+          console.log('Books API: Skipping duplicate check as no ISBN or GoogleBooksID provided.');
+        }
+      } catch (duplicateCheckError: any) {
+          console.error('Books API: ERROR DURING DUPLICATE CHECK:', duplicateCheckError);
+          console.error('Detailed duplicate check error:', {
+            message: duplicateCheckError.message,
+            code: duplicateCheckError.code,
+            stack: duplicateCheckError.stack,
+          });
+          // Re-throw or handle as a 500 internal error
+          return res.status(500).json({ success: false, error: 'Internal server error during duplicate check.' });
       }
       // --- End Duplicate Check ---
 
