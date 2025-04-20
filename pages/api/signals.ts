@@ -161,14 +161,17 @@ export default async function handler(
     // --- Handle Authenticated POST --- 
     if (req.method === 'POST') {
       try {
-        console.log('Signals API: Handling POST request.');
+        console.log('Signals API: Entered POST handler try block.');
+        console.log('Signals API: Raw request body:', req.body);
         const sanitizedBody = sanitizeData(req.body);
+        console.log('Signals API: Sanitized request body:', sanitizedBody);
         
         // Basic validation (add more as needed)
         if (!sanitizedBody.name || !sanitizedBody.type || !sanitizedBody.value) {
             return res.status(400).json({ success: false, error: 'Missing required fields (name, type, value)' });
         }
 
+        console.log('Signals API: Preparing data for Firestore...');
         const now = Timestamp.now();
         // Explicitly type to include potential 'id' and other fields from body
         const signalData: { [key: string]: any } = {
@@ -177,11 +180,12 @@ export default async function handler(
             updatedAt: now,
         };
         delete signalData.id; // Firestore generates ID
+        console.log('Signals API: Firestore data prepared:', signalData);
 
-        console.log('Signals API: Adding document to Firestore:', signalData);
+        console.log('Signals API: Attempting to add document to Firestore...');
         const docRef = await signalsCollection.add(signalData);
-        console.log('Signals API: Document added with ID:', docRef.id);
-
+        console.log(`Signals API: Document added successfully with ID: ${docRef.id}`);
+        
         // Fetch and return the new document
         const newDoc = await docRef.get();
         if (!newDoc.exists) { 
