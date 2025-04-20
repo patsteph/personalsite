@@ -74,8 +74,6 @@ export default async function handler(
   }
   // --- End Authentication Check ---
   
-  const booksCollection = db.collection(BOOKS_COLLECTION);
-  
   // GET - Get all books or a specific book by ID
   if (req.method === 'GET') {
     try {
@@ -84,7 +82,7 @@ export default async function handler(
       if (id && typeof id === 'string') {
         // Fetch specific book by ID
         console.log(`Books API: Handling GET request for ID: ${id}`);
-        const docRef = booksCollection.doc(id);
+        const docRef = db.collection(BOOKS_COLLECTION).doc(id);
         const docSnap = await docRef.get();
         if (docSnap.exists) {
           console.log(`Books API: Found book with ID: ${id}`);
@@ -100,7 +98,7 @@ export default async function handler(
         // Fetch all books
         console.log('Books API: Handling GET request for all books.');
         // Consider adding ordering, e.g., .orderBy('createdAt', 'desc')
-        const querySnapshot = await booksCollection.get(); 
+        const querySnapshot = await db.collection(BOOKS_COLLECTION).get(); 
         const books = querySnapshot.docs.map((doc: QueryDocumentSnapshot<DocumentData>) => ({
           id: doc.id,
           ...convertFirestoreToApiResponse(doc.data())
@@ -127,6 +125,7 @@ export default async function handler(
 
       // --- Duplicate Check --- 
       try {
+        const booksCollection = db.collection(BOOKS_COLLECTION);
         const { isbn, googleBooksId } = sanitizedBody;
         let duplicateQuery = booksCollection.limit(1);
         const queryConditions: FirebaseFirestore.Filter[] = [];
@@ -182,7 +181,7 @@ export default async function handler(
       delete bookData.id; // Firestore generates ID
       
       console.log('Books API: Adding document to Firestore:', bookData);
-      const docRef = await booksCollection.add(bookData);
+      const docRef = await db.collection(BOOKS_COLLECTION).add(bookData);
       console.log('Books API: Document added with ID:', docRef.id);
       
       // Fetch the newly created document
@@ -224,7 +223,7 @@ export default async function handler(
         return res.status(400).json({ success: false, error: 'Book ID is required in query parameters' });
       }
       
-      const docRef = booksCollection.doc(id);
+      const docRef = db.collection(BOOKS_COLLECTION).doc(id);
       const docSnap = await docRef.get();
 
       if (!docSnap.exists) {
@@ -279,7 +278,7 @@ export default async function handler(
         return res.status(400).json({ success: false, error: 'Book ID is required in query parameters' });
       }
       
-      const docRef = booksCollection.doc(id);
+      const docRef = db.collection(BOOKS_COLLECTION).doc(id);
       const docSnap = await docRef.get();
 
       if (!docSnap.exists) {
