@@ -1,14 +1,29 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { initializeAdminApp, getAdminFirestore, getAdminAuth } from '@/lib/firebase-admin'; // Using alias
+import { initializeAdminApp, getAdminFirestore, getAdminAuth } from '@/lib/firebase-admin'; 
 import { Timestamp, QueryDocumentSnapshot, DocumentData } from 'firebase-admin/firestore';
+import { Auth } from 'firebase-admin/auth';
 
 // Initialize Firebase Admin
-initializeAdminApp();
-const db = getAdminFirestore();
-const auth = getAdminAuth();
+let db: FirebaseFirestore.Firestore;
+let auth: Auth;
 
-console.log('Signals API: Firebase db object status:', db ? 'obtained' : 'null/undefined');
-console.log('Signals API: Firebase auth object status:', auth ? 'obtained' : 'null/undefined');
+try {
+  console.log('Signals API: Attempting Firebase Admin SDK initialization at module level...');
+  initializeAdminApp(); 
+  db = getAdminFirestore();
+  auth = getAdminAuth();
+  console.log('Signals API: Firebase Admin SDK initialized successfully at module level.');
+} catch (initError: any) {
+  console.error('Signals API: CRITICAL ERROR DURING FIREBASE ADMIN SDK INITIALIZATION:', initError);
+  console.error('Initialization Error Name:', initError.name);
+  console.error('Initialization Error Message:', initError.message);
+  console.error('Initialization Error Stack:', initError.stack);
+  // Set db/auth to null/undefined or handle appropriately
+  // @ts-ignore - Allow reassignment for error case
+  db = null;
+  // @ts-ignore - Allow reassignment for error case
+  auth = null;
+}
 
 const SIGNALS_COLLECTION = 'signals';
 
@@ -44,6 +59,13 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<SignalResponse>
 ) {
+  // Check if initialization failed earlier
+  if (!db || !auth) {
+    console.error('Signals API: Handler entered but Firebase Admin SDK failed to initialize. Returning 500.');
+    // Avoid processing if initialization failed
+    return res.status(500).json({ success: false, error: 'Internal Server Error: Firebase Admin SDK initialization failed.' });
+  }
+
   console.log('Signals API received', req.method, 'request',
     req.query ? `with query: ${JSON.stringify(req.query)}` : '',
     req.body ? `with body: ${JSON.stringify(req.body)}` : ''
