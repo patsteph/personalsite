@@ -189,8 +189,17 @@ export default async function handler(
         }
       });
     } catch (error: any) {
-      console.error('Books API error creating book:', error);
-      return res.status(500).json({ success: false, error: `Internal server error: ${error.message}` });
+      console.error('Books API error creating book:', error); // Keep existing log
+      // Add more detailed logging
+      console.error('Detailed error:', {
+        message: error.message,
+        code: error.code, // Firestore errors often have a code
+        stack: error.stack,
+      });
+      return res.status(500).json({ 
+        success: false, 
+        error: `Internal server error: ${error.message}` 
+      });
     }
   }
   
