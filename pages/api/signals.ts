@@ -6,6 +6,10 @@ import { Timestamp, QueryDocumentSnapshot, DocumentData } from 'firebase-admin/f
 initializeAdminApp();
 const db = getAdminFirestore();
 const auth = getAdminAuth();
+
+console.log('Signals API: Firebase db object status:', db ? 'obtained' : 'null/undefined');
+console.log('Signals API: Firebase auth object status:', auth ? 'obtained' : 'null/undefined');
+
 const SIGNALS_COLLECTION = 'signals';
 
 type SignalResponse = {

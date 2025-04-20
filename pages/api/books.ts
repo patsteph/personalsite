@@ -7,6 +7,9 @@ initializeAdminApp();
 const db = getAdminFirestore();
 const auth = getAdminAuth();
 
+console.log('Books API: Firebase db object status:', db ? 'obtained' : 'null/undefined');
+console.log('Books API: Firebase auth object status:', auth ? 'obtained' : 'null/undefined');
+
 const BOOKS_COLLECTION = 'books';
 
 type BookResponse = {

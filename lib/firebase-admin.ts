@@ -7,8 +7,8 @@ import { getAuth } from 'firebase-admin/auth';
 const serviceAccount: ServiceAccount = {
   projectId: process.env.FIREBASE_PROJECT_ID,
   clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-  // Use the private key directly, assuming newlines are handled correctly by the environment
-  privateKey: process.env.FIREBASE_PRIVATE_KEY,
+  // Replace literal \n with actual newlines for environment variable compatibility
+  privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'), 
 };
 
 const ADMIN_APP_NAME = 'firebase-admin-app';
@@ -16,8 +16,13 @@ const ADMIN_APP_NAME = 'firebase-admin-app';
 function initializeAdminApp() {
   // Check if already initialized
   if (getApps().some(app => app.name === ADMIN_APP_NAME)) {
+    console.log(`Firebase Admin App (${ADMIN_APP_NAME}) already initialized.`);
     return; // Exit if already initialized
   }
+
+  console.log(`Attempting to initialize Firebase Admin App (${ADMIN_APP_NAME})...`);
+  // Log credentials being used (excluding private key for security)
+  console.log(`Using Service Account - ProjectID: ${serviceAccount.projectId}, ClientEmail: ${serviceAccount.clientEmail}`);
 
   try {
     initializeApp({
@@ -25,6 +30,7 @@ function initializeAdminApp() {
       // Optional: databaseURL if using Realtime Database
       // databaseURL: process.env.FIREBASE_DATABASE_URL,
     }, ADMIN_APP_NAME);
+    console.log(`Firebase Admin App (${ADMIN_APP_NAME}) initialized successfully.`);
   } catch (error: any) {
     console.error('Firebase Admin SDK initializeApp encountered an error:', error);
     console.error('Error Stack:', error.stack); 
@@ -40,9 +46,12 @@ function initializeAdminApp() {
 function getAdminFirestore() {
   // Ensure app is initialized before getting Firestore
   initializeAdminApp(); 
+  console.log(`Attempting to get Firestore instance for app (${ADMIN_APP_NAME})...`);
   try {
     const adminApp = getApp(ADMIN_APP_NAME);
-    return getFirestore(adminApp);
+    const firestoreInstance = getFirestore(adminApp);
+    console.log(`Successfully got Firestore instance for app (${ADMIN_APP_NAME}).`);
+    return firestoreInstance;
   } catch (error) {
     console.error('Error getting Firestore instance:', error);
     // Re-throw or handle error appropriately
@@ -51,12 +60,17 @@ function getAdminFirestore() {
 }
 
 function getAdminAuth() {
+  // Ensure app is initialized before getting Auth
   initializeAdminApp();
+  console.log(`Attempting to get Auth instance for app (${ADMIN_APP_NAME})...`);
   try {
     const adminApp = getApp(ADMIN_APP_NAME);
-    return getAuth(adminApp);
+    const authInstance = getAuth(adminApp);
+    console.log(`Successfully got Auth instance for app (${ADMIN_APP_NAME}).`);
+    return authInstance;
   } catch (error) {
     console.error('Error getting Auth instance:', error);
+    // Re-throw or handle error appropriately
     throw new Error('Could not get Auth instance. Admin app might not be initialized correctly.');
   }
 }
