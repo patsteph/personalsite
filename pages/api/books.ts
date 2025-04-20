@@ -121,8 +121,8 @@ export default async function handler(
       const sanitizedBody = sanitizeData(req.body);
       
       // Basic validation (add more as needed)
-      if (!sanitizedBody.title || !sanitizedBody.author) {
-          return res.status(400).json({ success: false, error: 'Missing required fields (title, author)' });
+      if (!sanitizedBody.title || !Array.isArray(sanitizedBody.authors) || sanitizedBody.authors.length === 0) {
+          return res.status(400).json({ success: false, error: 'Missing required fields (title, non-empty authors array)' });
       }
 
       const now = Timestamp.now();
