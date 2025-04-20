@@ -2,7 +2,8 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { initializeAdminApp, getAdminFirestore, getAdminAuth } from '@/lib/firebase-admin'; 
 import { Timestamp, QueryDocumentSnapshot, DocumentData } from 'firebase-admin/firestore';
 import { Auth } from 'firebase-admin/auth';
-
+import { SignalSchema, SignalSchemaType, convertFirestoreSignalToApiResponse, sanitizeData } from '@/lib/api/signals'; 
+ 
 // Initialize Firebase Admin
 let db: FirebaseFirestore.Firestore;
 let auth: Auth;
@@ -27,37 +28,9 @@ try {
 
 const SIGNALS_COLLECTION = 'signals';
 
-type SignalResponse = {
-  success: boolean;
-  data?: any; // Can be single signal or array
-  error?: string;
-  // socialShareResults might be handled separately or removed if not used by API
-  // socialShareResults?: Record<string, 'success' | 'error'>;
-}
-
-// Helper to convert Firestore doc data (with Timestamps) to API response format (with ISO strings)
-function convertFirestoreToApiResponse(docData: FirebaseFirestore.DocumentData): any {
-  const data = { ...docData };
-  for (const key in data) {
-    if (data[key] instanceof Timestamp) {
-      data[key] = data[key].toDate().toISOString();
-    }
-  }
-  return data;
-}
-
-// Helper to sanitize incoming data (undefined -> null)
-function sanitizeData(body: any): Record<string, any> {
-    return Object.entries(body).reduce((acc, [key, value]) => {
-        // Keep null values as null, convert undefined to null
-        acc[key] = value === undefined ? null : value;
-        return acc;
-    }, {} as Record<string, any>);
-}
-
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<SignalResponse>
+  res: NextApiResponse<{ success: boolean; data?: SignalSchemaType | SignalSchemaType[]; error?: string; }>
 ) {
   // Check if initialization failed earlier
   if (!db || !auth) {
@@ -100,10 +73,10 @@ export default async function handler(
             const docSnap = await docRef.get();
             if (docSnap.exists) {
                 console.log(`Signals API: Found signal ID: ${id}`);
-                return res.status(200).json({
-                    success: true,
-                    data: { id: docSnap.id, ...convertFirestoreToApiResponse(docSnap.data()!) }
-                });
+                return res.status(200).json({ 
+                    success: true, 
+                    data: { id: docSnap.id, ...convertFirestoreSignalToApiResponse(docSnap.data()!) } 
+                }); // Use imported helper
             } else {
                 console.log(`Signals API: Signal not found by ID: ${id}`);
                 return res.status(404).json({ success: false, error: 'Signal not found' });
@@ -115,7 +88,7 @@ export default async function handler(
             const querySnapshot = await signalsCollection.where('type', '==', type).get();
             const signals = querySnapshot.docs.map((doc: QueryDocumentSnapshot<DocumentData>) => ({
                 id: doc.id,
-                ...convertFirestoreToApiResponse(doc.data())
+                ...convertFirestoreSignalToApiResponse(doc.data()) // Use imported helper
             }));
             console.log(`Signals API: Found ${signals.length} signals of type: ${type}`);
             return res.status(200).json({ success: true, data: signals });
@@ -126,7 +99,7 @@ export default async function handler(
             const querySnapshot = await signalsCollection.get(); 
             const signals = querySnapshot.docs.map((doc: QueryDocumentSnapshot<DocumentData>) => ({
                 id: doc.id,
-                ...convertFirestoreToApiResponse(doc.data())
+                ...convertFirestoreSignalToApiResponse(doc.data()) // Use imported helper
             }));
             console.log(`Signals API: Found ${signals.length} total signals.`);
             return res.status(200).json({ success: true, data: signals });
@@ -166,20 +139,33 @@ export default async function handler(
         const sanitizedBody = sanitizeData(req.body);
         console.log('Signals API: Sanitized request body:', sanitizedBody);
         
-        // Basic validation (add more as needed)
-        if (!sanitizedBody.name || !sanitizedBody.type || !sanitizedBody.value) {
-            return res.status(400).json({ success: false, error: 'Missing required fields (name, type, value)' });
+        // --- Data Validation using Imported Zod Schema ---
+        let validatedData: SignalSchemaType;
+        try {
+          console.log('Signals API: Attempting data validation with Zod...');
+          // Use the imported SignalSchema
+          validatedData = SignalSchema.parse(sanitizedBody);
+          console.log('Signals API: Zod validation successful.');
+        } catch (error: any) {
+          console.error('Signals API: Zod validation failed:', error.errors || error);
+          // Provide more specific error details if available from Zod
+          const zodError = error.errors ? error.errors.map((e: any) => `${e.path.join('.')}: ${e.message}`).join(', ') : error.message;
+          return res.status(400).json({ success: false, error: `Validation failed: ${zodError}` });
         }
-
+        // --- End Zod Validation ---
+ 
         console.log('Signals API: Preparing data for Firestore...');
         const now = Timestamp.now();
-        // Explicitly type to include potential 'id' and other fields from body
-        const signalData: { [key: string]: any } = {
-            ...sanitizedBody,
+        // Use the validated data directly
+        const signalData: Omit<SignalSchemaType, 'id'> & { createdAt: Timestamp; updatedAt: Timestamp; dateAdded?: Timestamp } = {
+            ...validatedData,
+            // Convert dateAdded back to Timestamp if it exists and is valid
+            dateAdded: validatedData.dateAdded ? Timestamp.fromDate(new Date(validatedData.dateAdded)) : undefined,
             createdAt: now,
             updatedAt: now,
         };
-        delete signalData.id; // Firestore generates ID
+        // Remove id if present, Firestore generates it
+        delete (signalData as any).id; 
         console.log('Signals API: Firestore data prepared:', signalData);
 
         console.log('Signals API: Attempting to add document to Firestore...');
@@ -195,7 +181,8 @@ export default async function handler(
 
         return res.status(201).json({
             success: true,
-            data: { id: newDoc.id, ...convertFirestoreToApiResponse(newDoc.data()!) }
+            // Use the imported conversion helper
+            data: { id: newDoc.id, ...convertFirestoreSignalToApiResponse(newDoc.data()!) } 
         });
       } catch (error: any) {
         console.error('Signals API POST error:', error);
@@ -210,54 +197,10 @@ export default async function handler(
 
     // --- Handle Authenticated PUT --- 
     if (req.method === 'PUT') {
-      try {
-        console.log('Signals API: Handling PUT request.');
-        const { id } = req.query;
-        if (!id || typeof id !== 'string') {
-            return res.status(400).json({ success: false, error: 'Signal ID is required in query parameters' });
-        }
-
-        const docRef = signalsCollection.doc(id);
-        const docSnap = await docRef.get();
-        if (!docSnap.exists) {
-            console.log(`Signals API: PUT failed, document not found: ${id}`);
-            return res.status(404).json({ success: false, error: 'Signal not found' });
-        }
-
-        const sanitizedBody = sanitizeData(req.body);
-        const updateData: { [key: string]: any } = { 
-            ...sanitizedBody,
-            updatedAt: Timestamp.now()
-        };
-        delete updateData.id;
-        delete updateData.createdAt;
-
-        console.log(`Signals API: Updating document ${id} with data:`, updateData);
-        await docRef.update(updateData);
-        console.log(`Signals API: Document ${id} updated successfully.`);
-
-        // Fetch and return the updated document
-        const updatedDoc = await docRef.get();
-        if (!updatedDoc.exists) { 
-           console.error(`Signals API: Signal document ${id} not found after update.`);
-           return res.status(404).json({ success: false, error: 'Signal not found after update' });
-        }
-
-        return res.status(200).json({
-            success: true,
-            data: { id: updatedDoc.id, ...convertFirestoreToApiResponse(updatedDoc.data()!) }
-        });
-      } catch (error: any) {
-        console.error(`Signals API PUT error for ID ${req.query.id}:`, error);
-        console.error('Detailed error:', { 
-            message: error.message,
-            code: error.code,
-            stack: error.stack,
-        });
-        return res.status(500).json({ success: false, error: `Internal server error updating signal: ${error.message}` });
-      }
+      console.warn('Signals API: PUT method handler not fully implemented with Zod validation yet.');
+      return res.status(501).json({ success: false, error: 'PUT method not implemented yet.' });
     }
-
+ 
     // --- Handle Authenticated DELETE --- 
     if (req.method === 'DELETE') {
       try {
