@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { initializeAdminApp, getAdminFirestore, getAdminAuth } from '@/lib/firebase-admin'; // Using alias
-import { Timestamp, QueryDocumentSnapshot, DocumentData } from 'firebase-admin/firestore';
+import { Timestamp, QueryDocumentSnapshot, DocumentData, Filter } from 'firebase-admin/firestore';
 
 // Initialize Firebase Admin
 initializeAdminApp();
@@ -124,6 +124,40 @@ export default async function handler(
       if (!sanitizedBody.title || !Array.isArray(sanitizedBody.authors) || sanitizedBody.authors.length === 0) {
           return res.status(400).json({ success: false, error: 'Missing required fields (title, non-empty authors array)' });
       }
+
+      // --- Duplicate Check --- 
+      const { isbn, googleBooksId } = sanitizedBody;
+      let duplicateQuery = booksCollection.limit(1);
+      const queryConditions: FirebaseFirestore.Filter[] = [];
+
+      if (isbn) {
+        queryConditions.push(FirebaseFirestore.Filter.where('isbn', '==', isbn));
+      }
+      if (googleBooksId) {
+        queryConditions.push(FirebaseFirestore.Filter.where('googleBooksId', '==', googleBooksId));
+      }
+
+      // Only run query if at least one identifier is present
+      if (queryConditions.length > 0) {
+        duplicateQuery = duplicateQuery.where(FirebaseFirestore.Filter.or(...queryConditions));
+        
+        console.log('Books API: Checking for duplicates with query...');
+        const duplicateSnapshot = await duplicateQuery.get();
+
+        if (!duplicateSnapshot.empty) {
+          const duplicateDoc = duplicateSnapshot.docs[0];
+          console.log(`Books API: Duplicate found (ID: ${duplicateDoc.id}) based on ISBN/GoogleBooksID.`);
+          return res.status(409).json({ 
+            success: false, 
+            error: `Duplicate book found (ID: ${duplicateDoc.id}). A book with this ISBN or Google Books ID already exists.`,
+            data: { duplicateId: duplicateDoc.id }
+          });
+        }
+        console.log('Books API: No duplicates found.');
+      } else {
+        console.log('Books API: Skipping duplicate check as no ISBN or GoogleBooksID provided.');
+      }
+      // --- End Duplicate Check ---
 
       const now = Timestamp.now();
       const bookData = {
