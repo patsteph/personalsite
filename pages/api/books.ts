@@ -154,18 +154,18 @@ export default async function handler(
           const booksCollection = db.collection(BOOKS_COLLECTION);
           const { isbn, googleBooksId } = sanitizedBody;
           let duplicateQuery = booksCollection.limit(1);
-          const queryConditions: FirebaseFirestore.Filter[] = [];
+          const queryConditions: Filter[] = [];
 
           if (isbn) {
-            queryConditions.push(FirebaseFirestore.Filter.where('isbn', '==', isbn));
+            queryConditions.push(Filter.where('isbn', '==', isbn));
           }
           if (googleBooksId) {
-            queryConditions.push(FirebaseFirestore.Filter.where('googleBooksId', '==', googleBooksId));
+            queryConditions.push(Filter.where('googleBooksId', '==', googleBooksId));
           }
 
           // Only run query if at least one identifier is present
           if (queryConditions.length > 0) {
-            duplicateQuery = duplicateQuery.where(FirebaseFirestore.Filter.or(...queryConditions));
+            duplicateQuery = duplicateQuery.where(Filter.or(...queryConditions));
             
             console.log('Books API: Checking for duplicates with query...');
             const duplicateSnapshot = await duplicateQuery.get();
