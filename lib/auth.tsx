@@ -186,7 +186,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const credential = await apiSignIn(email, password);
       setUser(credential.user);
       setIsAuthenticated(true);
-      if (typeof window !== 'undefined') localStorage.setItem('authToken', credential.token);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('authToken', credential.token);
+        // Set the cookie required by the middleware
+        // Setting a simple cookie, expires in 1 hour (3600 seconds)
+        document.cookie = 'auth_success=true; path=/; max-age=3600';
+      }
     } catch (error:any) {
       setAuthError(error instanceof Error ? error : new Error('Authentication failed'));
       throw error;
@@ -199,13 +204,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const signOut = async (): Promise<void> => {
     setLoading(true);
     try {
-      await apiSignOut();
-      document.cookie = 'auth_success=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('authToken');
-      }
+      await apiSignOut(); // Call the API sign out
       setUser(null);
       setIsAuthenticated(false);
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('authToken');
+        // Clear the cookie required by the middleware
+        document.cookie = 'auth_success=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+      }
+      // Optionally clear other session-related data
     } catch (error) {
       setAuthError(error instanceof Error ? error : new Error('Sign out failed'));
     } finally {
