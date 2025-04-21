@@ -1,24 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { GetServerSideProps, GetServerSidePropsResult } from 'next';
-import Head from 'next/head'; // Add missing Head import
+import { GetServerSideProps, GetServerSidePropsResult, GetServerSidePropsContext } from 'next'; 
+import Head from 'next/head'; 
 import { ParsedUrlQuery } from 'querystring';
-import { useRouter } from 'next/router'; // Import useRouter
+import { useRouter } from 'next/router'; 
 import { 
-  getAllSignals as apiFetchSignals, 
   addSignal as apiAddSignal, 
   updateSignal as apiUpdateSignal, 
   deleteSignal as apiDeleteSignal,
-  sanitizeData // Import sanitizeData
+  sanitizeData 
 } from '@/lib/api/signals';
-import { SignalSchema, SignalSchemaType } from '@/lib/schemas/signals'; // Import Zod schema and type
+import { SignalSchema, SignalSchemaType } from '@/lib/schemas/signals'; 
 import Layout from '@/components/layout/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import SignalForm from '@/components/admin/SignalForm';
 
-// Import schema definition
 import { Signal, Newsletter, Article } from '@/lib/schemas/signals';
-// Restore AppSignal for form/component usage
-import { Signal as AppSignal, Newsletter as AppNewsletter, Article as AppArticle } from '@/types'; // Import specific App types
+import { Signal as AppSignal, Newsletter as AppNewsletter, Article as AppArticle } from '@/types'; 
 
 interface SignalsAdminPageProps {
   initialSignals: SignalSchemaType[];
@@ -26,9 +23,8 @@ interface SignalsAdminPageProps {
 }
 
 const SignalsAdminPage: React.FC<SignalsAdminPageProps> = ({ initialSignals, serverError }) => {
-  const router = useRouter(); // Initialize router
+  const router = useRouter(); 
 
-  // State
   const [signals, setSignals] = useState<SignalSchemaType[]>(initialSignals || []);
   const [selectedSignal, setSelectedSignal] = useState<AppSignal | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -39,31 +35,38 @@ const SignalsAdminPage: React.FC<SignalsAdminPageProps> = ({ initialSignals, ser
   const [activeTab, setActiveTab] = useState<'all' | 'newsletter' | 'article'>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Clear messages
   useEffect(() => {
     if (successMessage || error) {
       const timer = setTimeout(() => {
         setSuccessMessage(null);
         setError(null);
       }, 5000);
-      return () => clearTimeout(timer); // Cleanup timer
+      return () => clearTimeout(timer); 
     }
-    return; // Explicit return for warning ac0ccfdd
-  }, [successMessage, error]); // Dependencies are correct
+    return; 
+  }, [successMessage, error]); 
 
-  // Fetch signals client-side if needed
   const fetchSignals = async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const signalsData = await apiFetchSignals();
-      if (signalsData && Array.isArray(signalsData)) {
-        console.log(`Loaded ${signalsData.length} signals from client-side fetch`);
-        setSignals(signalsData as SignalSchemaType[]);
-      } else {
-        console.error('Received non-array data for signals:', signalsData);
-        setError('Failed to load signals: Invalid data format received.');
+      const signalsData = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || ''}/api/signals`, {
+        headers: {
+          'Authorization': `Bearer ${document.cookie.split('auth_token=')[1].split(';')[0]}`,
+        },
+      });
+      const result = await signalsData.json();
+
+      if (!result.success || !Array.isArray(result.data)) {
+        throw new Error('API response format invalid or indicates failure.');
       }
+
+      const signalsFromApi: any[] = result.data; 
+
+      const validatedSignals = signalsFromApi.map((s: any) => SignalSchema.parse(sanitizeData(s))); 
+
+      console.log(`Loaded ${validatedSignals.length} signals from client-side fetch`);
+      setSignals(validatedSignals as SignalSchemaType[]);
     } catch (error) {
       console.error('Error loading signals:', error);
       setError(`Error loading signals: ${error instanceof Error ? error.message : String(error)}`);
@@ -72,7 +75,6 @@ const SignalsAdminPage: React.FC<SignalsAdminPageProps> = ({ initialSignals, ser
     }
   };
 
-  // Initial fetch if necessary
   useEffect(() => {
     if (!initialSignals?.length || serverError) {
       console.log('Initial signals empty or server error, fetching client-side...');
@@ -80,11 +82,7 @@ const SignalsAdminPage: React.FC<SignalsAdminPageProps> = ({ initialSignals, ser
     }
   }, [initialSignals, serverError]);
 
-  // --- Transformation Functions --- 
-
-  // Transform API/schema Signal -> AppSignal for Form/Component State
   const transformApiSignalToFormData = (apiSignal: SignalSchemaType): AppSignal => {
-    // Helper to safely create Date objects
     const safeNewDate = (dateStr: string | undefined | null): Date | undefined => {
       if (!dateStr) return undefined;
       try {
@@ -94,49 +92,43 @@ const SignalsAdminPage: React.FC<SignalsAdminPageProps> = ({ initialSignals, ser
     };
 
     const baseAppSignal = {
-      id: apiSignal.id || '', // AppSignal expects an ID, generate if missing (shouldn't happen from API)
+      id: apiSignal.id || '', 
       title: apiSignal.title,
       description: apiSignal.description,
       url: apiSignal.url,
       imageUrl: apiSignal.imageUrl || undefined,
-      dateAdded: apiSignal.dateAdded || new Date().toISOString(), // AppSignal needs dateAdded string
+      dateAdded: apiSignal.dateAdded || new Date().toISOString(), 
       featured: apiSignal.featured || false,
       tags: apiSignal.tags || [],
-      // 'status' field removed
-      // 'updatedAt' is not in AppSignal
     };
 
     if (apiSignal.type === 'article') {
-      // Article specific fields from schema, ensuring required AppArticle fields have fallbacks
       return {
         ...baseAppSignal,
         type: 'article',
-        author: apiSignal.author || '', // AppArticle requires author
-        source: apiSignal.source || '', // AppArticle requires source
-        publishDate: apiSignal.publishDate || new Date().toISOString(), // AppArticle requires publishDate string (type checked)
+        author: apiSignal.author || '', 
+        source: apiSignal.source || '', 
+        publishDate: apiSignal.publishDate || new Date().toISOString(), 
         readingTime: apiSignal.readingTime || undefined,
-        affiliateCode: undefined, // Placeholder - not in schema
+        affiliateCode: undefined, 
       } as AppArticle;
     } else if (apiSignal.type === 'newsletter') {
-      // Newsletter specific fields from schema, ensuring required AppNewsletter fields have fallbacks
       return {
         ...baseAppSignal,
         type: 'newsletter',
-        frequency: apiSignal.frequency || 'weekly', // AppNewsletter requires frequency (type checked)
-        publisher: apiSignal.publisher || '', // AppNewsletter requires publisher
-        subscriptionUrl: apiSignal.subscriptionUrl || '', // AppNewsletter requires subscriptionUrl
-        sampleUrl: undefined, // Placeholder - not in schema
-        affiliateCode: undefined, // Placeholder - not in schema
+        frequency: apiSignal.frequency || 'weekly', 
+        publisher: apiSignal.publisher || '', 
+        subscriptionUrl: apiSignal.subscriptionUrl || '', 
+        sampleUrl: undefined, 
+        affiliateCode: undefined, 
       } as AppNewsletter;
     }
 
     throw new Error(`Unknown signal type encountered during transformation: ${apiSignal.type}`);
   };
 
-  // Transform AppSignal (Component State) -> Partial<SignalSchemaType> for API
   const transformFormDataToApiSignal = (formData: AppSignal): Partial<SignalSchemaType> => {
     const apiData: Partial<SignalSchemaType> & { [key: string]: any } = {
-      // Base fields from AppSignal
       type: formData.type,
       title: formData.title,
       description: formData.description,
@@ -144,38 +136,28 @@ const SignalsAdminPage: React.FC<SignalsAdminPageProps> = ({ initialSignals, ser
       featured: formData.featured,
       tags: formData.tags,
       imageUrl: formData.imageUrl,
-      dateAdded: formData.dateAdded, // Pass date string directly
-      // 'id' is handled separately below
-      // 'status' removed
+      dateAdded: formData.dateAdded, 
     };
 
-    // Type-specific fields
     if (formData.type === 'article') {
-      // Map fields required by Zod Article schema
       apiData.author = formData.author;
       apiData.source = formData.source;
-      apiData.publishDate = formData.publishDate; // Pass date string directly
+      apiData.publishDate = formData.publishDate; 
       apiData.readingTime = formData.readingTime;
     } else if (formData.type === 'newsletter') {
-      // Map fields required by Zod Newsletter schema
       apiData.publisher = formData.publisher;
       apiData.frequency = formData.frequency;
       apiData.subscriptionUrl = formData.subscriptionUrl;
     }
 
-    // Convert undefined to null for Firestore compatibility (Memory faeee945)
     Object.keys(apiData).forEach(key => {
       if (apiData[key] === undefined) {
         apiData[key] = null;
       }
     });
     
-    // Do NOT include 'id' in the data sent for add/update 
-    // The API handler uses the URL parameter or generates a new one
     return apiData as Partial<SignalSchemaType>; 
   };
-
-  // --- Event Handlers ---
 
   const handleNewSignal = () => {
     setSelectedSignal(null);
@@ -190,13 +172,11 @@ const SignalsAdminPage: React.FC<SignalsAdminPageProps> = ({ initialSignals, ser
   const handleSaveSignal = async (formData: AppSignal) => {
     setIsSubmitting(true);
     setError(null);
-    // Transform the AppSignal (from form state) to the shape the API expects
     const apiPayload = transformFormDataToApiSignal(formData);
 
     try {
-      if (formData.id) { // Use ID from formData (which came from selectedSignal or was generated by form)
+      if (formData.id) { 
         console.log('Updating signal with ID:', formData.id, apiPayload);
-        // Pass the ID within the object for update
         const success = await apiUpdateSignal({ id: formData.id, ...apiPayload }); 
         if (success) {
           setSuccessMessage('Signal updated successfully');
@@ -207,7 +187,6 @@ const SignalsAdminPage: React.FC<SignalsAdminPageProps> = ({ initialSignals, ser
         }
       } else {
         console.log('Creating new signal...', apiPayload);
-        // addSignal expects the payload without an ID
         const newSignal = await apiAddSignal(apiPayload as Omit<SignalSchemaType, 'id'>);
         if (newSignal) {
           setSuccessMessage('Signal created successfully');
@@ -245,8 +224,6 @@ const SignalsAdminPage: React.FC<SignalsAdminPageProps> = ({ initialSignals, ser
     }
   };
 
-  // --- Filtering and Sorting ---
-
   const filteredSignals = signals.filter(signal => {
     const matchesType = activeTab === 'all' || signal.type === activeTab;
     const matchesSearch = !searchQuery ||
@@ -258,10 +235,8 @@ const SignalsAdminPage: React.FC<SignalsAdminPageProps> = ({ initialSignals, ser
   const sortedSignals = [...filteredSignals].sort((a, b) => {
     const dateA = a.dateAdded ? new Date(a.dateAdded).getTime() : 0;
     const dateB = b.dateAdded ? new Date(b.dateAdded).getTime() : 0;
-    return dateB - dateA; // Newest first
+    return dateB - dateA; 
   });
-
-  // --- Utility Functions ---
 
   const formatDate = (dateInput: string | Date | undefined | null): string => {
     if (!dateInput) return 'N/A';
@@ -282,8 +257,6 @@ const SignalsAdminPage: React.FC<SignalsAdminPageProps> = ({ initialSignals, ser
     }
   };
 
-  // --- Render --- 
-
   return (
     <ProtectedRoute>
       <Layout section="admin">
@@ -292,7 +265,6 @@ const SignalsAdminPage: React.FC<SignalsAdminPageProps> = ({ initialSignals, ser
         </Head>
 
         <div className="container mx-auto px-4 py-8">
-          {/* Header and Buttons */} 
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-2xl font-bold text-steel-blue">Manage Signals</h1>
             <div className="flex space-x-4">
@@ -313,7 +285,6 @@ const SignalsAdminPage: React.FC<SignalsAdminPageProps> = ({ initialSignals, ser
             </div>
           </div>
 
-          {/* Alerts */} 
           {error && (
             <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded" role="alert">
               {error}
@@ -325,7 +296,6 @@ const SignalsAdminPage: React.FC<SignalsAdminPageProps> = ({ initialSignals, ser
             </div>
           )}
 
-          {/* Form View */} 
           {isFormOpen ? (
             <div className="bg-white p-6 rounded-lg shadow-md">
               <h2 className="text-xl font-semibold mb-4">
@@ -333,17 +303,14 @@ const SignalsAdminPage: React.FC<SignalsAdminPageProps> = ({ initialSignals, ser
               </h2>
               <SignalForm
                 initialData={selectedSignal || undefined}
-                onSubmit={handleSaveSignal} // Use onSubmit prop
+                onSubmit={handleSaveSignal} 
                 onCancel={() => setIsFormOpen(false)}
                 isSubmitting={isSubmitting}
               />
             </div>
           ) : (
-            /* Table View */ 
             <>
-              {/* Filter and Search Controls */} 
               <div className="mb-4 flex flex-col md:flex-row items-center space-y-4 md:space-y-0 md:space-x-4">
-                {/* Tabs */} 
                 <div className="flex space-x-2 bg-gray-100 p-1 rounded-md">
                   <button
                     onClick={() => setActiveTab('all')}
@@ -364,7 +331,6 @@ const SignalsAdminPage: React.FC<SignalsAdminPageProps> = ({ initialSignals, ser
                     Articles ({signals.filter(s => s.type === 'article').length})
                   </button>
                 </div>
-                {/* Search */} 
                 <div className="flex-grow">
                   <div className="relative">
                     <input
@@ -377,7 +343,6 @@ const SignalsAdminPage: React.FC<SignalsAdminPageProps> = ({ initialSignals, ser
                     <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                   </div>
                 </div>
-                {/* Refresh Button */} 
                 <button
                   onClick={fetchSignals}
                   disabled={isLoading}
@@ -397,7 +362,6 @@ const SignalsAdminPage: React.FC<SignalsAdminPageProps> = ({ initialSignals, ser
                 </button>
               </div>
 
-              {/* Signals Table */} 
               <div className="bg-white rounded-lg shadow overflow-hidden">
                 <div className="overflow-x-auto">
                   {isLoading && !signals.length ? (
@@ -443,7 +407,7 @@ const SignalsAdminPage: React.FC<SignalsAdminPageProps> = ({ initialSignals, ser
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                               <button
-                                onClick={() => handleEditSignal(signal)} // Pass schema Signal
+                                onClick={() => handleEditSignal(signal)} 
                                 className="text-indigo-600 hover:text-indigo-900 mr-4"
                               >
                                 Edit
@@ -469,7 +433,7 @@ const SignalsAdminPage: React.FC<SignalsAdminPageProps> = ({ initialSignals, ser
                       </tbody>
                     </table>
                   ) : (
-                     <p className="p-4 text-center text-gray-500">{isLoading ? 'Loading...' : 'No signals found matching your criteria.'}</p>
+                    <p className="p-4 text-center text-gray-500">{isLoading ? 'Loading...' : 'No signals found matching your criteria.'}</p>
                   )}
                 </div>
               </div>
@@ -483,17 +447,48 @@ const SignalsAdminPage: React.FC<SignalsAdminPageProps> = ({ initialSignals, ser
 
 export default SignalsAdminPage;
 
-// getServerSideProps fetches initial data
-export const getServerSideProps: GetServerSideProps<SignalsAdminPageProps> = async (): Promise<GetServerSidePropsResult<SignalsAdminPageProps>> => {
+export const getServerSideProps: GetServerSideProps<SignalsAdminPageProps> = async (context: GetServerSidePropsContext): Promise<GetServerSidePropsResult<SignalsAdminPageProps>> => {
   try {
-    const signalsFromApi = await apiFetchSignals();
+    const token = context.req.cookies['auth_token']; 
+
+    if (!token) {
+      console.log('getServerSideProps: No auth token found in cookies.');
+      return {
+        redirect: { 
+          destination: '/login', 
+          permanent: false,
+        },
+      };
+    }
+
+    const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL || ''}/api/signals`; 
+    console.log(`getServerSideProps: Fetching signals from ${apiUrl}`);
+
+    const response = await fetch(apiUrl, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`API request failed with status ${response.status}`);
+    }
+
+    const result = await response.json();
+
+    if (!result.success || !Array.isArray(result.data)) {
+      throw new Error('API response format invalid or indicates failure.');
+    }
+
+    const signalsFromApi: any[] = result.data; 
+
     // Ensure the fetched data conforms to the Zod schema before passing as props
-    const validatedSignals = signalsFromApi.map(s => SignalSchema.parse(sanitizeData(s))); // Validate and sanitize
+    const validatedSignals = signalsFromApi.map((s: any) => SignalSchema.parse(sanitizeData(s))); // Validate and sanitize
 
     console.log(`Fetched ${validatedSignals.length} signals server-side`);
     return {
       props: {
-        initialSignals: validatedSignals, // Type is now correctly SignalSchemaType[]
+        initialSignals: validatedSignals, 
       },
     };
   } catch (error) {
