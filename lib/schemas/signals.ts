@@ -22,7 +22,7 @@ export const SignalSchema = z.object({
   frequency: z.string().nullable().optional(), 
   subscriptionUrl: z.string().url({ message: 'Subscription URL must be a valid URL' }).nullable().optional(),
   // Article specific fields
-  publicationDate: z.string().datetime({ message: 'Invalid date format. Use ISO 8601' }).nullable().optional(),
+  publishDate: z.string().datetime({ message: 'Invalid date format. Use ISO 8601' }).nullable().optional(), // Renamed from publicationDate
   readingTime: z.number().int().positive().nullable().optional(),
   // Timestamps managed by Firestore, not typically part of input validation 
   // createdAt: z.string().datetime().optional(),
@@ -64,7 +64,7 @@ export interface Newsletter extends Signal {
 // Article interface extending Signal
 export interface Article extends Signal {
   type: 'article';
-  publicationDate?: string | Date | null;
+  publishDate?: string | Date | null; // Renamed from publicationDate
   readingTime?: number | null;
 }
 

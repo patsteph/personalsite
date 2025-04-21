@@ -4,7 +4,7 @@ import { Signal, Newsletter, Article } from '@/types';
 
 interface SignalFormProps {
   initialData?: Signal;
-  onSubmit: (data: Omit<Signal, 'id'> & { shareToSocial?: { linkedin: boolean; twitter: boolean; bluesky: boolean } }) => void;
+  onSubmit: (data: Signal & { shareToSocial?: { linkedin: boolean; twitter: boolean; bluesky: boolean } }) => void; // Expect full Signal including ID
   onCancel: () => void;
   isSubmitting: boolean;
 }
@@ -100,7 +100,8 @@ export default function SignalForm({ initialData, onSubmit, onCancel, isSubmitti
     
     // Build the signal data based on type
     if (signalType === 'newsletter') {
-      const newsletterData: Omit<Newsletter, 'id'> = {
+      const newsletterData: Newsletter = {
+        id: initialData?.id || '', // Include ID if it exists
         type: 'newsletter',
         ...commonData,
         frequency,
@@ -110,7 +111,8 @@ export default function SignalForm({ initialData, onSubmit, onCancel, isSubmitti
       };
       onSubmit({ ...newsletterData, shareToSocial });
     } else {
-      const articleData: Omit<Article, 'id'> = {
+      const articleData: Article = {
+        id: initialData?.id || '', // Include ID if it exists
         type: 'article',
         ...commonData,
         author,
