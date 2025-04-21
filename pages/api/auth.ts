@@ -2,18 +2,30 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 // Import Firebase Admin SDK components
 import { initializeAdminApp, getAdminAuth } from '@/lib/firebase-admin'; 
 import { DecodedIdToken } from 'firebase-admin/auth'; 
+import { Auth as AdminAuth } from 'firebase-admin/auth'; // Import the type
 import { serialize } from 'cookie';
 
-// Initialize Firebase Admin SDK
-let adminAuth: ReturnType<typeof getAdminAuth> | null;
-try {
-  console.log('Auth API: Initializing Firebase Admin...');
-  initializeAdminApp();
-  adminAuth = getAdminAuth();
-  console.log('Auth API: Firebase Admin initialized.');
-} catch (initError: any) {
-  console.error('Auth API: CRITICAL FIREBASE INIT ERROR:', initError);
-  adminAuth = null; // Ensure adminAuth is null if init fails
+// Helper function to initialize and get auth instance ONCE per request handler invocation
+// This avoids re-initialization if the same serverless instance handles multiple requests,
+// but ensures initialization happens within the request context.
+let memoizedAdminAuth: AdminAuth | null = null;
+function ensureAdminAuthInitialized(): AdminAuth {
+  if (memoizedAdminAuth) {
+    return memoizedAdminAuth;
+  }
+  try {
+    console.log('Auth API: Initializing Firebase Admin within handler...');
+    initializeAdminApp(); // Initialize (safe if already initialized)
+    memoizedAdminAuth = getAdminAuth();
+    console.log('Auth API: Firebase Admin initialized successfully within handler.');
+    if (!memoizedAdminAuth) { // Should not happen if getAdminAuth() works
+      throw new Error('getAdminAuth() returned null after initialization.');
+    }
+    return memoizedAdminAuth;
+  } catch (initError: any) {
+    console.error('Auth API: CRITICAL FIREBASE INIT ERROR during request:', initError);
+    throw new Error('Auth service unavailable due to initialization failure.'); // Re-throw to be caught by handler
+  }
 }
 
 // Response type for authentication
@@ -40,7 +52,16 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<AuthResponse>
 ) {
+  let adminAuth: AdminAuth;
+  try {
+    adminAuth = ensureAdminAuthInitialized();
+  } catch (error: any) {
+    console.error('Auth API: Handler failed to get initialized adminAuth instance.');
+    return res.status(500).json({ success: false, error: error.message || 'Internal Server Error: Auth service failed to initialize.' });
+  }
+  
   // Check if Firebase Admin SDK initialized successfully
+  // This check might be redundant now due to the try/catch above, but safe to keep
   if (!adminAuth) {
     console.error('Auth API: Handler entered but Firebase Admin SDK failed to initialize.');
     return res.status(500).json({ success: false, error: 'Internal Server Error: Auth service unavailable.' });
@@ -69,6 +90,13 @@ async function handleLogin(
   req: NextApiRequest,
   res: NextApiResponse<AuthResponse>
 ) {
+  let adminAuth: AdminAuth;
+  try {
+    adminAuth = ensureAdminAuthInitialized();
+  } catch (error: any) {
+    return res.status(500).json({ success: false, error: error.message || 'Internal Server Error: Auth service failed to initialize.' });
+  }
+
   // Check if Firebase Admin SDK initialized successfully at the start of the function
   if (!adminAuth) {
     console.error('Auth API (handleLogin): Firebase Admin SDK not initialized.');
@@ -147,6 +175,13 @@ async function validateToken(
   req: NextApiRequest,
   res: NextApiResponse<AuthResponse>
 ) {
+  let adminAuth: AdminAuth;
+  try {
+    adminAuth = ensureAdminAuthInitialized();
+  } catch (error: any) {
+    return res.status(500).json({ success: false, error: error.message || 'Internal Server Error: Auth service failed to initialize.' });
+  }
+
   // Check if Firebase Admin SDK initialized successfully
   if (!adminAuth) {
     console.error('Auth API (validateToken): Firebase Admin SDK not initialized.');
@@ -197,6 +232,13 @@ async function getCurrentUser(
   req: NextApiRequest,
   res: NextApiResponse<AuthResponse>
 ) {
+  let adminAuth: AdminAuth;
+  try {
+    adminAuth = ensureAdminAuthInitialized();
+  } catch (error: any) {
+    return res.status(500).json({ success: false, error: error.message || 'Internal Server Error: Auth service failed to initialize.' });
+  }
+
   // Check if Firebase Admin SDK initialized successfully
   if (!adminAuth) {
     console.error('Auth API (getCurrentUser): Firebase Admin SDK not initialized.');
