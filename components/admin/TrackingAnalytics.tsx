@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { collection, query, orderBy, limit, getDocs, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase-client'; 
 import { TrackingEventData } from '@/lib/tracking'; 
+import { useAuth } from '@/lib/auth'; 
 
 // Define the structure of the event data as stored in Firestore (includes Firestore Timestamps)
 interface TrackingEventDocument extends Omit<TrackingEventData, 'timestamp'> {
@@ -17,11 +18,25 @@ interface DisplayableTrackingEvent extends Omit<TrackingEventDocument, 'timestam
 }
 
 const TrackingAnalytics: React.FC = () => {
+  const { user } = useAuth(); 
   const [events, setEvents] = useState<DisplayableTrackingEvent[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Only fetch data if db is initialized AND user exists
+    if (!db || !user) {
+        // If db isn't ready or user isn't logged in, don't fetch yet.
+        // Set loading to false if user is definitively null (meaning not logged in)
+        // If db is null or user is null because auth is still loading, keep loading true.
+        if (user === null) {
+            setLoading(false);
+            setError("User is not authenticated.");
+        }
+        // Keep loading true if db is null or auth state is pending
+        return; 
+    }
+
     const fetchTrackingData = async () => {
       setLoading(true);
       setError(null);
@@ -58,7 +73,7 @@ const TrackingAnalytics: React.FC = () => {
     };
 
     fetchTrackingData();
-  }, []); 
+  }, [user, db]); 
 
   if (loading) {
     return <div className="p-6 text-center">Loading analytics data...</div>;
