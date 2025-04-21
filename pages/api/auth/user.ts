@@ -11,7 +11,7 @@ type UserResponse = DecodedIdToken;
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<UserResponse | ErrorResponse>
+  res: NextApiResponse<{ success: boolean, user: UserResponse } | ErrorResponse>
 ) {
   // Only allow GET requests
   if (req.method !== 'GET') {
@@ -43,9 +43,8 @@ export default async function handler(
     const decodedToken = await adminAuth.verifyIdToken(idToken);
     console.log('API: /api/auth/user - Token verified successfully for UID:', decodedToken.uid);
 
-    // Token is valid, send back user information
-    // You might want to filter what you return, but decodedToken contains uid, email, etc.
-    return res.status(200).json(decodedToken);
+    // Token is valid, send back user information in the expected structure
+    return res.status(200).json({ success: true, user: decodedToken });
 
   } catch (error: any) {
     console.error('API: /api/auth/user - Error verifying token:', error);
