@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { initializeAdminApp, getAdminFirestore } from '@/lib/firebase-admin';
-import { Timestamp, CollectionReference, DocumentData, QueryDocumentSnapshot } from 'firebase-admin/firestore';
+// Temporarily comment out Firebase Admin SDK imports to debug deployment issue
+// import { initializeAdminApp, getAdminFirestore } from '@/lib/firebase-admin'; 
+// import { Timestamp, CollectionReference, DocumentData, QueryDocumentSnapshot } from 'firebase-admin/firestore'; 
 import { validateFirebaseIdToken } from '@/lib/api/server-auth';
 
 type FeedbackItem = {
@@ -45,25 +46,28 @@ type AdminAnalyticsResponse = {
   error?: string;
 }
 
-let db: FirebaseFirestore.Firestore | null;
-try {
-  console.log('Admin Analytics API: Initializing Firebase Admin...');
-  initializeAdminApp();
-  db = getAdminFirestore();
-  console.log('Admin Analytics API: Firebase Admin initialized.');
-} catch (initError: any) {
-  console.error('Admin Analytics API: CRITICAL FIREBASE INIT ERROR:', initError);
-  db = null; 
-}
+// Temporarily comment out Firebase Admin SDK Firestore initialization
+// let db: FirebaseFirestore.Firestore | null;
+// try {
+//   console.log('Admin Analytics API: Initializing Firebase Admin...');
+//   initializeAdminApp();
+//   db = getAdminFirestore();
+//   console.log('Admin Analytics API: Firebase Admin initialized.');
+// } catch (initError: any) {
+//   console.error('Admin Analytics API: CRITICAL FIREBASE INIT ERROR:', initError);
+//   // @ts-ignore - This comment can likely be removed now
+//   db = null; // Ensure db is null if init fails
+// }
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<AdminAnalyticsResponse>
 ) {
-  if (!db) {
-    console.error('Admin Analytics API: Handler entered but Firebase Admin SDK failed to initialize.');
-    return res.status(500).json({ success: false, error: 'Internal Server Error: Firebase initialization failed.' });
-  }
+  // Temporarily remove check for db initialization failure
+  // if (!db) {
+  //   console.error('Admin Analytics API: Handler entered but Firebase Admin SDK failed to initialize.');
+  //   return res.status(500).json({ success: false, error: 'Internal Server Error: Firebase initialization failed.' });
+  // }
 
   const uid = await validateFirebaseIdToken(req);
   
@@ -201,8 +205,36 @@ async function getBlogEngagement() {
   }
 }
 
+// Temporarily revert to placeholder data
 async function getFeedbackAnalytics(): Promise<FeedbackAnalyticsData> {
   try {
+    // TODO: Replace with server-side API call for feedback analytics
+    // Placeholder: return sample data
+    return {
+      feedbackItems: [],
+      categoryStats: [],
+      sentimentStats: [],
+      reactionStats: { thumbsUp: 0, celebrate: 0, insightful: 0, meh: 0, total: 0 },
+      visitorCount: 0
+    };
+  } catch (error) {
+    console.error('Error getting feedback analytics (Placeholder):', error);
+    // Return empty structure on error to prevent frontend crash
+    return {
+      feedbackItems: [],
+      categoryStats: [],
+      sentimentStats: [],
+      reactionStats: { thumbsUp: 0, celebrate: 0, insightful: 0, meh: 0, total: 0 },
+      visitorCount: 0,
+    };
+  }
+}
+
+/* 
+// Original implementation temporarily commented out:
+async function getFeedbackAnalytics(): Promise<FeedbackAnalyticsData> {
+  try {
+    // Ensure db is initialized before using
     if (!db) {
       throw new Error("Firestore database is not initialized.");
     }
@@ -222,28 +254,32 @@ async function getFeedbackAnalytics(): Promise<FeedbackAnalyticsData> {
         category: category,
         feedback: data.feedback || '',
         page: data.page || '',
+        // Convert timestamp to ISO string or keep as is depending on needs
         timestamp: data.timestamp instanceof Timestamp ? data.timestamp.toDate().toISOString() : new Date().toISOString(),
-        classification: data.classification, 
-        status: data.status || 'new', 
+        classification: data.classification, // Assuming field exists
+        status: data.status || 'new', // Assuming field exists
       });
 
+      // Count categories
       categoryCounts[category] = (categoryCounts[category] || 0) + 1;
     });
 
+    // Format category stats
     const categoryStats: CategoryStat[] = Object.entries(categoryCounts).map(([name, count]) => ({
       name,
       count,
     }));
 
-    const sentimentStats: SentimentStat[] = []; 
-    const reactionStats: ReactionCounts = { 
+    // Placeholder for sentiment and reactions
+    const sentimentStats: SentimentStat[] = []; // TODO: Implement if sentiment data exists
+    const reactionStats: ReactionCounts = { // TODO: Implement if reaction data exists
       thumbsUp: 0,
       celebrate: 0,
       insightful: 0,
       meh: 0,
       total: 0
     };
-    const visitorCount = 0; 
+    const visitorCount = 0; // TODO: Implement visitor tracking if available
 
     return {
       feedbackItems,
@@ -254,6 +290,7 @@ async function getFeedbackAnalytics(): Promise<FeedbackAnalyticsData> {
     };
   } catch (error) {
     console.error('Error getting feedback analytics:', error);
+    // Return empty structure on error to prevent frontend crash
     return {
       feedbackItems: [],
       categoryStats: [],
@@ -263,3 +300,4 @@ async function getFeedbackAnalytics(): Promise<FeedbackAnalyticsData> {
     };
   }
 }
+*/
