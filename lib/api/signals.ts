@@ -1,9 +1,5 @@
 // lib/api/signals.ts
 
-import { getCurrentUserToken } from './auth';
-
-console.log('--- lib/api/signals.ts: Module evaluation starting ---');
-
 // Determine API base URL based on environment
 const API_BASE = typeof window === 'undefined' 
   ? process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000' // Server-side needs full URL
@@ -63,7 +59,6 @@ export async function getSignalsByType(type: string): Promise<any[]> {
 
 // Function to add a new signal
 export async function addSignal(signalData: Record<string, any>): Promise<any | null> {
-  console.log('addSignal: Sending data to API:', signalData);
   try {
     // Single try block for fetch and processing
     const response = await fetch(`${SIGNALS_API_URL}`, {
@@ -133,7 +128,6 @@ export async function updateSignal(signal: Record<string, any>): Promise<boolean
 
 // Function to delete a signal
 export async function deleteSignal(id: string): Promise<boolean> {
-  console.log(`deleteSignal: Requesting deletion for ID ${id} from API`);
   try {
     const response = await fetch(`${SIGNALS_API_URL}?id=${id}`, {
       method: 'DELETE',

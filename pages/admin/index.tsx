@@ -157,7 +157,7 @@ export default function AdminPage() {
             </div>
           </div>
           
-          {/* Feedback Analytics Card */}
+          {/* Analytics Card */}
           <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
             <div className="h-40 bg-emerald-600 bg-opacity-20 flex items-center justify-center">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-12 h-12 text-emerald-600">
@@ -165,13 +165,13 @@ export default function AdminPage() {
               </svg>
             </div>
             <div className="p-6">
-              <h2 className="text-xl font-bold text-emerald-600 mb-2">Feedback Analytics</h2>
+              <h2 className="text-xl font-bold text-emerald-600 mb-2">Analytics</h2>
               <p className="text-gray-600 mb-4">View and analyze user feedback.</p>
               <button 
                 onClick={() => setActiveTab('feedback')}
                 className="w-full py-2 bg-emerald-600 text-white rounded hover:bg-opacity-90 transition-colors"
               >
-                View Feedback
+                View Analytics
               </button>
             </div>
           </div>

@@ -1,18 +1,70 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-// Removed Firestore import. Use server-side API or stubbed logic.
+import { initializeAdminApp, getAdminFirestore } from '@/lib/firebase-admin';
+import { Timestamp, CollectionReference, DocumentData, QueryDocumentSnapshot } from 'firebase-admin/firestore';
 import { validateFirebaseIdToken } from '@/lib/api/server-auth';
+
+type FeedbackItem = {
+  id: string;
+  category: string;
+  feedback: string;
+  page: string;
+  timestamp: string; 
+  classification?: string;
+  status: string;
+}
+
+type CategoryStat = {
+  name: string;
+  count: number;
+}
+
+type SentimentStat = {
+  name: string;
+  value: number;
+}
+
+type ReactionCounts = {
+  thumbsUp: number;
+  celebrate: number;
+  insightful: number;
+  meh: number;
+  total: number;
+}
+
+type FeedbackAnalyticsData = {
+  feedbackItems: FeedbackItem[];
+  categoryStats: CategoryStat[];
+  sentimentStats: SentimentStat[]; 
+  reactionStats: ReactionCounts; 
+  visitorCount: number; 
+}
 
 type AdminAnalyticsResponse = {
   success: boolean;
-  data?: Record<string, any>;
+  data?: FeedbackAnalyticsData | Record<string, any>; 
   error?: string;
+}
+
+let db: FirebaseFirestore.Firestore | null;
+try {
+  console.log('Admin Analytics API: Initializing Firebase Admin...');
+  initializeAdminApp();
+  db = getAdminFirestore();
+  console.log('Admin Analytics API: Firebase Admin initialized.');
+} catch (initError: any) {
+  console.error('Admin Analytics API: CRITICAL FIREBASE INIT ERROR:', initError);
+  db = null; 
 }
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<AdminAnalyticsResponse>
 ) {
-  // Verify the user is authenticated - uses direct token verification
+  if (!db) {
+    console.error('Admin Analytics API: Handler entered but Firebase Admin SDK failed to initialize.');
+    return res.status(500).json({ success: false, error: 'Internal Server Error: Firebase initialization failed.' });
+  }
+
   const uid = await validateFirebaseIdToken(req);
   
   if (!uid) {
@@ -25,10 +77,6 @@ export default async function handler(
   
   console.log(`Admin analytics: Authenticated user with UID ${uid}`);
   
-  // For existing admin websites, we'll skip the admin collection check
-  // and just use Firebase Authentication
-  
-  // Only GET requests are supported
   if (req.method !== 'GET') {
     return res.status(405).json({ 
       success: false, 
@@ -37,11 +85,9 @@ export default async function handler(
   }
   
   try {
-    // Check if we're requesting a specific type of analytics
     const analyticsType = req.query.type as string;
     
     if (analyticsType === 'feedback') {
-      // Return feedback-specific analytics
       const feedbackAnalytics = await getFeedbackAnalytics();
       return res.status(200).json({
         success: true,
@@ -49,10 +95,7 @@ export default async function handler(
       });
     }
     
-    // TODO: Replace with server-side API call to fetch site statistics
-    // Placeholder: return empty stats for now
     let statsData = {};
-    // Simulate stats data
     statsData = {
       visits: 0,
       blogVisits: 0,
@@ -70,14 +113,9 @@ export default async function handler(
       }
     };
 
-    // Get additional analytics data
-    // 1. Get top pages data
     const topPages = await getTopPages();
-    // 2. Get book engagement data
     const bookEngagement = await getBookEngagement();
-    // 3. Get blog engagement data
     const blogEngagement = await getBlogEngagement();
-    // Combine all data for the admin dashboard
     const dashboardData = {
       siteStats: statsData,
       topPages,
@@ -97,11 +135,8 @@ export default async function handler(
   }
 }
 
-// Helper function to get top pages data
 async function getTopPages() {
   try {
-    // This could be enhanced to query real page view data if you have that collection
-    // For now, we'll return sample data structured the same way
     return [
       { path: '/books', views: 428, avgTime: '5:12', bounceRate: 31.2 },
       { path: '/', views: 389, avgTime: '2:45', bounceRate: 42.8 },
@@ -114,11 +149,8 @@ async function getTopPages() {
   }
 }
 
-// Helper function to get book engagement data
 async function getBookEngagement() {
   try {
-    // TODO: Replace with server-side API call for book engagement
-    // Placeholder: return sample data
     return {
       totalViews: 0,
       totalDetailViews: 0,
@@ -138,11 +170,8 @@ async function getBookEngagement() {
   }
 }
 
-// Helper function to get blog engagement data
 async function getBlogEngagement() {
   try {
-    // TODO: Replace with server-side API call for blog engagement
-    // Placeholder: return sample data
     return {
       totalViews: 0,
       avgReadTime: '0:00',
@@ -172,23 +201,56 @@ async function getBlogEngagement() {
   }
 }
 
-// Helper function to get feedback analytics data
-async function getFeedbackAnalytics() {
+async function getFeedbackAnalytics(): Promise<FeedbackAnalyticsData> {
   try {
-    // TODO: Replace with server-side API call for feedback analytics
-    // Placeholder: return sample data
+    if (!db) {
+      throw new Error("Firestore database is not initialized.");
+    }
+
+    const feedbackCollection = db.collection('feedback');
+    const snapshot = await feedbackCollection.orderBy('timestamp', 'desc').get();
+
+    const feedbackItems: FeedbackItem[] = [];
+    const categoryCounts: { [key: string]: number } = {};
+
+    snapshot.forEach((doc: QueryDocumentSnapshot<DocumentData>) => {
+      const data = doc.data();
+      const category = data.category || 'uncategorized';
+
+      feedbackItems.push({
+        id: doc.id,
+        category: category,
+        feedback: data.feedback || '',
+        page: data.page || '',
+        timestamp: data.timestamp instanceof Timestamp ? data.timestamp.toDate().toISOString() : new Date().toISOString(),
+        classification: data.classification, 
+        status: data.status || 'new', 
+      });
+
+      categoryCounts[category] = (categoryCounts[category] || 0) + 1;
+    });
+
+    const categoryStats: CategoryStat[] = Object.entries(categoryCounts).map(([name, count]) => ({
+      name,
+      count,
+    }));
+
+    const sentimentStats: SentimentStat[] = []; 
+    const reactionStats: ReactionCounts = { 
+      thumbsUp: 0,
+      celebrate: 0,
+      insightful: 0,
+      meh: 0,
+      total: 0
+    };
+    const visitorCount = 0; 
+
     return {
-      feedbackItems: [],
-      categoryStats: [],
-      sentimentStats: [],
-      reactionStats: {
-        thumbsUp: 0,
-        celebrate: 0,
-        insightful: 0,
-        meh: 0,
-        total: 0
-      },
-      visitorCount: 0
+      feedbackItems,
+      categoryStats,
+      sentimentStats,
+      reactionStats,
+      visitorCount,
     };
   } catch (error) {
     console.error('Error getting feedback analytics:', error);
@@ -196,14 +258,8 @@ async function getFeedbackAnalytics() {
       feedbackItems: [],
       categoryStats: [],
       sentimentStats: [],
-      reactionStats: {
-        thumbsUp: 0,
-        celebrate: 0,
-        insightful: 0,
-        meh: 0,
-        total: 0
-      },
-      visitorCount: 0
+      reactionStats: { thumbsUp: 0, celebrate: 0, insightful: 0, meh: 0, total: 0 },
+      visitorCount: 0,
     };
   }
 }
