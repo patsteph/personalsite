@@ -148,20 +148,33 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // Initialize auth state on mount
   useEffect(() => {
     (async () => {
+      console.log('AuthProvider: Initializing auth state...');
       setLoading(true);
-      const token = await getCurrentUserToken();
-      if (token) {
-        const currentUser = await getCurrentUser();
-        if (currentUser) {
-          setUser(currentUser);
-          setIsAuthenticated(true);
+      try {
+        const token = await getCurrentUserToken();
+        console.log('AuthProvider: Token retrieved:', token ? `Token found (length ${token.length})` : 'No token found');
+        if (token) {
+          console.log('AuthProvider: Calling getCurrentUser...');
+          const currentUser = await getCurrentUser(); // This calls the client-side function in lib/api/auth.ts
+          console.log('AuthProvider: getCurrentUser result:', currentUser);
+          if (currentUser) {
+            console.log('AuthProvider: User authenticated successfully.', currentUser);
+            setUser(currentUser);
+            setIsAuthenticated(true);
+          } else {
+            console.log('AuthProvider: getCurrentUser returned null/falsy. Setting unauthenticated.');
+            setIsAuthenticated(false);
+          }
         } else {
+          console.log('AuthProvider: No initial token found. Setting unauthenticated.');
           setIsAuthenticated(false);
         }
-      } else {
-        setIsAuthenticated(false);
+      } catch (error) {
+        console.error('AuthProvider: Error during initialization:', error);
+        setIsAuthenticated(false); // Ensure unauthenticated on error
       }
       setLoading(false);
+      console.log('AuthProvider: Initialization complete.');
     })();
   }, []);
 

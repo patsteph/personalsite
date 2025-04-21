@@ -152,28 +152,49 @@ export async function getCurrentUserToken(forceRefresh = false): Promise<string 
  * Get the current user from token
  */
 export async function getCurrentUser(): Promise<AppUser | null> {
+  console.log('Client API (getCurrentUser): Attempting to get current user...');
   const token = await getCurrentUserToken();
   
   if (!token) {
+    console.log('Client API (getCurrentUser): No token found.');
     return null;
   }
   
   try {
-    // Get user profile from server
-    const response = await fetch('/api/auth/me', {
+    console.log('Client API (getCurrentUser): Fetching /api/auth/user with token:', `Bearer ${token.substring(0, 10)}...`);
+    const response = await fetch('/api/auth/user', {
+      method: 'GET',
       headers: {
-        'Authorization': `Bearer ${token}`
-      }
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
     });
     
+    console.log(`Client API (getCurrentUser): Response status: ${response.status}`);
+    
     if (!response.ok) {
-      return null;
+      let errorBody = 'Could not read error body';
+      try {
+        errorBody = await response.text();
+      } catch (e) { /* Ignore */ }
+      console.error(`Client API (getCurrentUser): Fetch failed with status ${response.status}. Body: ${errorBody}`);
+      throw new Error(`Failed to fetch user: ${response.statusText}`);
     }
     
     const data = await response.json();
-    return data.user || null;
+    console.log('Client API (getCurrentUser): Fetch successful. Data:', data);
+    
+    if (data.success && data.user) {
+      return data.user as AppUser;
+    } else {
+      console.warn('Client API (getCurrentUser): API call successful but returned no user or success=false.');
+      return null;
+    }
   } catch (error) {
-    console.error('Error getting current user:', error);
+    console.error('Client API (getCurrentUser): Error fetching user:', error);
+    // Optionally clear token if fetch fails due to invalid token?
+    // localStorage.removeItem('authToken');
+    // document.cookie = 'fb_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'; // Clear cookie too if used
     return null;
   }
 }

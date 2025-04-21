@@ -14,11 +14,11 @@ import { useTranslation } from '@/lib/translations';
 //   ssr: false // Admin section doesn't need server-side rendering
 // });
 
-// Dynamically import FeedbackAnalytics component
-const FeedbackAnalytics = dynamic(() => import('@/components/FeedbackAnalytics'), {
-  loading: () => <div className="p-6 text-center">Loading feedback analytics...</div>,
-  ssr: false
-});
+// Temporarily comment out FeedbackAnalytics import
+// const FeedbackAnalytics = dynamic(() => import('@/components/FeedbackAnalytics'), {
+//   loading: () => <div className="p-6 text-center">Loading feedback analytics...</div>,
+//   ssr: false
+// });
 
 export default function AdminPage() {
   const router = useRouter();
@@ -44,6 +44,8 @@ export default function AdminPage() {
   };
   
   // Load any analytics scripts for the admin dashboard
+  // Temporarily comment out script loading
+  /*
   useEffect(() => {
     // Check if the script is already loaded
     if (typeof document !== 'undefined' && !document.getElementById('admin-analytics-script')) {
@@ -62,6 +64,7 @@ export default function AdminPage() {
     }
     return () => {}; // Return empty cleanup function for SSR
   }, []);
+  */
   
   return (
     <Layout section="admin">
@@ -96,7 +99,9 @@ export default function AdminPage() {
         )} */}
         
         {activeTab === 'feedback' ? (
-          <FeedbackAnalytics />
+          // Temporarily disable rendering FeedbackAnalytics
+          <div className="p-6 text-center text-gray-500">Feedback Analytics temporarily disabled for debugging.</div>
+          // <FeedbackAnalytics />
         ) : (
           /* Admin Navigation Cards */
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 mb-8">
@@ -168,10 +173,13 @@ export default function AdminPage() {
               <h2 className="text-xl font-bold text-emerald-600 mb-2">Analytics</h2>
               <p className="text-gray-600 mb-4">View and analyze user feedback.</p>
               <button 
-                onClick={() => setActiveTab('feedback')}
-                className="w-full py-2 bg-emerald-600 text-white rounded hover:bg-opacity-90 transition-colors"
+                // Temporarily disable clicking the button that shows FeedbackAnalytics
+                // onClick={() => setActiveTab('feedback')}
+                onClick={() => alert('Analytics view temporarily disabled for debugging.')}
+                disabled // Optionally disable the button
+                className="w-full py-2 bg-emerald-600 text-white rounded hover:bg-opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                View Analytics
+                View Analytics (Disabled)
               </button>
             </div>
           </div>
