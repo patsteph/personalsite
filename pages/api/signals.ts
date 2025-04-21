@@ -132,13 +132,30 @@ export default async function handler(
     if (['POST', 'PUT', 'DELETE'].includes(req.method!)) {
       try {
         console.log(`Signals API: Checking authentication for ${req.method}.`);
-        const idToken = req.headers.authorization?.split('Bearer ')[1];
+        let idToken: string | undefined = undefined;
+
+        // 1. Check Authorization header (preferred, e.g., from SSR fetch)
+        const authHeader = req.headers.authorization?.split('Bearer ')[1];
+        if (authHeader) {
+          idToken = authHeader;
+          console.log('Signals API: Found token in Authorization header.');
+        } else {
+          // 2. Fallback to fb_token cookie (e.g., from client-side fetch)
+          idToken = req.cookies['fb_token'];
+          if (idToken) {
+            console.log('Signals API: Found token in fb_token cookie.');
+          } else {
+            console.log('Signals API: No token found in header or fb_token cookie.');
+          }
+        }
+        
+        // 3. Verify token if found
         if (!idToken) {
             console.log('Signals API: No token provided for mutation.');
             return res.status(401).json({ success: false, error: 'No token provided' });
         }
         await auth.verifyIdToken(idToken);
-        console.log(`Signals API: Token verified for ${req.method}.`);
+        console.log(`Signals API: Token verified successfully for ${req.method}.`);
       } catch (error: any) {
         console.error(`Signals API auth error for ${req.method}:`, error.code, error.message);
         if (error.code === 'auth/id-token-expired') {

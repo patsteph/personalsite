@@ -26,65 +26,38 @@ export function sanitizeData(body: any): Record<string, any> {
 // Function to fetch all signals
 export async function getAllSignals(): Promise<any[]> {
   try {
-    // Try server API first
-    const token = await getCurrentUserToken();
-    
-    if (token) {
-      try {
-        const response = await fetch(`${API_BASE}/api/signals`, {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          return data.success ? data.data : [];
-        }
-      } catch (error) {
-        console.error('Server API error:', error);
-        // Continue with fallback
-      }
+    const response = await fetch(`${API_BASE}/api/signals`);
+
+    if (!response.ok) {
+      console.error(`getAllSignals: API responded with status ${response.status}`);
+      return []; // Return empty array if response not OK
     }
-    
-    // No client-side fallback. All signal fetching must go through the server API.
-    return [];
+
+    const data = await response.json();
+    return data.success ? data.data : []; // Return data if API success, else empty array
 
   } catch (error) {
-    console.error('Error getting signals:', error);
-    return [];
+    console.error('Error getting signals (network, parsing, etc.):', error);
+    return []; // Return empty array on any exception
   }
 }
 
 // Function to fetch signals by type
 export async function getSignalsByType(type: string): Promise<any[]> {
   try {
-    // Try server API first
-    const token = await getCurrentUserToken();
-    if (token) {
-      try {
-        const response = await fetch(`${API_BASE}/api/signals?type=${type}`, {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          return data.success ? data.data : [];
-        }
-      } catch (error) {
-        console.error('Server API error:', error);
-        // Continue with fallback
-      }
+    const response = await fetch(`${API_BASE}/api/signals?type=${type}`);
+
+    if (!response.ok) {
+      console.error(`getSignalsByType (${type}): API responded with status ${response.status}`);
+      return []; // Return empty array if response not OK
     }
-    
-    // No client-side fallback. All signal fetching must go through the server API.
-    return [];
+
+    const data = await response.json();
+    return data.success ? data.data : []; // Return data if API success, else empty array
 
   } catch (error) {
-    console.error(`Error getting signals by type ${type}:`, error);
-    return [];
+    console.error(`Error getting signals by type ${type} (network, parsing, etc.):`, error);
+    return []; // Return empty array on any exception
   }
 }
 
@@ -92,34 +65,35 @@ export async function getSignalsByType(type: string): Promise<any[]> {
 export async function addSignal(signalData: Record<string, any>): Promise<any | null> {
   console.log('addSignal: Sending data to API:', signalData);
   try {
-    const token = await getCurrentUserToken();
-    if (token) {
-      try {
-        const response = await fetch(`${SIGNALS_API_URL}`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`
-          },
-          body: JSON.stringify(signalData)
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          return data.success ? data.data : null;
-        }
-      } catch (error) {
-        console.error('Server API error:', error);
-        // Continue with fallback
-      }
-    }
-    
-    // No client-side fallback. All signal creation must go through the server API.
-    return null;
+    // Single try block for fetch and processing
+    const response = await fetch(`${SIGNALS_API_URL}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(signalData)
+    });
 
-  } catch (error) {
-    console.error('Error adding signal:', error);
-    return null;
+    if (!response.ok) {
+      // Handle non-OK responses (e.g., 4xx, 5xx)
+      console.error(`addSignal: API responded with status ${response.status}`);
+      // Attempt to read error body for more context, but don't fail if it doesn't parse
+      try { 
+        const errorData = await response.json();
+        console.error('addSignal: API error response body:', errorData);
+      } catch { 
+        // Ignore error if response body isn't valid JSON
+      }
+      return null; // Return null if response not OK
+    }
+
+    // Response is OK, parse JSON body
+    const data = await response.json();
+    return data.success ? data.data : null; // Return data if API reported success, else null
+
+  } catch (error) { // Catches errors from fetch() or response.json()
+    console.error('Error adding signal (network, parsing, etc.):', error);
+    return null; // Return null on any exception during the process
   }
 }
 
@@ -128,33 +102,32 @@ export async function updateSignal(signal: Record<string, any>): Promise<boolean
   if (!signal.id) return false;
   
   try {
-    // Try server API first
-    const token = await getCurrentUserToken();
-    if (token) {
-      try {
-        const response = await fetch(`${SIGNALS_API_URL}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`
-          },
-          body: JSON.stringify(signal)
-        });
-        
-        if (response.ok) {
-          return true;
-        }
-      } catch (error) {
-        console.error('Server API error:', error);
-        return false;
-      }
+    const response = await fetch(`${SIGNALS_API_URL}`, { // Assuming PUT endpoint is /api/signals
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(signal)
+    });
+
+    if (!response.ok) {
+      console.error(`updateSignal (${signal.id}): API responded with status ${response.status}`);
+      // Attempt to read error body
+      try { 
+        const errorData = await response.json();
+        console.error('updateSignal: API error response body:', errorData);
+      } catch { }
+      return false; // Return false if response not OK
     }
-    
-    return false;
+
+    // Check response body for success if applicable, otherwise assume OK status means success
+    // const data = await response.json(); 
+    // return data.success; 
+    return true; // Return true if response is OK
 
   } catch (error) {
-    console.error('Error updating signal:', error);
-    return false;
+    console.error(`Error updating signal ${signal.id} (network, parsing, etc.):`, error);
+    return false; // Return false on any exception
   }
 }
 
@@ -162,33 +135,28 @@ export async function updateSignal(signal: Record<string, any>): Promise<boolean
 export async function deleteSignal(id: string): Promise<boolean> {
   console.log(`deleteSignal: Requesting deletion for ID ${id} from API`);
   try {
-    const token = await getCurrentUserToken();
-    if (!token) {
-      return false;
+    const response = await fetch(`${SIGNALS_API_URL}?id=${id}`, {
+      method: 'DELETE',
+    });
+
+    if (!response.ok) {
+      console.error(`deleteSignal (${id}): API responded with status ${response.status}`);
+      // Attempt to read error body
+      try { 
+        const errorData = await response.json();
+        console.error('deleteSignal: API error response body:', errorData);
+      } catch { }
+      return false; // Return false if response not OK
     }
-    
-    try {
-      const response = await fetch(`${SIGNALS_API_URL}?id=${id}`, {
-        method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-      
-      if (response.ok) {
-        return true;
-      }
-    } catch (error) {
-      console.error('Server API error:', error);
-      // Continue with fallback
-    }
-    
-    // No client-side fallback. All signal deletions must go through the server API.
-    return false;
+
+    // Check response body for success if applicable, otherwise assume OK status means success
+    // const data = await response.json(); 
+    // return data.success;
+    return true; // Return true if response is OK
 
   } catch (error) {
-    console.error('Error deleting signal:', error);
-    return false;
+    console.error(`Error deleting signal ${id} (network, parsing, etc.):`, error);
+    return false; // Return false on any exception
   }
 }
 

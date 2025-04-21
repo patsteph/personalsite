@@ -86,14 +86,18 @@ async function handleLogin(
         photoURL: firebaseData.photoUrl || ''
       };
       const isAdmin = (process.env.ADMIN_EMAILS?.split(',') || []).includes(email);
-      // Set the auth_success cookie for SSR/middleware
-      res.setHeader('Set-Cookie', serialize('auth_success', 'true', {
+
+      // Set the HttpOnly cookie containing the Firebase ID token
+      const cookieOptions = {
         path: '/',
-        httpOnly: false,
-        maxAge: 60 * 60,
-        sameSite: 'strict',
+        httpOnly: true,
+        maxAge: 60 * 60, // 1 hour in seconds
+        sameSite: 'strict' as const, // Explicitly type as 'strict'
         secure: process.env.NODE_ENV === 'production',
-      }));
+      };
+      res.setHeader('Set-Cookie', serialize('fb_token', customToken, cookieOptions));
+
+      // Return success with token and user info (token in body might still be useful for client)
       return res.status(200).json({ success: true, token: customToken, user: { ...userRecord, isAdmin } });
     } catch (error: any) {
       console.error('Server authentication error:', error);

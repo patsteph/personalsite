@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { GetServerSideProps, GetServerSidePropsResult, GetServerSidePropsContext } from 'next'; 
 import Head from 'next/head'; 
-import { ParsedUrlQuery } from 'querystring';
+import { GetServerSideProps, GetServerSidePropsResult, GetServerSidePropsContext } from 'next'; 
 import { useRouter } from 'next/router'; 
 import { 
   addSignal as apiAddSignal, 
@@ -17,7 +16,7 @@ import SignalForm from '@/components/admin/SignalForm';
 import { Signal, Newsletter, Article } from '@/lib/schemas/signals';
 import { Signal as AppSignal, Newsletter as AppNewsletter, Article as AppArticle } from '@/types'; 
 
-interface SignalsAdminPageProps {
+interface SignalsAdminPageProps { 
   initialSignals: SignalSchemaType[];
   serverError?: string;
 }
@@ -27,8 +26,8 @@ const SignalsAdminPage: React.FC<SignalsAdminPageProps> = ({ initialSignals, ser
 
   const [signals, setSignals] = useState<SignalSchemaType[]>(initialSignals || []);
   const [selectedSignal, setSelectedSignal] = useState<AppSignal | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(serverError || null);
+  const [isLoading, setIsLoading] = useState(false); 
+  const [error, setError] = useState<string | null>(serverError || null); 
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -50,11 +49,8 @@ const SignalsAdminPage: React.FC<SignalsAdminPageProps> = ({ initialSignals, ser
     setIsLoading(true);
     setError(null);
     try {
-      const signalsData = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || ''}/api/signals`, {
-        headers: {
-          'Authorization': `Bearer ${document.cookie.split('auth_token=')[1].split(';')[0]}`,
-        },
-      });
+      // Token logic removed - HttpOnly cookie 'fb_token' sent automatically by browser
+      const signalsData = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || ''}/api/signals`);
       const result = await signalsData.json();
 
       if (!result.success || !Array.isArray(result.data)) {
@@ -74,13 +70,6 @@ const SignalsAdminPage: React.FC<SignalsAdminPageProps> = ({ initialSignals, ser
       setIsLoading(false);
     }
   };
-
-  useEffect(() => {
-    if (!initialSignals?.length || serverError) {
-      console.log('Initial signals empty or server error, fetching client-side...');
-      fetchSignals();
-    }
-  }, [initialSignals, serverError]);
 
   const transformApiSignalToFormData = (apiSignal: SignalSchemaType): AppSignal => {
     const safeNewDate = (dateStr: string | undefined | null): Date | undefined => {
@@ -449,10 +438,10 @@ export default SignalsAdminPage;
 
 export const getServerSideProps: GetServerSideProps<SignalsAdminPageProps> = async (context: GetServerSidePropsContext): Promise<GetServerSidePropsResult<SignalsAdminPageProps>> => {
   try {
-    const token = context.req.cookies['auth_token']; 
+    const token = context.req.cookies['fb_token']; 
 
     if (!token) {
-      console.log('getServerSideProps: No auth token found in cookies.');
+      console.log('getServerSideProps: No fb_token found in cookies. Redirecting to login.');
       return {
         redirect: { 
           destination: '/login', 
@@ -461,8 +450,10 @@ export const getServerSideProps: GetServerSideProps<SignalsAdminPageProps> = asy
       };
     }
 
-    const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL || ''}/api/signals`; 
-    console.log(`getServerSideProps: Fetching signals from ${apiUrl}`);
+    const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+    const host = context.req.headers.host || process.env.NEXT_PUBLIC_VERCEL_URL || 'localhost:3000'; 
+    const apiUrl = `${protocol}://${host}/api/signals`;
+    console.log(`getServerSideProps: Fetching signals from internal API: ${apiUrl}`);
 
     const response = await fetch(apiUrl, {
       headers: {
@@ -471,21 +462,22 @@ export const getServerSideProps: GetServerSideProps<SignalsAdminPageProps> = asy
     });
 
     if (!response.ok) {
-      throw new Error(`API request failed with status ${response.status}`);
+      const errorText = await response.text();
+      throw new Error(`API request failed with status ${response.status}: ${errorText}`);
     }
 
     const result = await response.json();
 
     if (!result.success || !Array.isArray(result.data)) {
+      console.error('getServerSideProps: API response format invalid:', result);
       throw new Error('API response format invalid or indicates failure.');
     }
 
     const signalsFromApi: any[] = result.data; 
 
-    // Ensure the fetched data conforms to the Zod schema before passing as props
-    const validatedSignals = signalsFromApi.map((s: any) => SignalSchema.parse(sanitizeData(s))); // Validate and sanitize
+    const validatedSignals = signalsFromApi.map((s: any) => SignalSchema.parse(sanitizeData(s))); 
 
-    console.log(`Fetched ${validatedSignals.length} signals server-side`);
+    console.log(`getServerSideProps: Fetched ${validatedSignals.length} signals server-side.`);
     return {
       props: {
         initialSignals: validatedSignals, 
@@ -500,4 +492,4 @@ export const getServerSideProps: GetServerSideProps<SignalsAdminPageProps> = asy
       },
     };
   }
-};
+}; 
