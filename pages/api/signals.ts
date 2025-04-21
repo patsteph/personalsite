@@ -2,7 +2,8 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { initializeAdminApp, getAdminFirestore, getAdminAuth } from '@/lib/firebase-admin'; 
 import { Timestamp, QueryDocumentSnapshot, DocumentData } from 'firebase-admin/firestore';
 import { Auth } from 'firebase-admin/auth';
-import { SignalSchema, SignalSchemaType, convertFirestoreSignalToApiResponse, sanitizeData } from '@/lib/api/signals'; 
+import { SignalSchema, SignalSchemaType } from '@/lib/schemas/signals'; 
+import { sanitizeData } from '@/lib/api/signals'; 
  
 console.log('--- pages/api/signals.ts: Module evaluation starting ---');
 
@@ -29,6 +30,20 @@ try {
 }
 
 const SIGNALS_COLLECTION = 'signals';
+
+// Define helper locally as it uses server-only Timestamp
+function convertFirestoreSignalToApiResponse(docData: FirebaseFirestore.DocumentData | undefined | null): Record<string, any> {
+  if (!docData) return {};
+  const data: Record<string, any> = { ...docData };
+  for (const key in data) {
+    if (data[key] instanceof Timestamp) { 
+      data[key] = data[key].toDate().toISOString(); // Convert Timestamp to ISO string
+    } else if (data[key] === undefined) {
+       data[key] = null; // Convert undefined to null
+    }
+  }
+  return data; 
+}
 
 export default async function handler(
   req: NextApiRequest,
