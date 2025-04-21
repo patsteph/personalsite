@@ -4,6 +4,8 @@ import { Timestamp, QueryDocumentSnapshot, DocumentData } from 'firebase-admin/f
 import { Auth } from 'firebase-admin/auth';
 import { SignalSchema, SignalSchemaType, convertFirestoreSignalToApiResponse, sanitizeData } from '@/lib/api/signals'; 
  
+console.log('--- pages/api/signals.ts: Module evaluation starting ---');
+
 // Initialize Firebase Admin
 let db: FirebaseFirestore.Firestore;
 let auth: Auth;
@@ -30,7 +32,8 @@ const SIGNALS_COLLECTION = 'signals';
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<{ success: boolean; data?: SignalSchemaType | SignalSchemaType[]; error?: string; }>
+  // Use `any` for data type temporarily to align with convertFirestoreSignalToApiResponse return type
+  res: NextApiResponse<{ success: boolean; data?: any; error?: string; }>
 ) {
   // Check if initialization failed earlier
   if (!db || !auth) {
@@ -156,14 +159,24 @@ export default async function handler(
  
         console.log('Signals API: Preparing data for Firestore...');
         const now = Timestamp.now();
-        // Use the validated data directly
-        const signalData: Omit<SignalSchemaType, 'id'> & { createdAt: Timestamp; updatedAt: Timestamp; dateAdded?: Timestamp } = {
-            ...validatedData,
-            // Convert dateAdded back to Timestamp if it exists and is valid
-            dateAdded: validatedData.dateAdded ? Timestamp.fromDate(new Date(validatedData.dateAdded)) : undefined,
+        // Define type based on validated data before converting dateAdded
+        const { dateAdded: validatedDateAddedString, ...restOfValidatedData } = validatedData;
+        const signalData: Omit<SignalSchemaType, 'id' | 'dateAdded'> & { 
+          createdAt: Timestamp; 
+          updatedAt: Timestamp; 
+        } = {
+            ...restOfValidatedData,
             createdAt: now,
             updatedAt: now,
         };
+        // Conditionally add the converted dateAdded Timestamp
+        if (validatedDateAddedString) {
+            try {
+                (signalData as any).dateAdded = Timestamp.fromDate(new Date(validatedDateAddedString));
+            } catch (dateError) {
+                console.warn(`Signals API: Invalid dateAdded format received: ${validatedDateAddedString}. Skipping field.`);
+            }
+        }
         // Remove id if present, Firestore generates it
         delete (signalData as any).id; 
         console.log('Signals API: Firestore data prepared:', signalData);

@@ -4,6 +4,8 @@ import { z } from 'zod'; // Import zod
 import { getCurrentUserToken } from './auth';
 import { Timestamp } from 'firebase-admin/firestore'; // Import Timestamp
 
+console.log('--- lib/api/signals.ts: Module evaluation starting ---');
+
 // Determine API base URL based on environment
 const API_BASE = typeof window === 'undefined' 
   ? process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000' // Server-side needs full URL
