@@ -2,238 +2,232 @@
 import React, { useState, useEffect } from 'react';
 import { GetServerSideProps } from 'next';
 import Head from 'next/head';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/router';
 import { ParsedUrlQuery } from 'querystring';
 import Layout from '@/components/layout/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import SignalForm from '@/components/admin/SignalForm';
-import { Signal, Newsletter, Article } from '@/types';
-import { Signal as ApiSignal } from '@/lib/api/signals';
-import api from '@/lib/api';
+import { Signal, Newsletter, Article } from '@/lib/schemas/signals'; // Import schema definition
+import { Signal as AppSignal } from '@/types'; // Restore AppSignal for form/component usage
+import { fetchSignals as apiFetchSignals, addSignal as apiAddSignal, updateSignal as apiUpdateSignal, deleteSignal as apiDeleteSignal } from '@/lib/api/signals';
 
 interface SignalsAdminPageProps {
-  signals: Signal[];
-  error?: string;
+  initialSignals: Signal[];
 }
 
-export default function SignalsAdminPage({ signals: initialSignals, error: serverError }: SignalsAdminPageProps) {
-  const router = useRouter();
-  
-  // Local state
-  const [signals, setSignals] = useState<Signal[]>(initialSignals);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(serverError || null);
+const SignalsAdminPage: React.FC<SignalsAdminPageProps> = ({ initialSignals }) => {
+  // State for managing signals
+  const [signals, setSignals] = useState<Signal[]>(initialSignals || []); // Store raw API/schema signals
+  const [selectedSignal, setSelectedSignal] = useState<AppSignal | null>(null); // State holds AppSignal for the form
+  const [isLoading, setIsLoading] = useState(false); // Start false if using initialSignals
+  const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  
-  // Form state
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [selectedSignal, setSelectedSignal] = useState<Signal | null>(null);
-  
-  // Filter state
   const [activeTab, setActiveTab] = useState<'all' | 'newsletter' | 'article'>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  
+
   // Clear messages after 5 seconds
   useEffect(() => {
     const timer = setTimeout(() => {
       setSuccessMessage(null);
       setError(null);
     }, 5000);
-    
+
     return () => clearTimeout(timer);
   }, [successMessage, error]);
-  
+
   // Load signals when component mounts
   useEffect(() => {
-    loadSignals();
+    fetchSignals();
   }, []);
-  
-  // Load signals fresh from the API
-  const loadSignals = async () => {
+
+  // Fetch signals from API
+  const fetchSignals = async () => {
     setIsLoading(true);
     setError(null);
-    
+
     try {
-      console.log('Loading signals using API library with fallback mechanism');
-      
-      // Use the API library function instead of direct fetch
-      const signalsData = await api.signals.getAllSignals();
-      
+      const signalsData = await apiFetchSignals(); // Use direct import
       if (signalsData && Array.isArray(signalsData)) {
         console.log(`Loaded ${signalsData.length} signals`);
-        // Convert API signal type to app signal type
-        const convertedSignals: Signal[] = signalsData.map((signal: ApiSignal) => {
-          return {
-            ...signal,
-            // Add any required fields for Article or Newsletter types
-            ...(signal.type === 'article' ? {
-              publishDate: signal.dateAdded || new Date().toISOString()
-            } : {})
-          } as Signal;
-        });
-        setSignals(convertedSignals);
+        // Store the raw API/schema signals
+        setSignals(signalsData as Signal[]);
       } else {
-        console.error('API error: No signals data returned');
-        setError('Failed to load signals');
+        console.error('Received non-array data for signals:', signalsData);
+        setError('Failed to load signals: Invalid data format received.');
       }
-    } catch (err) {
-      console.error('Error loading signals:', err);
-      setError(`Error: ${err instanceof Error ? err.message : String(err)}`);
+    } catch (error) {
+      console.error('Error loading signals:', error);
+      setError(`Error: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       setIsLoading(false);
     }
   };
-  
-  // Open the form for creating a new signal
-  const handleCreateNew = () => {
-    setSelectedSignal(null);
+
+  // Transform API/schema Signal data to AppSignal for the form/display
+  const transformApiSignalToFormData = (apiSignal: Signal): AppSignal => {
+    // Ensure all AppSignal fields are present and correctly typed
+    return {
+      id: apiSignal.id || '', // Ensure ID is string
+      type: apiSignal.type,
+      title: apiSignal.title,
+      description: apiSignal.description,
+      url: apiSignal.url,
+      source: apiSignal.source || '', // Ensure source is string
+      dateAdded: apiSignal.dateAdded ? new Date(apiSignal.dateAdded) : new Date(), // Convert to Date object
+      updatedAt: apiSignal.updatedAt ? new Date(apiSignal.updatedAt) : undefined,
+      featured: apiSignal.featured || false,
+      tags: apiSignal.tags || [],
+      imageUrl: apiSignal.imageUrl || undefined,
+      // Add Article/Newsletter specific fields with defaults if needed
+      publishDate: apiSignal.type === 'article' ? (apiSignal.publishDate ? new Date(apiSignal.publishDate) : undefined) : undefined,
+      publisher: apiSignal.type === 'newsletter' ? (apiSignal.publisher || '') : undefined,
+      status: apiSignal.status || 'published', // Default status if needed
+    } as AppSignal; // Cast to the appropriate union type if necessary
+  };
+
+  // Transform AppSignal (from form) back to Partial<Signal> for the API call
+  const transformFormDataToApiSignal = (formData: AppSignal): Partial<Signal> => {
+    const apiData: Partial<Signal> = { ...formData };
+    // Convert Date objects back to ISO strings for the API
+    if (formData.dateAdded instanceof Date) {
+      apiData.dateAdded = formData.dateAdded.toISOString();
+    }
+    if (formData.updatedAt instanceof Date) {
+      apiData.updatedAt = formData.updatedAt.toISOString();
+    }
+    if (formData.publishDate instanceof Date) {
+      apiData.publishDate = formData.publishDate.toISOString();
+    }
+    // Remove fields not present in the base Signal schema if necessary
+    // delete apiData.someAppSpecificField;
+    return apiData;
+  };
+
+  // Open editor for creating a new signal
+  const handleNewSignal = () => {
+    setSelectedSignal(null); // Clear selection for new form
     setIsFormOpen(true);
   };
-  
-  // Open the form for editing an existing signal
-  const handleEdit = (signal: Signal) => {
-    setSelectedSignal(signal);
+
+  // Open editor for editing an existing signal
+  const handleEditSignal = (signal: Signal) => {
+    // Use the imported Signal type directly
+    setSelectedSignal(transformApiSignalToFormData(signal)); // Transform schema signal to AppSignal for form
     setIsFormOpen(true);
   };
-  
-  // Handle form submission (for both create and update)
-  const handleSubmit = async (data: Omit<Signal, 'id'> & { shareToSocial?: { linkedin: boolean; twitter: boolean; bluesky: boolean } }) => {
-    setIsSubmitting(true);
+
+  // Handle signal creation/update from form
+  const handleSaveSignal = async (formData: AppSignal) => { // Expect AppSignal from form
+    setIsLoading(true);
     setError(null);
-    
+    const apiData = transformFormDataToApiSignal(formData); // Transform AppSignal to Partial<Signal> for API
+
     try {
-      console.log(selectedSignal ? 'Updating signal' : 'Creating new signal', {
-        ...data,
-        shareToSocial: data.shareToSocial ? 'Specified' : 'Not specified'
-      });
-      
-      // Result variable removed as it's not used
-      let message = '';
-      
-      // Use the API library with fallback instead of direct fetch
-      if (selectedSignal) {
+      if (selectedSignal && selectedSignal.id) { // Check selectedSignal's ID for update
         // Update existing signal
         console.log('Updating signal with ID:', selectedSignal.id);
-        
-        // Convert to API signal type, ensuring required fields exist
-        const apiSignal: ApiSignal = {
-          id: selectedSignal.id,
-          ...data,
-          // Ensure required fields for API signal
-          source: ''
-        };
-        
-        const updated = await api.signals.updateSignal(apiSignal);
-        
-        if (updated) {
-          message = 'Signal updated successfully';
-          // No longer storing result as it's not needed
+        const success = await apiUpdateSignal(selectedSignal.id, apiData); // Use direct import
+        if (success) {
+          setSuccessMessage('Signal updated successfully');
+          fetchSignals(); // Reload signals
         } else {
           throw new Error('Failed to update signal');
         }
       } else {
         // Create new signal
-        // Create the stringified body first so we can log it
-        const jsonBody = JSON.stringify(data);
-        console.log('Request data:', jsonBody.substring(0, 200) + (jsonBody.length > 200 ? '...' : ''));
-        
-        // Convert to API signal type, ensuring required fields exist
-        const apiSignal: ApiSignal = {
-          ...data,
-          // Ensure required fields for API signal
-          source: ''
-        };
-        
-        const apiResult = await api.signals.addSignal(apiSignal);
-        
-        if (apiResult) {
-          // Successfully created signal
-          message = 'Signal created successfully';
+        console.log('Creating new signal...');
+        // AddSignal expects Omit<Signal, 'id'>, ensure apiData matches
+        const newSignal = await apiAddSignal(apiData as Omit<Signal, 'id'>); // Use direct import
+        if (newSignal) {
+          setSuccessMessage('Signal created successfully');
+          fetchSignals(); // Reload signals
         } else {
           throw new Error('Failed to create signal');
         }
       }
-      
-      // Add social share message if applicable
-      if (data.shareToSocial && Object.values(data.shareToSocial).some(v => v)) {
-        const platforms = Object.entries(data.shareToSocial)
-          .filter(([, value]) => value)
-          .map(([platform]) => platform);
-        
-        if (platforms.length > 0) {
-          message += ` and shared to ${platforms.join(', ')}`;
-        }
-      }
-      
-      setSuccessMessage(message);
-      setIsFormOpen(false);
-      loadSignals(); // Reload signals to get the updated data
-    } catch (err) {
-      console.error('Error submitting signal:', err);
-      
-      const errorMessage = err instanceof Error ? err.message : String(err);
-      setError(`Error: ${errorMessage}`);
+    } catch (error) {
+      console.error('Error submitting signal:', error);
+      setError(`Error: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       setIsSubmitting(false);
     }
   };
-  
+
   // Handle signal deletion
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this signal? This action cannot be undone.')) {
-      return;
-    }
-    
+  const handleDeleteSignal = async (signalId: string) => {
+    if (!window.confirm('Are you sure you want to delete this signal? This action cannot be undone.')) return;
     setIsLoading(true);
     setError(null);
-    
+
     try {
-      console.log('Deleting signal with ID:', id);
-      
-      // Use the API library with fallback instead of direct fetch
-      const deleted = await api.signals.deleteSignal(id);
-      
-      if (deleted) {
+      const success = await apiDeleteSignal(signalId); // Use direct import
+      if (success) {
         setSuccessMessage('Signal deleted successfully');
-        // Remove from local state instead of reloading
-        setSignals(prev => prev.filter(signal => signal.id !== id));
+        // Remove from local state instead of reloading full list
+        setSignals(prev => prev.filter(signal => signal.id !== signalId));
       } else {
         throw new Error('Failed to delete signal');
       }
-    } catch (err) {
-      console.error('Error deleting signal:', err);
-      setError(`Error: ${err instanceof Error ? err.message : String(err)}`);
+    } catch (error) {
+      console.error('Error deleting signal:', error);
+      setError(`Error: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       setIsLoading(false);
     }
   };
-  
+
   // Filter signals based on tab and search query
   const filteredSignals = signals.filter(signal => {
     const matchesType = activeTab === 'all' || signal.type === activeTab;
     const matchesSearch = !searchQuery || 
       signal.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       signal.description.toLowerCase().includes(searchQuery.toLowerCase());
-    
+
     return matchesType && matchesSearch;
   });
-  
+
+  // Format date for display
+  const formatDate = (dateInput: string | Date | undefined | null): string => {
+    if (!dateInput) return 'N/A';
+    let date: Date;
+    try {
+      // Attempt to parse the input as a Date
+      // Strings should be in ISO format, Date objects are used directly
+      if (dateInput === undefined || dateInput === null) {
+        return 'N/A';
+      }
+      date = new Date(dateInput);
+
+      // Check if the date is valid after parsing
+      if (isNaN(date.getTime())) {
+        return 'Invalid date';
+      }
+
+      return date.toLocaleDateString();
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return 'Invalid date';
+    }
+  };
+
   return (
     <ProtectedRoute>
       <Layout section="admin">
         <Head>
           <title>Manage Signals | Admin</title>
         </Head>
-        
+
         <div className="container mx-auto px-4 py-8">
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-2xl font-bold text-steel-blue">Manage Signals</h1>
-            
+
             <div className="flex space-x-4">
               {!isFormOpen && (
                 <button
-                  onClick={handleCreateNew}
+                  onClick={handleNewSignal}
                   className="px-4 py-2 bg-steel-blue text-white rounded-md hover:bg-opacity-90"
                 >
                   Add New Signal
@@ -247,30 +241,30 @@ export default function SignalsAdminPage({ signals: initialSignals, error: serve
               </button>
             </div>
           </div>
-          
+
           {/* Alerts */}
           {error && (
             <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
               {error}
             </div>
           )}
-          
+
           {successMessage && (
             <div className="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded">
               {successMessage}
             </div>
           )}
-          
+
           {isFormOpen ? (
             <div className="bg-white p-6 rounded-lg shadow-md">
               <h2 className="text-xl font-semibold mb-4">
                 {selectedSignal ? 'Edit Signal' : 'Create New Signal'}
               </h2>
               <SignalForm
-                initialData={selectedSignal || undefined}
-                onSubmit={handleSubmit}
+                initialData={selectedSignal || undefined} // Pass AppSignal | undefined
+                onSave={handleSaveSignal} // Ensure handleSaveSignal uses the correct types
                 onCancel={() => setIsFormOpen(false)}
-                isSubmitting={isSubmitting}
+                isLoading={isLoading}
               />
             </div>
           ) : (
@@ -309,7 +303,7 @@ export default function SignalsAdminPage({ signals: initialSignals, error: serve
                     Articles ({signals.filter(s => s.type === 'article').length})
                   </button>
                 </div>
-                
+
                 <div className="flex-grow">
                   <div className="relative">
                     <input
@@ -326,9 +320,9 @@ export default function SignalsAdminPage({ signals: initialSignals, error: serve
                     </div>
                   </div>
                 </div>
-                
+
                 <button
-                  onClick={loadSignals}
+                  onClick={fetchSignals}
                   disabled={isLoading}
                   className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 flex items-center"
                 >
@@ -344,7 +338,7 @@ export default function SignalsAdminPage({ signals: initialSignals, error: serve
                   )}
                 </button>
               </div>
-              
+
               {/* Signals Table */}
               <div className="bg-white rounded-lg shadow overflow-hidden">
                 <div className="overflow-x-auto">
@@ -429,7 +423,7 @@ export default function SignalsAdminPage({ signals: initialSignals, error: serve
                               </div>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                              {new Date(signal.dateAdded).toLocaleDateString()}
+                              {formatDate(signal.dateAdded)}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               {signal.featured ? (
@@ -444,14 +438,23 @@ export default function SignalsAdminPage({ signals: initialSignals, error: serve
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                               <button
-                                onClick={() => handleEdit(signal)}
+                                onClick={() => handleEditSignal(signal)}
                                 className="text-indigo-600 hover:text-indigo-900 mr-4"
                               >
                                 Edit
                               </button>
                               <button
-                                onClick={() => handleDelete(signal.id)}
-                                className="text-red-600 hover:text-red-900"
+                                onClick={() => {
+                                  const id = signal.id;
+                                  if (id) {
+                                    handleDeleteSignal(id);
+                                  } else {
+                                    console.error('Attempted to delete signal with no ID:', signal);
+                                    setError('Cannot delete signal: Missing ID.');
+                                  }
+                                }}
+                                disabled={!signal.id} // Disable if no ID
+                                className="text-red-600 hover:text-red-900 disabled:opacity-50 disabled:cursor-not-allowed"
                               >
                                 Delete
                               </button>
@@ -469,7 +472,7 @@ export default function SignalsAdminPage({ signals: initialSignals, error: serve
       </Layout>
     </ProtectedRoute>
   );
-}
+};
 
 export const getServerSideProps: GetServerSideProps<SignalsAdminPageProps, ParsedUrlQuery> = async () => {
   try {
@@ -481,7 +484,7 @@ export const getServerSideProps: GetServerSideProps<SignalsAdminPageProps, Parse
     };
   } catch (error) {
     console.error('Error in getServerSideProps:', error);
-    
+
     return {
       props: {
         signals: [],
