@@ -1,5 +1,20 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-// Removed adminAuth and Firestore import. Use server-side API or remove logic.
+// Import Firebase Admin SDK components
+import { initializeAdminApp, getAdminAuth } from '@/lib/firebase-admin'; 
+import { DecodedIdToken } from 'firebase-admin/auth'; 
+import { serialize } from 'cookie';
+
+// Initialize Firebase Admin SDK
+let adminAuth: ReturnType<typeof getAdminAuth> | null;
+try {
+  console.log('Auth API: Initializing Firebase Admin...');
+  initializeAdminApp();
+  adminAuth = getAdminAuth();
+  console.log('Auth API: Firebase Admin initialized.');
+} catch (initError: any) {
+  console.error('Auth API: CRITICAL FIREBASE INIT ERROR:', initError);
+  adminAuth = null; // Ensure adminAuth is null if init fails
+}
 
 // Response type for authentication
 type AuthResponse = {
@@ -21,12 +36,16 @@ type AuthResponse = {
  * Server-side authentication endpoint
  * Uses Firebase Admin SDK to authenticate users without exposing API keys
  */
-import { serialize } from 'cookie';
-
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<AuthResponse>
 ) {
+  // Check if Firebase Admin SDK initialized successfully
+  if (!adminAuth) {
+    console.error('Auth API: Handler entered but Firebase Admin SDK failed to initialize.');
+    return res.status(500).json({ success: false, error: 'Internal Server Error: Auth service unavailable.' });
+  }
+
   // Handle different types of auth requests
   if (req.method === 'POST') {
     // Login handler
@@ -50,6 +69,12 @@ async function handleLogin(
   req: NextApiRequest,
   res: NextApiResponse<AuthResponse>
 ) {
+  // Check if Firebase Admin SDK initialized successfully at the start of the function
+  if (!adminAuth) {
+    console.error('Auth API (handleLogin): Firebase Admin SDK not initialized.');
+    return res.status(500).json({ success: false, error: 'Internal Server Error: Auth service unavailable.' });
+  }
+
   try {
     const { email, password } = req.body;
 
@@ -122,6 +147,12 @@ async function validateToken(
   req: NextApiRequest,
   res: NextApiResponse<AuthResponse>
 ) {
+  // Check if Firebase Admin SDK initialized successfully
+  if (!adminAuth) {
+    console.error('Auth API (validateToken): Firebase Admin SDK not initialized.');
+    return res.status(500).json({ success: false, error: 'Internal Server Error: Auth service unavailable.' });
+  }
+
   try {
     // Get token from Authorization header
     const authHeader = req.headers.authorization || '';
@@ -166,6 +197,12 @@ async function getCurrentUser(
   req: NextApiRequest,
   res: NextApiResponse<AuthResponse>
 ) {
+  // Check if Firebase Admin SDK initialized successfully
+  if (!adminAuth) {
+    console.error('Auth API (getCurrentUser): Firebase Admin SDK not initialized.');
+    return res.status(500).json({ success: false, error: 'Internal Server Error: Auth service unavailable.' });
+  }
+
   try {
     // Get token from Authorization header
     const authHeader = req.headers.authorization || '';
@@ -176,24 +213,24 @@ async function getCurrentUser(
     }
     
     try {
-      // Verify the token
-      // TODO: Replace with server-side API call to verify token
-      // Stubbed logic for token verification
-      const decodedToken = {
-        uid: 'stub-uid',
-        email: 'stub-email@example.com'
-      };
+      // Verify the token using Firebase Admin SDK
+      const decodedToken: DecodedIdToken = await adminAuth.verifyIdToken(token);
       
-      // Get user record from Firebase Auth
-      // TODO: Replace with server-side API call to get user by uid
-      // Stubbed logic for user retrieval
-      const userRecord = {
-        uid: decodedToken.uid,
-        email: decodedToken.email,
-        displayName: 'Stubbed User',
-        photoURL: null
-      };
+      if (!decodedToken || !decodedToken.uid) {
+        console.warn('Token decoded but UID missing.');
+        return res.status(401).json({ success: false, error: 'Invalid token data' });
+      }
       
+      // Get user record from Firebase Auth using Admin SDK
+      const userRecord = await adminAuth.getUser(decodedToken.uid);
+      
+      if (!userRecord) {
+        console.warn(`User record not found for UID: ${decodedToken.uid}`);
+        return res.status(404).json({ success: false, error: 'User not found' });
+      }
+
+      // Check if the user is an admin
+      const isAdmin = (process.env.ADMIN_EMAILS?.split(',') || []).includes(userRecord.email || '');
       // Return user info
       return res.status(200).json({
         success: true,
@@ -201,15 +238,20 @@ async function getCurrentUser(
           uid: userRecord.uid,
           email: userRecord.email || '',
           displayName: userRecord.displayName || undefined,
-          photoURL: userRecord.photoURL || undefined
-        }
+          photoURL: userRecord.photoURL || undefined,
+          isAdmin, // Use the determined isAdmin status
+        },
       });
-    } catch (error) {
-      console.error('Get current user error:', error);
-      return res.status(401).json({ success: false, error: 'Invalid token' });
+    } catch (error: any) {
+      console.error('Error verifying token or getting user record:', error);
+      // Differentiate between invalid token and other errors
+      if (error.code === 'auth/id-token-expired' || error.code === 'auth/argument-error') {
+        return res.status(401).json({ success: false, error: 'Invalid or expired token' });
+      } 
+      return res.status(500).json({ success: false, error: 'Failed to get user data' });
     }
   } catch (error) {
-    console.error('Get current user error:', error);
-    return res.status(500).json({ success: false, error: 'Error getting user info' });
+    console.error('API user fetch error:', error);
+    return res.status(500).json({ success: false, error: 'Internal server error' });
   }
 }
