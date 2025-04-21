@@ -6,10 +6,12 @@ import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 initializeAdminApp();
 const db = getAdminFirestore();
 
-const STATS_COLLECTION = 'site-stats'; // Corrected collection name
-const STATS_DOC_ID = 'stats';
+const STATS_COLLECTION = 'site-stats'; // Old collection for aggregated stats
+const STATS_DOC_ID = 'stats'; // Old document ID
+const TRACKING_EVENTS_COLLECTION = 'trackingEvents'; // New collection for individual events
 
 // Define a default structure for stats if the document doesn't exist
+// NOTE: This is for the OLD / GET endpoint. New data goes to TRACKING_EVENTS_COLLECTION.
 const defaultStats = {
   totalVisits: 0,
   pageVisits: { // Example specific page counters
@@ -37,6 +39,7 @@ type SiteStatsResponse = {
   data?: Record<string, any>;
   error?: string;
   message?: string;
+  eventId?: string; // Add optional eventId for POST response
 }
 
 export default async function handler(
@@ -75,71 +78,38 @@ export default async function handler(
   if (req.method === 'POST') {
     try {
         console.log('Site Stats API: Processing POST request with body:', req.body);
-        const { action, ...payload } = req.body;
+        
+        // --- New Logic for Individual Event Tracking --- 
+        const eventPayload = req.body; // Assume body matches TrackingEventData structure
 
-        if (!action || typeof action !== 'string') {
-            return res.status(400).json({ success: false, error: 'Missing or invalid required field: action (string)' });
+        // Basic validation of the new payload structure
+        if (!eventPayload || typeof eventPayload !== 'object') {
+          return res.status(400).json({ success: false, error: 'Invalid request body: expected an object.' });
         }
-
-        const increment = FieldValue.increment(1);
-        let updateData: { [key: string]: any } = { 
-            lastUpdated: FieldValue.serverTimestamp() // Update timestamp on any tracked action
+        
+        const { eventType, sessionId, pathname, timestamp, referrer, userAgent, eventData } = eventPayload;
+        
+        if (!eventType || !sessionId || !pathname || !timestamp) {
+          return res.status(400).json({ success: false, error: 'Missing required tracking fields: eventType, sessionId, pathname, timestamp' });
+        }
+        
+        // Prepare data for Firestore
+        const dataToSave = {
+            eventType,
+            sessionId,
+            pathname,
+            timestamp: Timestamp.fromDate(new Date(timestamp)), // Convert ISO string to Firestore Timestamp
+            referrer: referrer || null, // Ensure null if missing/empty
+            userAgent: userAgent || null, // Ensure null if missing/empty
+            ...(eventData && { eventData: eventData }), // Include eventData if present
+            receivedAt: FieldValue.serverTimestamp() // Add server timestamp for processing time
         };
-
-        switch (action) {
-            case 'trackPageVisit':
-                // Increment total visits
-                updateData['totalVisits'] = increment;
-                // Increment specific page counter if provided and valid
-                if (payload.page && typeof payload.page === 'string') {
-                    // Sanitize page key (e.g., replace '/' with '_' or use a map)
-                    // Simple example: use predefined keys like 'home', 'blog', 'books'
-                    const pageKey = payload.page.replace('/', '') || 'home'; // Treat '/' as 'home'
-                    if (defaultStats.pageVisits.hasOwnProperty(pageKey)) {
-                         updateData[`pageVisits.${pageKey}`] = increment;
-                         console.log(`Site Stats API: Incrementing pageVisits.${pageKey}`);
-                    } else {
-                        console.warn(`Site Stats API: Unknown page key for tracking: ${pageKey}`);
-                    }
-                } else if (payload.isBlogPost) {
-                    // Specific handling for blog posts if needed
-                    updateData['totalBlogPostVisits'] = increment;
-                    console.log(`Site Stats API: Incrementing totalBlogPostVisits`);
-                } else {
-                     console.warn(`Site Stats API: trackPageVisit called without valid 'page' or 'isBlogPost' flag.`);
-                }
-                break;
-
-            case 'trackReaction':
-                if (payload.type && typeof payload.type === 'string' && defaultStats.reactions.hasOwnProperty(payload.type)) {
-                    updateData[`reactions.${payload.type}`] = increment;
-                    updateData['reactions.total'] = increment; // Also increment total reactions
-                    console.log(`Site Stats API: Incrementing reactions.${payload.type} and reactions.total`);
-                } else {
-                    console.warn(`Site Stats API: trackReaction called with invalid or missing 'type': ${payload.type}`);
-                    // Don't fail the request, just log a warning
-                    return res.status(200).json({ success: true, message: `Action '${action}' processed, but reaction type invalid or missing.` });
-                }
-                break;
-            
-            case 'trackFeedbackSubmission':
-                updateData['feedbackCount'] = increment;
-                console.log(`Site Stats API: Incrementing feedbackCount`);
-                break;
-
-            // Add more actions as needed
-
-            default:
-                console.warn(`Site Stats API: Unknown action received: ${action}`);
-                return res.status(400).json({ success: false, error: `Unknown action: ${action}` });
-        }
-
-        // Atomically update the document, creating it if it doesn't exist
-        console.log('Site Stats API: Updating stats document with:', updateData);
-        await statsDocRef.set(updateData, { merge: true });
-        console.log('Site Stats API: Stats document updated successfully.');
-
-        return res.status(200).json({ success: true, message: `Action '${action}' processed successfully.` });
+        
+        // Add the event as a new document in the trackingEvents collection
+        const docRef = await db.collection(TRACKING_EVENTS_COLLECTION).add(dataToSave);
+        console.log('Site Stats API: Saved tracking event with ID:', docRef.id);
+        
+        return res.status(201).json({ success: true, message: 'Event tracked successfully.', eventId: docRef.id });
 
     } catch (error: any) {
         console.error('Site Stats API POST error:', error);

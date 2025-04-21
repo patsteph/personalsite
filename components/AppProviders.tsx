@@ -1,7 +1,9 @@
 // components/AppProviders.tsx
 import { ReactNode, useEffect, useState, createContext, useContext } from 'react';
+import { useRouter } from 'next/router';
 import { AuthProvider } from '@/lib/auth';
 import { TranslationProvider } from '@/lib/translations';
+import { getTrackingSessionId, trackEvent } from '@/lib/tracking';
 import dynamic from 'next/dynamic';
 
 // Dynamically import the FeedbackWidget with no SSR to avoid hydration issues
@@ -32,10 +34,14 @@ export default function AppProviders({ children }: AppProvidersProps) {
   // Theme state
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   
-  // Initialize theme from localStorage when client is available
+  // Initialize theme and tracking when client is available
   useEffect(() => {
     setIsClient(true);
     
+    // Initialize tracking session and log initial page view
+    getTrackingSessionId(); // Ensures session ID is set
+    trackEvent('pageview'); // Track initial page load
+
     // Check for saved theme preference
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme === 'dark') {
@@ -45,44 +51,67 @@ export default function AppProviders({ children }: AppProvidersProps) {
       setTheme('light');
       document.documentElement.classList.remove('dark');
     }
-    
-    // Track site visit if not already tracked in this session
-    try {
-      const visitKey = 'site-visit-tracked';
-      if (!localStorage.getItem(visitKey) && typeof window !== 'undefined') {
-        localStorage.setItem(visitKey, new Date().toISOString());
-        
-        // Track visit through dedicated site-stats API
-        fetch('/api/site-stats', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            action: 'visit'
-          })
-        }).catch(error => {
-          console.error('Error tracking site visit:', error);
-        });
-        
-        // For backward compatibility, still use the old endpoint too
-        fetch('/api/blog-post', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            postId: 'site-global',
-            action: 'visit'
-          })
-        }).catch(error => {
-          console.error('Error tracking site visit through legacy endpoint:', error);
+  }, []);
+  
+  // Hook up page view tracking to router events
+  const router = useRouter();
+  useEffect(() => {
+    // Function to handle route changes
+    const handleRouteChange = (url: string) => {
+      // Track page view on route change complete
+      // The pathname is already captured within trackEvent using window.location
+      trackEvent('pageview');
+      // Optionally, you could pass the url if needed:
+      // trackEvent('pageview', { targetUrl: url });
+    };
+
+    // Subscribe to the event
+    router.events.on('routeChangeComplete', handleRouteChange);
+
+    // Unsubscribe from the event on component unmount
+    return () => {
+      router.events.off('routeChangeComplete', handleRouteChange);
+    };
+  }, [router.events]); // Re-run if router.events changes (though typically stable)
+
+  // Global click listener for interaction tracking
+  useEffect(() => {
+    const handleClick = (event: MouseEvent) => {
+      let targetElement = event.target as HTMLElement;
+      
+      // Traverse up the DOM tree to find the tracking ID (max 5 levels up)
+      let trackingId: string | null = null;
+      let elementTag: string = '';
+      let levels = 0;
+      while (targetElement && levels < 5) {
+        trackingId = targetElement.getAttribute('data-track-id');
+        if (trackingId) {
+          elementTag = targetElement.tagName;
+          break;
+        }
+        targetElement = targetElement.parentElement as HTMLElement;
+        levels++;
+      }
+
+      if (trackingId) {
+        // console.log(`Interaction tracked: ${trackingId}`);
+        trackEvent('interaction', {
+          elementId: trackingId,
+          elementType: elementTag,
+          // Optional: add more context like text content if needed
+          // elementText: targetElement.textContent?.trim().substring(0, 50) 
         });
       }
-    } catch (error) {
-      console.error('Error in site visit tracking:', error);
-    }
-  }, []);
+    };
+
+    // Add the listener to the document body
+    document.body.addEventListener('click', handleClick);
+
+    // Clean up the listener on component unmount
+    return () => {
+      document.body.removeEventListener('click', handleClick);
+    };
+  }, []); // Empty dependency array ensures this runs only once on mount/unmount
   
   // Toggle theme function
   const toggleTheme = () => {

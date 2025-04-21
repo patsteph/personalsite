@@ -5,66 +5,29 @@ import dynamic from 'next/dynamic';
 import Layout from '@/components/layout/Layout';
 import { useAuth } from '@/lib/auth';
 import { useTranslation } from '@/lib/translations';
+
 // Dynamically import components to reduce initial load size
-// BookForm is not used in this component, so no need to import it
 
-// Removed unused import:
-// const BookForm = dynamic(() => import('@/components/admin/BookForm'), {
-//   loading: () => <div className="p-6 text-center">Loading book management tools...</div>,
-//   ssr: false // Admin section doesn't need server-side rendering
-// });
-
-// Temporarily comment out FeedbackAnalytics import
-// const FeedbackAnalytics = dynamic(() => import('@/components/FeedbackAnalytics'), {
-//   loading: () => <div className="p-6 text-center">Loading feedback analytics...</div>,
-//   ssr: false
-// });
+// NEW: Dynamically import TrackingAnalytics
+const TrackingAnalytics = dynamic(() => import('@/components/admin/TrackingAnalytics'), {
+  loading: () => <div className="p-6 text-center">Loading analytics data...</div>,
+  ssr: false // Admin section doesn't need server-side rendering
+});
 
 export default function AdminPage() {
   const router = useRouter();
   const { signOut } = useAuth();
   const { t } = useTranslation();
-  // Success state removed since it's not currently used
-  // const [isSuccess, setIsSuccess] = useState(false);
-  const [activeTab, setActiveTab] = useState('main'); // 'main' or 'feedback'
+  const [activeTab, setActiveTab] = useState('main'); // 'main' or 'analytics'
   
   const handleSignOut = async () => {
     await signOut();
     router.push('/');
   };
   
-  // Success handler - not currently used but kept for future feature implementation
-  // const handleSuccess = () => {
-  //   setIsSuccess(true);
-  //   setTimeout(() => setIsSuccess(false), 3000);
-  // };
-  
   const navigateTo = (path: string) => {
     router.push(path);
   };
-  
-  // Load any analytics scripts for the admin dashboard
-  // Temporarily comment out script loading
-  /*
-  useEffect(() => {
-    // Check if the script is already loaded
-    if (typeof document !== 'undefined' && !document.getElementById('admin-analytics-script')) {
-      const script = document.createElement('script');
-      script.id = 'admin-analytics-script';
-      script.src = '/admin-dashboard-analytics.js';
-      script.async = true;
-      document.body.appendChild(script);
-      
-      return () => {
-        // Clean up on unmount
-        if (document.getElementById('admin-analytics-script')) {
-          document.body.removeChild(script);
-        }
-      };
-    }
-    return () => {}; // Return empty cleanup function for SSR
-  }, []);
-  */
   
   return (
     <Layout section="admin">
@@ -74,7 +37,7 @@ export default function AdminPage() {
             {t('admin.dashboard', 'Admin Dashboard')}
           </h1>
           <div className="flex space-x-4">
-            {activeTab === 'feedback' && (
+            {activeTab === 'analytics' && (
               <button
                 onClick={() => setActiveTab('main')}
                 className="bg-steel-blue hover:bg-accent text-white font-medium py-2 px-4 rounded transition-colors"
@@ -91,17 +54,9 @@ export default function AdminPage() {
           </div>
         </div>
         
-        {/* Success message removed since state is not currently used
-        {isSuccess && (
-          <div className="bg-green-100 text-green-700 p-3 rounded mb-4">
-            {t('admin.success', 'Operation completed successfully!')}
-          </div>
-        )} */}
-        
-        {activeTab === 'feedback' ? (
-          // Temporarily disable rendering FeedbackAnalytics
-          <div className="p-6 text-center text-gray-500">Feedback Analytics temporarily disabled for debugging.</div>
-          // <FeedbackAnalytics />
+        {activeTab === 'analytics' ? (
+          // Render the new TrackingAnalytics component
+          <TrackingAnalytics />
         ) : (
           /* Admin Navigation Cards */
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 mb-8">
@@ -171,15 +126,12 @@ export default function AdminPage() {
             </div>
             <div className="p-6">
               <h2 className="text-xl font-bold text-emerald-600 mb-2">Analytics</h2>
-              <p className="text-gray-600 mb-4">View and analyze user feedback.</p>
+              <p className="text-gray-600 mb-4">View site usage statistics and interactions.</p>
               <button 
-                // Temporarily disable clicking the button that shows FeedbackAnalytics
-                // onClick={() => setActiveTab('feedback')}
-                onClick={() => alert('Analytics view temporarily disabled for debugging.')}
-                disabled // Optionally disable the button
-                className="w-full py-2 bg-emerald-600 text-white rounded hover:bg-opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={() => setActiveTab('analytics')} // Set tab to 'analytics'
+                className="w-full py-2 bg-emerald-600 text-white rounded hover:bg-opacity-90 transition-colors"
               >
-                View Analytics (Disabled)
+                View Analytics
               </button>
             </div>
           </div>
