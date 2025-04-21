@@ -14,6 +14,7 @@ import { SignalSchema, SignalSchemaType } from '@/lib/schemas/signals'; // Impor
 import Layout from '@/components/layout/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import SignalForm from '@/components/admin/SignalForm';
+
 // Import schema definition
 import { Signal, Newsletter, Article } from '@/lib/schemas/signals';
 // Restore AppSignal for form/component usage
@@ -121,7 +122,7 @@ const SignalsAdminPage: React.FC<SignalsAdminPageProps> = ({ initialSignals, ser
       return {
         ...baseAppSignal,
         type: 'newsletter',
-        frequency: apiSignal.frequency as Newsletter['frequency'] || 'weekly', // AppNewsletter requires frequency (type checked)
+        frequency: apiSignal.frequency || 'weekly', // AppNewsletter requires frequency (type checked)
         publisher: apiSignal.publisher || '', // AppNewsletter requires publisher
         subscriptionUrl: apiSignal.subscriptionUrl || '', // AppNewsletter requires subscriptionUrl
         sampleUrl: undefined, // Placeholder - not in schema
@@ -486,8 +487,6 @@ export default SignalsAdminPage;
 export const getServerSideProps: GetServerSideProps<SignalsAdminPageProps> = async (): Promise<GetServerSidePropsResult<SignalsAdminPageProps>> => {
   try {
     const signalsFromApi = await apiFetchSignals();
-    // Log the raw data received from the API
-    console.log('Raw signals data from API in getServerSideProps:', JSON.stringify(signalsFromApi, null, 2)); 
     // Ensure the fetched data conforms to the Zod schema before passing as props
     const validatedSignals = signalsFromApi.map(s => SignalSchema.parse(sanitizeData(s))); // Validate and sanitize
 
