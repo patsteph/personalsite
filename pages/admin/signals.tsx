@@ -486,6 +486,8 @@ export default SignalsAdminPage;
 export const getServerSideProps: GetServerSideProps<SignalsAdminPageProps> = async (): Promise<GetServerSidePropsResult<SignalsAdminPageProps>> => {
   try {
     const signalsFromApi = await apiFetchSignals();
+    // Log the raw data received from the API
+    console.log('Raw signals data from API in getServerSideProps:', JSON.stringify(signalsFromApi, null, 2)); 
     // Ensure the fetched data conforms to the Zod schema before passing as props
     const validatedSignals = signalsFromApi.map(s => SignalSchema.parse(sanitizeData(s))); // Validate and sanitize
 
