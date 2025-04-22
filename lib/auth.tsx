@@ -133,9 +133,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       return; // Exit after redirect
     }
 
-    console.log(`AuthProvider: No redirect needed for path ${currentPath}.`);
-
-  }, [loading, isAuthenticated, router.pathname]); // Dependencies: auth state and PATHNAME
+    // console.log(`AuthProvider: No redirect needed for path ${currentPath}.`);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // NOTE: Temporarily removed router.pathname for debugging redirect loop
+  }, [loading, isAuthenticated]);
 
   // Sign in function - Triggers backend login, relies on onAuthStateChanged for state update
   const signIn = useCallback(async (email: string, password: string): Promise<void> => {
