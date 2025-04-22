@@ -89,7 +89,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     // Cleanup subscription on unmount
     return () => {
-      console.log('AuthProvider: Cleaning up onAuthStateChanged listener.');
+      console.log('AuthProvider: >>> Cleaning up onAuthStateChanged listener. <<<');
       unsubscribe();
     };
   }, []); // Empty dependency array ensures this runs only once on mount
@@ -112,31 +112,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // If it's a protected route and user is NOT authenticated, redirect to login
     if (isProtectedRoute && !isAuthenticated) {
       console.log('AuthProvider: User not authenticated for protected route, redirecting to login.');
-      console.log(`AuthProvider: ---> Scheduling router.push('/admin/login')`);
-      const timerId = setTimeout(() => {
-        console.log(`AuthProvider: ---> Executing router.push('/admin/login') from timer ${timerId}`);
-        router.push('/admin/login');
-      }, 50); // 50ms delay
-      console.log(`AuthProvider: ---> Scheduled timer ${timerId} for login redirect`);
+      router.push('/admin/login');
       return; // Exit after redirect
     }
 
     // If it's the login page and user IS authenticated, redirect to admin dashboard
     if (publicAdminRoutes.includes(currentPath) && isAuthenticated) {
       console.log('AuthProvider: User authenticated on login page, redirecting to dashboard.');
-      console.log(`AuthProvider: ---> Scheduling router.push('/admin')`);
-      const timerId = setTimeout(() => {
-        console.log(`AuthProvider: ---> Executing router.push('/admin') from timer ${timerId}`);
-        router.push('/admin');
-      }, 50); // 50ms delay
-      console.log(`AuthProvider: ---> Scheduled timer ${timerId} for dashboard redirect`);
+      router.push('/admin');
       return; // Exit after redirect
     }
 
     // console.log(`AuthProvider: No redirect needed for path ${currentPath}.`);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    // NOTE: Temporarily removed router.pathname for debugging redirect loop
-  }, [loading, isAuthenticated]);
+  }, [loading, isAuthenticated, router.pathname]);
 
   // Sign in function - Triggers backend login, relies on onAuthStateChanged for state update
   const signIn = useCallback(async (email: string, password: string): Promise<void> => {
