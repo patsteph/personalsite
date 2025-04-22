@@ -5,7 +5,9 @@
  */
 // Blog API module (server-side only)
 import { BlogPost } from '@/types/blog';
-import { getCurrentUserToken } from './auth';
+// Import Firebase auth instance and token function
+import { auth } from '../firebase-client';
+import { getIdToken } from 'firebase/auth';
 
 // Determine API base URL based on environment
 const API_BASE = typeof window === 'undefined' 
@@ -57,12 +59,26 @@ export async function getPublishedPosts(maxPosts?: number): Promise<BlogPost[]> 
  */
 export async function getAllPosts(): Promise<BlogPost[]> {
   try {
-    const token = await getCurrentUserToken();
+    // Get auth token if available using Firebase SDK
+    let token: string | null = null;
+    if (auth?.currentUser) {
+      try {
+        token = await auth.currentUser.getIdToken(true);
+      } catch (error) {
+        console.warn('Failed to get ID token for getAllPosts:', error);
+      }
+    }
+
+    // If no token, likely shouldn't be calling this admin=true endpoint
+    if (!token) {
+      console.warn('getAllPosts requires authentication, but no user token found.');
+      return []; // Or throw an error?
+    }
+
     const response = await fetch(`${API_BASE}/api/blog?admin=true`, {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
+        'Authorization': `Bearer ${token}`
       }
     });
     if (response.ok) {
@@ -102,12 +118,25 @@ export async function getPostBySlug(slug: string): Promise<BlogPost | null> {
  */
 export async function addBlogPost(post: Omit<BlogPost, 'id' | 'createdAt' | 'updatedAt'>): Promise<BlogPost | null> {
   try {
-    const token = await getCurrentUserToken();
+    // Get auth token - required for adding posts using Firebase SDK
+    let token: string | null = null;
+    if (auth?.currentUser) {
+      try {
+        token = await auth.currentUser.getIdToken(true);
+      } catch (error) {
+        console.error('Failed to get ID token for addBlogPost:', error);
+      }
+    }
+
+    if (!token) {
+      throw new Error('Authentication required to add blog posts');
+    }
+
     const response = await fetch(`${API_BASE}/api/blog`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        'Authorization': `Bearer ${token}` // Token is guaranteed here
       },
       body: JSON.stringify(post)
     });
@@ -129,12 +158,25 @@ export async function addBlogPost(post: Omit<BlogPost, 'id' | 'createdAt' | 'upd
  */
 export async function updateBlogPost(id: string, post: Partial<BlogPost>): Promise<boolean> {
   try {
-    const token = await getCurrentUserToken();
+    // Get auth token - required for updating posts using Firebase SDK
+    let token: string | null = null;
+    if (auth?.currentUser) {
+      try {
+        token = await auth.currentUser.getIdToken(true);
+      } catch (error) {
+        console.error('Failed to get ID token for updateBlogPost:', error);
+      }
+    }
+
+    if (!token) {
+      throw new Error('Authentication required to update blog posts');
+    }
+
     const response = await fetch(`${API_BASE}/api/blog?id=${id}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        'Authorization': `Bearer ${token}` // Token is guaranteed here
       },
       body: JSON.stringify(post)
     });
@@ -154,12 +196,25 @@ export async function updateBlogPost(id: string, post: Partial<BlogPost>): Promi
  */
 export async function deleteBlogPost(id: string): Promise<boolean> {
   try {
-    const token = await getCurrentUserToken();
+    // Get auth token - required for deleting posts using Firebase SDK
+    let token: string | null = null;
+    if (auth?.currentUser) {
+      try {
+        token = await auth.currentUser.getIdToken(true);
+      } catch (error) {
+        console.error('Failed to get ID token for deleteBlogPost:', error);
+      }
+    }
+
+    if (!token) {
+      throw new Error('Authentication required to delete blog posts');
+    }
+
     const response = await fetch(`${API_BASE}/api/blog?id=${id}`, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        'Authorization': `Bearer ${token}` // Token is guaranteed here
       }
     });
     if (response.ok) {
