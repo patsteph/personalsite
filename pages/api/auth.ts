@@ -90,6 +90,11 @@ async function handleLogin(
   req: NextApiRequest,
   res: NextApiResponse<AuthResponse>
 ) {
+  // **** Login is now handled entirely by the Firebase Client SDK ****
+  // **** This backend endpoint should no longer be called for login ****
+  return res.status(405).json({ success: false, error: 'Login via this API endpoint is disabled. Use Firebase Client SDK.' });
+
+  /* Commenting out previous logic:
   let adminAuth: AdminAuth;
   try {
     adminAuth = ensureAdminAuthInitialized();
@@ -166,6 +171,7 @@ async function handleLogin(
       error: 'Internal server error during authentication'
     });
   }
+  */
 }
 
 /**

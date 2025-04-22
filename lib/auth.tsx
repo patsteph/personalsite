@@ -27,7 +27,7 @@ interface AuthContextType {
   user: AppUser | null;
   isAuthenticated: boolean;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<AuthCredential>; // Keep same signature for now
+  signIn: (email: string, password: string) => Promise<void>; 
   signOut: () => Promise<void>;
   // Removed refreshToken, checkSession as SDK handles this
 }
@@ -90,23 +90,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, []); // Empty dependency array ensures this runs only once on mount
 
   // Sign in function - Triggers backend login, relies on onAuthStateChanged for state update
-  const signIn = useCallback(async (email: string, password: string): Promise<AuthCredential> => {
+  const signIn = useCallback(async (email: string, password: string): Promise<void> => {
     console.log('AuthProvider: signIn called.');
     setLoading(true);
     try {
-      // Call the original API sign-in. This should:
-      // 1. Verify credentials via Firebase REST API on the backend.
-      // 2. Set the HttpOnly 'fb_token' cookie with the Firebase ID Token.
-      // 3. Return user info and the ID token (which we won't store in localStorage anymore).
-      const credential = await apiSignIn(email, password);
-      console.log('AuthProvider: apiSignIn successful.');
-      // We NO LONGER manually set user state or store token here.
-      // The 'fb_token' cookie is set by the server.
-      // The onAuthStateChanged listener should detect the new auth state shortly
-      // after a page reload.
-      setLoading(false); // Set loading to false before reloading
-      router.reload(); // Force reload to make SDK recognize the cookie/session
-      return credential; // Return the original credential for compatibility if needed
+      // Call the API wrapper function, which now uses Firebase Client SDK
+      // No need to set user state here, onAuthStateChanged will handle it
+      await apiSignIn(email, password); 
+      console.log('AuthProvider: Client SDK signIn successful. Waiting for onAuthStateChanged...');
+      // No page reload needed, the listener should fire.
     } catch (error) {
       console.error('AuthProvider: signIn error:', error);
       setUser(null);
@@ -114,7 +106,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setLoading(false); // Ensure loading stops on error
       throw error; // Re-throw the error for the caller
     }
-  }, [router]); // Add router to dependency array
+  }, []); // Add router to dependency array
 
   // Sign out function - Signs out from Firebase SDK and clears local state
   const signOut = useCallback(async () => {
@@ -143,8 +135,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       throw error; // Re-throw the error
     }
   }, [router]); // Add router to dependency array
-
-  // Removed session check/refresh logic, Firebase SDK handles it.
 
   // Provide the authentication context to child components
   return (

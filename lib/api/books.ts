@@ -4,7 +4,9 @@
  * This module handles all book-related interactions with server API endpoints
  */
 import { Book } from '@/types/book';
-import { getCurrentUserToken } from './auth';
+// Import Firebase auth instance and token function
+import { auth } from '../firebase-client';
+import { getIdToken } from 'firebase/auth';
 
 // Determine API base URL based on environment
 const API_BASE = typeof window === 'undefined' 
@@ -16,8 +18,16 @@ const API_BASE = typeof window === 'undefined'
  */
 export async function getAllBooks(): Promise<Book[]> {
   try {
-    // Get auth token if available
-    const token = await getCurrentUserToken();
+    // Get auth token if available using Firebase SDK
+    let token: string | null = null;
+    if (auth?.currentUser) {
+      try {
+        token = await auth.currentUser.getIdToken(true); // Force refresh if needed
+      } catch (error) {
+        console.warn('Failed to get ID token:', error);
+      }
+    }
+
     const headers: HeadersInit = {
       'Content-Type': 'application/json'
     };
@@ -72,8 +82,16 @@ export async function getAllBooks(): Promise<Book[]> {
  */
 export async function getBookById(id: string): Promise<Book | null> {
   try {
-    // Get auth token if available
-    const token = await getCurrentUserToken();
+    // Get auth token if available using Firebase SDK
+    let token: string | null = null;
+    if (auth?.currentUser) {
+      try {
+        token = await auth.currentUser.getIdToken(true);
+      } catch (error) {
+        console.warn('Failed to get ID token:', error);
+      }
+    }
+
     const headers: HeadersInit = {
       'Content-Type': 'application/json'
     };
@@ -131,8 +149,17 @@ export async function addBook(book: Omit<Book, 'id'>): Promise<Book | null> {
       dateAdded: book.dateAdded || new Date().toISOString()
     };
     
-    // Get auth token - required for adding books
-    const token = await getCurrentUserToken();
+    // Get auth token - required for adding books using Firebase SDK
+    let token: string | null = null;
+    if (auth?.currentUser) {
+      try {
+        token = await auth.currentUser.getIdToken(true);
+      } catch (error) {
+        console.error('Failed to get ID token for adding book:', error);
+        // Throw specific error or let the check below handle it
+      }
+    }
+    
     if (!token) {
       throw new Error('Authentication required to add books');
     }
@@ -168,8 +195,16 @@ export async function updateBook(id: string, book: Partial<Book>): Promise<boole
       updatedAt: new Date().toISOString()
     };
     
-    // Get auth token - required for updating books
-    const token = await getCurrentUserToken();
+    // Get auth token - required for updating books using Firebase SDK
+    let token: string | null = null;
+    if (auth?.currentUser) {
+      try {
+        token = await auth.currentUser.getIdToken(true);
+      } catch (error) {
+        console.error('Failed to get ID token for updating book:', error);
+      }
+    }
+    
     if (!token) {
       throw new Error('Authentication required to update books');
     }
@@ -200,8 +235,16 @@ export async function updateBook(id: string, book: Partial<Book>): Promise<boole
  */
 export async function deleteBook(id: string): Promise<boolean> {
   try {
-    // Get auth token - required for deleting books
-    const token = await getCurrentUserToken();
+    // Get auth token - required for deleting books using Firebase SDK
+    let token: string | null = null;
+    if (auth?.currentUser) {
+      try {
+        token = await auth.currentUser.getIdToken(true);
+      } catch (error) {
+        console.error('Failed to get ID token for deleting book:', error);
+      }
+    }
+    
     if (!token) {
       throw new Error('Authentication required to delete books');
     }
