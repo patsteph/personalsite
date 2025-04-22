@@ -119,7 +119,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // If it's the login page and user IS authenticated, redirect to admin dashboard
     if (publicAdminRoutes.includes(currentPath) && isAuthenticated) {
       console.log('AuthProvider: User authenticated on login page, redirecting to dashboard.');
-      router.push('/admin');
+      // DEBUG: Using hard redirect instead of router.push
+      console.log("AuthProvider: ---> Attempting hard redirect using window.location.href = '/admin'");
+      window.location.href = '/admin';
       return; // Exit after redirect
     }
 
