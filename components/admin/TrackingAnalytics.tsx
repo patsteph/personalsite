@@ -46,14 +46,20 @@ const TrackingAnalytics: React.FC = () => {
         }
         const eventsColRef = collection(db, 'trackingEvents');
         
-        // Query for the latest 100 events, ordered by the event timestamp descending
-        const q = query(eventsColRef, orderBy('timestamp', 'desc'), limit(100));
+        // TEMPORARY DEBUGGING: Query for just 1 document, no ordering
+        console.log('Attempting simplified query (limit 1, no order)...');
+        const q = query(eventsColRef, limit(1)); 
+        
+        // Original query:
+        // const q = query(eventsColRef, orderBy('timestamp', 'desc'), limit(100));
         
         const querySnapshot = await getDocs(q);
+        console.log(`Simplified query finished. Found ${querySnapshot.size} documents.`);
         
         const fetchedEvents: DisplayableTrackingEvent[] = [];
         querySnapshot.forEach((doc) => {
           const data = doc.data() as TrackingEventDocument;
+          console.log('Processing document:', doc.id);
           fetchedEvents.push({
             ...data,
             id: doc.id, 
