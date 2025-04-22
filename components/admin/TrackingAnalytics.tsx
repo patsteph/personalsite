@@ -73,7 +73,7 @@ const TrackingAnalytics: React.FC = () => {
     };
 
     fetchTrackingData();
-  }, [user, db]); 
+  }, [user]); 
 
   if (loading) {
     return <div className="p-6 text-center">Loading analytics data...</div>;
