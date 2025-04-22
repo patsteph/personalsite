@@ -62,7 +62,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     console.log('AuthProvider: Setting up onAuthStateChanged listener.');
     // onAuthStateChanged returns an unsubscribe function
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser: FirebaseUser | null) => {
-      console.log('AuthProvider: onAuthStateChanged triggered. User:', firebaseUser?.uid || 'null');
+      console.log(`AuthProvider: onAuthStateChanged triggered. Incoming Firebase User: ${firebaseUser?.uid || 'null'}`);
       if (firebaseUser) {
         // User is signed in according to Firebase SDK
         // Map the FirebaseUser to our AppUser type
@@ -76,9 +76,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           // We don't have isAdmin here, remove or fetch separately if needed
         };
         setUser(appUser);
+        console.log('AuthProvider: --> Setting isAuthenticated = true, loading = false');
         setIsAuthenticated(true);
       } else {
         // User is signed out according to Firebase SDK
+        console.log('AuthProvider: --> Setting user = null, isAuthenticated = false, loading = false');
         setUser(null);
         setIsAuthenticated(false);
       }
@@ -94,7 +96,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Effect for handling route protection
   useEffect(() => {
-    console.log(`AuthProvider: Protection check running. Loading: ${loading}, IsAuth: ${isAuthenticated}, Path: ${router.pathname}`);
+    console.log(`AuthProvider: Protection Effect RUNNING. State: loading=${loading}, isAuth=${isAuthenticated}, path=${router.pathname}`);
 
     // Don't run protection logic until auth state is determined
     if (loading) {
@@ -110,14 +112,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // If it's a protected route and user is NOT authenticated, redirect to login
     if (isProtectedRoute && !isAuthenticated) {
       console.log('AuthProvider: User not authenticated for protected route, redirecting to login.');
+      console.log(`AuthProvider: ---> Calling router.push('/admin/login')`);
       router.push('/admin/login');
+      console.log(`AuthProvider: ---> Finished router.push('/admin/login')`);
       return; // Exit after redirect
     }
 
     // If it's the login page and user IS authenticated, redirect to admin dashboard
     if (publicAdminRoutes.includes(currentPath) && isAuthenticated) {
       console.log('AuthProvider: User authenticated on login page, redirecting to dashboard.');
+      console.log(`AuthProvider: ---> Calling router.push('/admin')`);
       router.push('/admin');
+      console.log(`AuthProvider: ---> Finished router.push('/admin')`);
       return; // Exit after redirect
     }
 
