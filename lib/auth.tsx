@@ -46,6 +46,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState<boolean>(true); // Start loading until auth state is determined
   const router = useRouter();
 
+  // Define protected and public routes within the admin scope
+  const protectedAdminRoutes = ['/admin', '/admin/books', '/admin/blog', '/admin/signals'];
+  const publicAdminRoutes = ['/admin/login'];
+
   // Effect to listen for Firebase Auth state changes
   useEffect(() => {
     // Ensure auth is initialized before subscribing
@@ -88,6 +92,39 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
   }, []); // Empty dependency array ensures this runs only once on mount
 
+  // Effect for handling route protection
+  useEffect(() => {
+    console.log(`AuthProvider: Protection check running. Loading: ${loading}, IsAuth: ${isAuthenticated}, Path: ${router.pathname}`);
+
+    // Don't run protection logic until auth state is determined
+    if (loading) {
+      console.log('AuthProvider: Still loading, skipping protection check.');
+      return;
+    }
+
+    const currentPath = router.pathname;
+
+    // Check if the current path is a protected admin route
+    const isProtectedRoute = protectedAdminRoutes.some(route => currentPath.startsWith(route));
+
+    // If it's a protected route and user is NOT authenticated, redirect to login
+    if (isProtectedRoute && !isAuthenticated) {
+      console.log('AuthProvider: User not authenticated for protected route, redirecting to login.');
+      router.push('/admin/login');
+      return; // Exit after redirect
+    }
+
+    // If it's the login page and user IS authenticated, redirect to admin dashboard
+    if (publicAdminRoutes.includes(currentPath) && isAuthenticated) {
+      console.log('AuthProvider: User authenticated on login page, redirecting to dashboard.');
+      router.push('/admin');
+      return; // Exit after redirect
+    }
+
+    console.log(`AuthProvider: No redirect needed for path ${currentPath}.`);
+
+  }, [loading, isAuthenticated, router.pathname]); // Dependencies: auth state and PATHNAME
+
   // Sign in function - Triggers backend login, relies on onAuthStateChanged for state update
   const signIn = useCallback(async (email: string, password: string): Promise<void> => {
     console.log('AuthProvider: signIn called.');
@@ -105,7 +142,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setLoading(false); // Ensure loading stops on error
       throw error; // Re-throw the error for the caller
     }
-  }, []); // Add router to dependency array
+  }, [router]); // Add router to dependency array
 
   // Sign out function - Signs out from Firebase SDK and clears local state
   const signOut = useCallback(async () => {

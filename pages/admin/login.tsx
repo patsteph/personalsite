@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import dynamic from 'next/dynamic';
 import Layout from '@/components/layout/Layout';
 import { useAuth } from '@/lib/auth';
@@ -14,20 +14,11 @@ const LoginForm = dynamic(() => import('@/components/admin/LoginForm'), {
 function AdminLoginPage() {
   // Not using Next.js router as we redirect with window.location for a full page reload
   // const router = useRouter();
-  const { user, isAuthenticated, loading } = useAuth(); // Rely solely on useAuth state
+  const { loading } = useAuth(); 
   const { t } = useTranslation();
 
-  console.log('AdminLoginPage - Auth state:', { isAuthenticated, loading, user: !!user });
-
-  // Redirect if already authenticated
-  useEffect(() => {
-    // If authentication check is done and user is authenticated, redirect away
-    if (isAuthenticated && !loading) {
-      console.log('User is authenticated, redirecting to admin dashboard');
-      // Force hard navigation to avoid Next.js client-side routing issues
-      window.location.href = '/admin';
-    }
-  }, [isAuthenticated, loading]); // Dependencies are just auth state
+  // console.log('AdminLoginPage - loading state:', loading);
+  // The redirection logic based on isAuthenticated is now handled centrally in AuthProvider.
 
   return (
     <Layout section="admin">
