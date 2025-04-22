@@ -19,7 +19,6 @@ import {
   signInWithEmailAndPassword as apiSignIn, // Keep for triggering backend login
   signOut as apiSignOut,               // Keep for clearing backend session/cookie if necessary
   AppUser,                             // Keep our AppUser type
-  AuthCredential                       // Keep for apiSignIn return type
 } from './api/auth'; // Assuming api/auth.ts exports these
 
 // Define the shape of the authentication context
