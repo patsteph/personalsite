@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth';
+import { auth } from '@/lib/firebase-client';
+import { getIdToken } from 'firebase/auth';
 
 interface FeedbackItem {
   id: string;
@@ -53,27 +55,34 @@ const FeedbackAnalytics = () => {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { user, refreshToken } = useAuth();
+  const { user } = useAuth();
 
   useEffect(() => {
     const fetchFeedbackAnalytics = async () => {
+      if (!user) {
+        setError('User not authenticated.');
+        setIsLoading(false);
+        return;
+      }
+      
+      if (!auth || !auth.currentUser) {
+        setError('Firebase Auth instance or current user not available.');
+        setIsLoading(false);
+        return;
+      }
+
+      setIsLoading(true);
+      setError(null);
+      
       try {
-        setIsLoading(true);
-        
-        // Make sure we have a user before trying to refresh token
-        if (!user) {
-          setError('Authentication required');
-          setIsLoading(false);
-          return;
-        }
-        
-        // Get the current user's ID token
-        const token = await refreshToken();
+        const token = await auth.currentUser.getIdToken();
         
         if (!token) {
-          throw new Error('No authentication token available');
+           setError('Could not retrieve authentication token.');
+           setIsLoading(false);
+           return;
         }
-          
+
         const response = await fetch('/api/admin-analytics?type=feedback', {
           method: 'GET',
           headers: {
@@ -103,7 +112,7 @@ const FeedbackAnalytics = () => {
     };
     
     fetchFeedbackAnalytics();
-  }, [user, refreshToken]);
+  }, [user]);
 
   if (isLoading) {
     return <div className="p-6 text-center">Loading feedback data...</div>;
