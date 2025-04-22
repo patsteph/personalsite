@@ -119,7 +119,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // If it's the login page and user IS authenticated, redirect to admin dashboard
     if (publicAdminRoutes.includes(currentPath) && isAuthenticated) {
       console.log('AuthProvider: User authenticated on login page, redirecting to dashboard.');
-      router.push('/admin');
+      try {
+        console.log('AuthProvider: ---> Calling router.push("/admin") NOW.');
+        router.push('/admin');
+        console.log('AuthProvider: ---> router.push("/admin") call completed without throwing error.');
+      } catch (error) {
+        console.error('AuthProvider: >>> ERROR during router.push("/admin") <<<', error);
+      }
       return; // Exit after redirect
     }
 
