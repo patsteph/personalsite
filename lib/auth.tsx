@@ -112,18 +112,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // If it's a protected route and user is NOT authenticated, redirect to login
     if (isProtectedRoute && !isAuthenticated) {
       console.log('AuthProvider: User not authenticated for protected route, redirecting to login.');
-      console.log(`AuthProvider: ---> Calling router.push('/admin/login')`);
-      router.push('/admin/login');
-      console.log(`AuthProvider: ---> Finished router.push('/admin/login')`);
+      console.log(`AuthProvider: ---> Scheduling router.push('/admin/login')`);
+      const timerId = setTimeout(() => {
+        console.log(`AuthProvider: ---> Executing router.push('/admin/login') from timer ${timerId}`);
+        router.push('/admin/login');
+      }, 50); // 50ms delay
+      console.log(`AuthProvider: ---> Scheduled timer ${timerId} for login redirect`);
       return; // Exit after redirect
     }
 
     // If it's the login page and user IS authenticated, redirect to admin dashboard
     if (publicAdminRoutes.includes(currentPath) && isAuthenticated) {
       console.log('AuthProvider: User authenticated on login page, redirecting to dashboard.');
-      console.log(`AuthProvider: ---> Calling router.push('/admin')`);
-      router.push('/admin');
-      console.log(`AuthProvider: ---> Finished router.push('/admin')`);
+      console.log(`AuthProvider: ---> Scheduling router.push('/admin')`);
+      const timerId = setTimeout(() => {
+        console.log(`AuthProvider: ---> Executing router.push('/admin') from timer ${timerId}`);
+        router.push('/admin');
+      }, 50); // 50ms delay
+      console.log(`AuthProvider: ---> Scheduled timer ${timerId} for dashboard redirect`);
       return; // Exit after redirect
     }
 
