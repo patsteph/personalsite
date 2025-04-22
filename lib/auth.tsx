@@ -1,260 +1,164 @@
-import { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
-import { getCurrentUserToken, signInWithEmailAndPassword as apiSignIn, signOut as apiSignOut, getCurrentUser, AppUser } from './api/auth';
+import React, {
+  createContext,
+  useState,
+  useEffect,
+  useContext,
+  ReactNode,
+  useCallback,
+} from 'react';
+import { useRouter } from 'next/router';
+// Import Firebase client auth instance and SDK methods
+import { auth } from './firebase-client'; // Import the initialized auth instance
+import { 
+  onAuthStateChanged, 
+  signOut as firebaseSignOut, 
+  User as FirebaseUser // Rename Firebase User type
+} from 'firebase/auth';
+// Import the API functions for SIGN IN and SIGN OUT (we still need these)
+import {
+  signInWithEmailAndPassword as apiSignIn, // Keep for triggering backend login
+  signOut as apiSignOut,               // Keep for clearing backend session/cookie if necessary
+  AppUser,                             // Keep our AppUser type
+  AuthCredential                       // Keep for apiSignIn return type
+} from './api/auth'; // Assuming api/auth.ts exports these
 
-// Constants for auth timeouts
-const TOKEN_REFRESH_INTERVAL = 10 * 60 * 1000; // 10 minutes
-const SESSION_TIMEOUT = 60 * 60 * 1000; // 1 hour of inactivity
-
-// Define the authentication context type
-type AuthContextType = {
+// Define the shape of the authentication context
+interface AuthContextType {
   user: AppUser | null;
-  loading: boolean;
   isAuthenticated: boolean;
-  authError: Error | null;
-  signIn: (email: string, password: string, rememberMe?: boolean) => Promise<void>;
+  loading: boolean;
+  signIn: (email: string, password: string) => Promise<AuthCredential>; // Keep same signature for now
   signOut: () => Promise<void>;
-  refreshToken: () => Promise<string | null>;
-  resetAuthError: () => void;
-  recheckAuthState: () => Promise<boolean>;
-};
-
-// Create a default context
-const AuthContext = createContext<AuthContextType>({
-  user: null,
-  loading: true,
-  isAuthenticated: false,
-  authError: null,
-  signIn: async () => {},
-  signOut: async () => {},
-  refreshToken: async () => null,
-  resetAuthError: () => {},
-  recheckAuthState: async () => false
-});
-
-// Export the context
-export { AuthContext };
-
-// Define props for the AuthProvider component
-type AuthProviderProps = {
-  children: ReactNode;
-};
-
-// Custom hook to use the auth context
-export function useAuth() {
-  return useContext(AuthContext);
+  // Removed refreshToken, checkSession as SDK handles this
 }
 
-// The AuthProvider component
-export function AuthProvider({ children }: AuthProviderProps) {
+// Create the authentication context with a default undefined value
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+// Define the props for the AuthProvider component
+interface AuthProviderProps {
+  children: ReactNode;
+}
+
+// Create the AuthProvider component
+export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<AppUser | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [authError, setAuthError] = useState<Error | null>(null);
+  const [loading, setLoading] = useState<boolean>(true); // Start loading until auth state is determined
+  const router = useRouter();
 
-  // Refs for tracking activity and intervals
-  const lastActivityRef = useRef(Date.now());
-  const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const sessionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Track user activity
-  const updateLastActivity = useCallback(() => {
-    lastActivityRef.current = Date.now();
-  }, []);
-
-  // Auto sign out after inactivity
-  const checkInactivity = useCallback(() => {
-    const now = Date.now();
-    if (now - lastActivityRef.current > SESSION_TIMEOUT && isAuthenticated) {
-      console.log('Session timeout due to inactivity');
-      signOut();
-    }
-  }, [isAuthenticated]);
-
-  // Function to refresh token
-  const refreshToken = useCallback(async (): Promise<string | null> => {
-    if (!user) return null;
-    
-    try {
-      updateLastActivity();
-      
-      // If token is in localStorage, try to validate it first
-      const currentToken = localStorage.getItem('authToken');
-      if (currentToken) {
-        try {
-          // Attempt to validate the existing token
-          const response = await fetch('/api/auth/validate', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${currentToken}`
-            }
-          });
-          
-          if (response.ok) {
-            const data = await response.json();
-            if (data.valid) {
-              return currentToken;
-            }
-          }
-        } catch (validateError) {
-          console.warn('Error validating current token:', validateError);
-        }
-      }
-      
-      // If we reach here, either there was no token or it was invalid
-      return await getCurrentUserToken(true);
-    } catch (error) {
-      console.error('Failed to refresh token:', error);
-      return null;
-    }
-  }, [user, updateLastActivity]);
-
-  // Set up token refresh and activity monitoring
+  // Effect to listen for Firebase Auth state changes
   useEffect(() => {
-    // Set up activity listeners
-    const activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
-    
-    // Add event listeners
-    activityEvents.forEach(event => {
-      window.addEventListener(event, updateLastActivity);
+    // Ensure auth is initialized before subscribing
+    if (!auth) {
+      console.error('AuthProvider: Firebase auth instance is not available. Cannot subscribe to state changes.');
+      setLoading(false); // Stop loading, but auth won't work
+      return;
+    }
+
+    console.log('AuthProvider: Setting up onAuthStateChanged listener.');
+    // onAuthStateChanged returns an unsubscribe function
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser: FirebaseUser | null) => {
+      console.log('AuthProvider: onAuthStateChanged triggered. User:', firebaseUser?.uid || 'null');
+      if (firebaseUser) {
+        // User is signed in according to Firebase SDK
+        // Map the FirebaseUser to our AppUser type
+        // NOTE: Additional details like 'isAdmin' are NOT available here
+        //       unless fetched separately based on UID or included in custom claims.
+        const appUser: AppUser = {
+          uid: firebaseUser.uid,
+          email: firebaseUser.email || undefined,
+          displayName: firebaseUser.displayName || undefined,
+          photoURL: firebaseUser.photoURL || undefined,
+          // We don't have isAdmin here, remove or fetch separately if needed
+        };
+        setUser(appUser);
+        setIsAuthenticated(true);
+      } else {
+        // User is signed out according to Firebase SDK
+        setUser(null);
+        setIsAuthenticated(false);
+      }
+      setLoading(false); // Auth state determined, stop loading
     });
-    
-    // Start periodic checks for token refresh and session timeout
-    if (isAuthenticated) {
-      // Set up token refresh interval
-      refreshIntervalRef.current = setInterval(refreshToken, TOKEN_REFRESH_INTERVAL);
-      
-      // Set up session timeout checker
-      sessionTimeoutRef.current = setInterval(checkInactivity, 60000); // Check every minute
-    }
-    
-    // Clean up on unmount
+
+    // Cleanup subscription on unmount
     return () => {
-      // Remove event listeners
-      activityEvents.forEach(event => {
-        window.removeEventListener(event, updateLastActivity);
-      });
-      
-      // Clear intervals
-      if (refreshIntervalRef.current) {
-        clearInterval(refreshIntervalRef.current);
-      }
-      
-      if (sessionTimeoutRef.current) {
-        clearInterval(sessionTimeoutRef.current);
-      }
+      console.log('AuthProvider: Cleaning up onAuthStateChanged listener.');
+      unsubscribe();
     };
-  }, [isAuthenticated, refreshToken, updateLastActivity, checkInactivity]);
+  }, []); // Empty dependency array ensures this runs only once on mount
 
-  // Initialize auth state on mount
-  useEffect(() => {
-    (async () => {
-      console.log('AuthProvider: Initializing auth state...');
-      setLoading(true);
-      try {
-        const token = await getCurrentUserToken();
-        console.log('AuthProvider: Token retrieved:', token ? `Token found (length ${token.length})` : 'No token found');
-        if (token) {
-          console.log('AuthProvider: Calling getCurrentUser...');
-          const currentUser = await getCurrentUser(); // This calls the client-side function in lib/api/auth.ts
-          console.log('AuthProvider: getCurrentUser result:', currentUser);
-          if (currentUser) {
-            console.log('AuthProvider: User authenticated successfully.', currentUser);
-            setUser(currentUser);
-            setIsAuthenticated(true);
-          } else {
-            console.log('AuthProvider: getCurrentUser returned null/falsy. Setting unauthenticated.');
-            setIsAuthenticated(false);
-          }
-        } else {
-          console.log('AuthProvider: No initial token found. Setting unauthenticated.');
-          setIsAuthenticated(false);
-        }
-      } catch (error) {
-        console.error('AuthProvider: Error during initialization:', error);
-        setIsAuthenticated(false); // Ensure unauthenticated on error
-      }
-      setLoading(false);
-      console.log('AuthProvider: Initialization complete.');
-    })();
-  }, []);
-
-  // Function to sign in
-  const signIn = async (email: string, password: string): Promise<void> => {
+  // Sign in function - Triggers backend login, relies on onAuthStateChanged for state update
+  const signIn = useCallback(async (email: string, password: string): Promise<AuthCredential> => {
+    console.log('AuthProvider: signIn called.');
     setLoading(true);
-    setAuthError(null);
     try {
+      // Call the original API sign-in. This should:
+      // 1. Verify credentials via Firebase REST API on the backend.
+      // 2. Set the HttpOnly 'fb_token' cookie with the Firebase ID Token.
+      // 3. Return user info and the ID token (which we won't store in localStorage anymore).
       const credential = await apiSignIn(email, password);
-      setUser(credential.user);
-      setIsAuthenticated(true);
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('authToken', credential.token);
-        // Set the cookie required by the middleware
-        // Setting a simple cookie, expires in 1 hour (3600 seconds)
-        document.cookie = 'auth_success=true; path=/; max-age=3600';
-      }
-    } catch (error:any) {
-      setAuthError(error instanceof Error ? error : new Error('Authentication failed'));
-      throw error;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Function to sign out
-  const signOut = async (): Promise<void> => {
-    setLoading(true);
-    try {
-      await apiSignOut(); // Call the API sign out
+      console.log('AuthProvider: apiSignIn successful.');
+      // We NO LONGER manually set user state or store token here.
+      // The 'fb_token' cookie is set by the server.
+      // The onAuthStateChanged listener should detect the new auth state shortly.
+      // If state doesn't update quickly, a reload might be needed, but test first.
+      // setLoading(false); // Let onAuthStateChanged handle final loading state
+      // router.reload(); // Optional: Uncomment if state update is delayed
+      return credential; // Return the original credential for compatibility if needed
+    } catch (error) {
+      console.error('AuthProvider: signIn error:', error);
       setUser(null);
       setIsAuthenticated(false);
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('authToken');
-        // Clear the cookie required by the middleware
-        document.cookie = 'auth_success=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+      setLoading(false); // Ensure loading stops on error
+      throw error; // Re-throw the error for the caller
+    }
+  }, []);
+
+  // Sign out function - Signs out from Firebase SDK and clears local state
+  const signOut = useCallback(async () => {
+    console.log('AuthProvider: signOut called.');
+    setLoading(true);
+    try {
+      // Sign out from Firebase Client SDK
+      if (auth) {
+        await firebaseSignOut(auth);
+        console.log('AuthProvider: Firebase SDK signOut successful.');
+      } else {
+         console.warn('AuthProvider: Firebase auth instance not available for sign out.');
       }
-      // Optionally clear other session-related data
+      // Call the original API sign-out (clears localStorage token, notifies backend)
+      await apiSignOut();
+      console.log('AuthProvider: apiSignOut successful.');
+      // We NO LONGER manually set user state here.
+      // The onAuthStateChanged listener will detect the sign-out.
+      // setLoading(false); // Let onAuthStateChanged handle final loading state
     } catch (error) {
-      setAuthError(error instanceof Error ? error : new Error('Sign out failed'));
-    } finally {
-      setLoading(false);
+      console.error('AuthProvider: signOut error:', error);
+      // Even on error, ensure local state reflects sign-out attempt
+      setUser(null);
+      setIsAuthenticated(false);
+      setLoading(false); // Ensure loading stops on error
+      throw error; // Re-throw the error
     }
-  };
+  }, []);
 
-  // Function to reset auth error
-  const resetAuthError = () => {
-    setAuthError(null);
-  };
+  // Removed session check/refresh logic, Firebase SDK handles it.
 
-  // Function to recheck auth state
-  const recheckAuthState = async (): Promise<boolean> => {
-    if (user) {
-      try {
-        // Try to refresh the token to verify auth state is still valid
-        const token = await refreshToken();
-        return !!token;
-      } catch (error) {
-        console.error('Auth state check failed:', error);
-        return false;
-      }
-    }
-    return false;
-  };
-
+  // Provide the authentication context to child components
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        loading,
-        isAuthenticated,
-        authError,
-        signIn,
-        signOut,
-        refreshToken,
-        resetAuthError,
-        recheckAuthState
-      }}
-    >
+    <AuthContext.Provider value={{ user, isAuthenticated, loading, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   );
-}
+};
+
+// Custom hook to use the authentication context
+export const useAuth = (): AuthContextType => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};

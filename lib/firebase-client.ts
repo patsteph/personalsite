@@ -1,8 +1,7 @@
 // lib/firebase-client.ts
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth';
-// Import other Firebase services like getStorage if needed
+import { getAuth, setPersistence, browserLocalPersistence, inMemoryPersistence, browserSessionPersistence } from 'firebase/auth';
 
 // Your web app's Firebase configuration from the Firebase console
 // Store these in environment variables (.env.local) for security
@@ -19,6 +18,9 @@ const firebaseConfig = {
 // Initialize Firebase only if it hasn't been initialized yet
 // Check required config values before initializing
 let app;
+let authInstance = null;
+let dbInstance = null;
+
 if (
   firebaseConfig.apiKey &&
   firebaseConfig.authDomain &&
@@ -28,16 +30,33 @@ if (
   firebaseConfig.appId
 ) {
   app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+  dbInstance = getFirestore(app); // Initialize Firestore
+  
+  // Initialize Auth and set persistence
+  try {
+    authInstance = getAuth(app);
+    // Use browserLocalPersistence for persistent sessions (like localStorage)
+    // Use browserSessionPersistence for session-only (cleared on browser close)
+    // Use inMemoryPersistence for no persistence (cleared on page refresh)
+    setPersistence(authInstance, browserLocalPersistence)
+      .then(() => {
+        console.log('Firebase Auth persistence set to local.');
+      })
+      .catch((error) => {
+        console.error('Firebase Auth: Error setting persistence:', error);
+      });
+  } catch (error) {
+    console.error('Firebase Auth initialization error:', error);
+    authInstance = null; // Ensure auth is null if init fails
+  }
+
 } else {
   console.error(
     'Firebase client config is missing. Check your .env.local file and ensure all NEXT_PUBLIC_FIREBASE_ variables are set.'
   );
-  // You might want to handle this more gracefully, maybe throw an error
-  // or provide a dummy app object if appropriate for your use case.
 }
 
-const db = app ? getFirestore(app) : null; // Get Firestore instance only if app is initialized
-const auth = app ? getAuth(app) : null; // Initialize auth instance only if app is initialized
-// Export other services like storage if initialized
+const db = dbInstance; // Assign potentially initialized db
+const auth = authInstance; // Assign potentially initialized auth
 
 export { app, db, auth }; // Export the initialized app, Firestore instance, and auth instance

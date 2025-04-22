@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { collection, query, orderBy, limit, getDocs, Timestamp } from 'firebase/firestore';
-import { db, auth } from '@/lib/firebase-client'; 
+import { db } from '@/lib/firebase-client'; 
 import { TrackingEventData } from '@/lib/tracking'; 
 import { useAuth } from '@/lib/auth'; 
 
@@ -48,9 +48,6 @@ const TrackingAnalytics: React.FC = () => {
         
         const q = query(eventsColRef, orderBy('timestamp', 'desc'), limit(100));
         
-        // Log the UID from the auth instance right before the query
-        console.log('Auth UID before getDocs:', auth?.currentUser?.uid);
-
         const querySnapshot = await getDocs(q);
         
         const fetchedEvents: DisplayableTrackingEvent[] = [];
