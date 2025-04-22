@@ -1,10 +1,19 @@
 import { Book, BookWithId } from '@/types/book';
-import { getCurrentUserToken } from '@/lib/api/auth';
+import { auth } from './firebase-client';
+import { getIdToken } from 'firebase/auth';
 
 // Fetch book by ISBN using Google Books API via our server API
 export const fetchBookByISBN = async (isbn: string): Promise<BookWithId | null> => {
   try {
-    const token = await getCurrentUserToken();
+    let token: string | null = null;
+    if (auth?.currentUser) {
+      try {
+        token = await auth.currentUser.getIdToken(true);
+      } catch (error) {
+        console.error('Failed to get ID token for fetchBookByISBN:', error);
+      }
+    }
+
     if (!token) {
       throw new Error('Authentication required to fetch book by ISBN.');
     }
@@ -42,7 +51,15 @@ export const fetchBookByISBN = async (isbn: string): Promise<BookWithId | null> 
 // Search books by title or author using server API
 export const searchBooks = async (query: string, maxResults = 10): Promise<BookWithId[]> => {
   try {
-    const token = await getCurrentUserToken();
+    let token: string | null = null;
+    if (auth?.currentUser) {
+      try {
+        token = await auth.currentUser.getIdToken(true);
+      } catch (error) {
+        console.error('Failed to get ID token for searchBooks:', error);
+      }
+    }
+
     if (!token) {
       throw new Error('Authentication required to search books.');
     }
@@ -82,7 +99,14 @@ export const addBook = async (book: Book): Promise<string> => {
     console.log('Adding new book to collection:', book.title);
     
     // Use the server API endpoint
-    const token = await getCurrentUserToken();
+    let token: string | null = null;
+    if (auth?.currentUser) {
+      try {
+        token = await auth.currentUser.getIdToken(true);
+      } catch (error) {
+        console.error('Failed to get ID token for addBook:', error);
+      }
+    }
     
     if (!token) {
       throw new Error('Authentication required to add books');
@@ -121,7 +145,14 @@ export const updateBook = async (id: string, updates: Partial<Book>): Promise<vo
     console.log('Updating book:', id);
     
     // Use the server API endpoint
-    const token = await getCurrentUserToken();
+    let token: string | null = null;
+    if (auth?.currentUser) {
+      try {
+        token = await auth.currentUser.getIdToken(true);
+      } catch (error) {
+        console.error('Failed to get ID token for updateBook:', error);
+      }
+    }
     
     if (!token) {
       throw new Error('Authentication required to update books');
@@ -159,7 +190,14 @@ export const deleteBook = async (id: string): Promise<void> => {
     console.log('Deleting book:', id);
     
     // Use the server API endpoint
-    const token = await getCurrentUserToken();
+    let token: string | null = null;
+    if (auth?.currentUser) {
+      try {
+        token = await auth.currentUser.getIdToken(true);
+      } catch (error) {
+        console.error('Failed to get ID token for deleteBook:', error);
+      }
+    }
     
     if (!token) {
       throw new Error('Authentication required to delete books');
@@ -227,7 +265,14 @@ export const getBookStats = async (): Promise<{
 export const getBookById = async (id: string): Promise<BookWithId | null> => {
   try {
     // Use the server API endpoint
-    const token = await getCurrentUserToken();
+    let token: string | null = null;
+    if (auth?.currentUser) {
+      try {
+        token = await auth.currentUser.getIdToken(true);
+      } catch (error) {
+        console.error('Failed to get ID token for getBookById:', error);
+      }
+    }
     
     // Headers object
     const headers: HeadersInit = {
@@ -266,7 +311,14 @@ export const getBookById = async (id: string): Promise<BookWithId | null> => {
 export const getBooks = async (): Promise<BookWithId[]> => {
   console.log('Attempting to fetch books...');
 
-  const token = await getCurrentUserToken();
+  let token: string | null = null;
+  if (auth?.currentUser) {
+    try {
+      token = await auth.currentUser.getIdToken(true);
+    } catch (error) {
+      console.error('Failed to get ID token for getBooks:', error);
+    }
+  }
 
   // 1. Try fetching from the authenticated admin endpoint if token exists
   if (token) {
