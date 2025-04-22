@@ -102,10 +102,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log('AuthProvider: apiSignIn successful.');
       // We NO LONGER manually set user state or store token here.
       // The 'fb_token' cookie is set by the server.
-      // The onAuthStateChanged listener should detect the new auth state shortly.
-      // If state doesn't update quickly, a reload might be needed, but test first.
-      // setLoading(false); // Let onAuthStateChanged handle final loading state
-      // router.reload(); // Optional: Uncomment if state update is delayed
+      // The onAuthStateChanged listener should detect the new auth state shortly
+      // after a page reload.
+      setLoading(false); // Set loading to false before reloading
+      router.reload(); // Force reload to make SDK recognize the cookie/session
       return credential; // Return the original credential for compatibility if needed
     } catch (error) {
       console.error('AuthProvider: signIn error:', error);
@@ -114,7 +114,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setLoading(false); // Ensure loading stops on error
       throw error; // Re-throw the error for the caller
     }
-  }, []);
+  }, [router]); // Add router to dependency array
 
   // Sign out function - Signs out from Firebase SDK and clears local state
   const signOut = useCallback(async () => {
@@ -133,7 +133,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log('AuthProvider: apiSignOut successful.');
       // We NO LONGER manually set user state here.
       // The onAuthStateChanged listener will detect the sign-out.
-      // setLoading(false); // Let onAuthStateChanged handle final loading state
+      router.push('/admin/login'); // Redirect to login page after sign out
     } catch (error) {
       console.error('AuthProvider: signOut error:', error);
       // Even on error, ensure local state reflects sign-out attempt
@@ -142,7 +142,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setLoading(false); // Ensure loading stops on error
       throw error; // Re-throw the error
     }
-  }, []);
+  }, [router]); // Add router to dependency array
 
   // Removed session check/refresh logic, Firebase SDK handles it.
 
