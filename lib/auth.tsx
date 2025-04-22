@@ -126,10 +126,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       } catch (error) {
         console.error('AuthProvider: >>> ERROR during router.push("/admin") <<<', error);
       }
-      return; // Exit after redirect
-    }
-
-    // console.log(`AuthProvider: No redirect needed for path ${currentPath}.`);
+     }
+ 
+     // console.log(`AuthProvider: No redirect needed for path ${currentPath}.`);
   }, [loading, isAuthenticated, router.pathname]);
 
   // Sign in function - Triggers backend login, relies on onAuthStateChanged for state update
