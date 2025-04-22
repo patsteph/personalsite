@@ -127,6 +127,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Sign in function - Triggers backend login, relies on onAuthStateChanged for state update
   const signIn = useCallback(async (email: string, password: string): Promise<void> => {
+    // If user is already authenticated, don't re-initiate the process
+    if (isAuthenticated) {
+      console.log('AuthProvider: User already authenticated, skipping sign-in process.');
+      // Optionally, trigger redirect check explicitly if needed, but the useEffect should handle it.
+      // setLoading(false); // Ensure loading is false if we abort here.
+      return;
+    }
+
     console.log('AuthProvider: signIn called.');
     setLoading(true);
     try {
@@ -142,7 +150,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setLoading(false); // Ensure loading stops on error
       throw error; // Re-throw the error for the caller
     }
-  }, [router]); // Add router to dependency array
+  }, [router, isAuthenticated]); // Add router and isAuthenticated to dependency array
 
   // Sign out function - Signs out from Firebase SDK and clears local state
   const signOut = useCallback(async () => {
