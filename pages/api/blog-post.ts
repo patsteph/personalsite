@@ -37,7 +37,7 @@ export default async function handler(
   // Handle reactions (POST method)
   if (req.method === 'POST') {
     try {
-      const { postId, reaction, action } = req.body;
+      const { postId, reaction, action, previousReaction } = req.body;
 
       // Track visits
       if (action === 'visit') {
@@ -118,6 +118,7 @@ export default async function handler(
           
           // Update the specific reaction count for this post
           if (action === 'increment') {
+            // First, handle updates to the target reaction
             transaction.update(postDocRef, {
               [`reactions.${reaction}`]: (currentReactions[reaction] || 0) + 1
             });
@@ -127,6 +128,21 @@ export default async function handler(
               [`reactions.${reaction}`]: increment(1),
               totalReactions: increment(1)
             });
+            
+            // If there's a previous reaction, we need to decrement it
+            if (previousReaction && previousReaction !== reaction && currentReactions[previousReaction] > 0) {
+              // Update the post document
+              transaction.update(postDocRef, {
+                [`reactions.${previousReaction}`]: currentReactions[previousReaction] - 1
+              });
+              
+              // Update the global stats
+              transaction.update(statsDocRef, {
+                [`reactions.${previousReaction}`]: increment(-1),
+                // Don't decrement totalReactions since we're just changing the type
+              });
+            }
+            
           } else if (action === 'decrement' && currentReactions[reaction] > 0) {
             transaction.update(postDocRef, {
               [`reactions.${reaction}`]: currentReactions[reaction] - 1

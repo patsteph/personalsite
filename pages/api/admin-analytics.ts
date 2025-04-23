@@ -68,7 +68,8 @@ export default async function handler(
   }
   
   try {
-    const analyticsType = req.query.type as string;
+    // Support both 'type' and 'dataType' parameters for backward compatibility
+    const analyticsType = (req.query.type || req.query.dataType) as string;
     
     if (analyticsType === 'feedback') {
       const feedbackAnalytics = await getFeedbackAnalytics();
@@ -99,6 +100,21 @@ export default async function handler(
     const topPages = await getTopPages();
     const bookEngagement = await getBookEngagement();
     const blogEngagement = await getBlogEngagement();
+    
+    // If dataType is specified, return only that specific data
+    if (analyticsType === 'blog') {
+      return res.status(200).json({
+        success: true,
+        data: blogEngagement
+      });
+    } else if (analyticsType === 'books') {
+      return res.status(200).json({
+        success: true,
+        data: bookEngagement
+      });
+    }
+    
+    // Otherwise return the full dashboard data
     const dashboardData = {
       siteStats: statsData,
       topPages,
@@ -155,17 +171,87 @@ async function getBookEngagement() {
 
 async function getBlogEngagement() {
   try {
+    const firestore = getFirestore();
+    
+    // Get blog stats from the stats document
+    let totalReactions = 0;
+    let reactions = {
+      thumbsUp: 0,
+      celebrate: 0,
+      insightful: 0, // This will be mapped from 'brain' in our DB
+      meh: 0
+    };
+    
+    // Get the stats document
+    const statsDocRef = doc(firestore, 'stats', 'blogStats');
+    const statsDoc = await getDoc(statsDocRef);
+    
+    if (statsDoc.exists()) {
+      const data = statsDoc.data();
+      totalReactions = data.totalReactions || 0;
+      
+      // Map the reactions from the database to our expected format
+      const dbReactions = data.reactions || {};
+      reactions = {
+        thumbsUp: dbReactions.thumbsUp || 0,
+        celebrate: dbReactions.celebrate || 0,
+        insightful: dbReactions.insightful || dbReactions.brain || 0, // Support both naming conventions
+        meh: dbReactions.meh || 0
+      };
+      
+      console.log('Fetched blog reactions from Firestore:', reactions);
+    } else {
+      console.log('Blog stats document does not exist');
+    }
+    
+    // Get popular blog posts (top 5 by reaction count)
+    const popularPosts = [];
+    try {
+      const postsColRef = collection(firestore, 'blogPosts');
+      const postsQuery = query(postsColRef, limit(10)); // We'll sort them client-side by reactions
+      const postsSnapshot = await getDocs(postsQuery);
+      
+      // Define an interface for blog post data
+      interface BlogPost {
+        id: string;
+        title: string;
+        slug: string;
+        totalReactions: number;
+        reactions: Record<string, number>;
+      }
+      
+      // Convert to array and calculate total reactions per post
+      const posts: BlogPost[] = [];
+      postsSnapshot.forEach(doc => {
+        const data = doc.data();
+        const postReactions = data.reactions || {};
+        const totalPostReactions = Object.values(postReactions).reduce((sum: number, val) => sum + (Number(val) || 0), 0);
+        
+        posts.push({
+          id: doc.id,
+          title: data.title || 'Untitled Post',
+          slug: data.slug || '',
+          totalReactions: totalPostReactions,
+          reactions: postReactions
+        });
+      });
+      
+      // Sort by totalReactions and take top 5
+      const topPosts = posts
+        .sort((a, b) => b.totalReactions - a.totalReactions)
+        .slice(0, 5);
+      
+      popularPosts.push(...topPosts);
+    } catch (postsError) {
+      console.error('Error fetching popular blog posts:', postsError);
+    }
+    
     return {
-      totalViews: 0,
-      avgReadTime: '0:00',
-      totalReactions: 0,
-      reactions: {
-        thumbsUp: 0,
-        celebrate: 0,
-        insightful: 0,
-        meh: 0
-      },
-      popularPosts: []
+      totalViews: 0, // This would come from a different tracking system
+      avgReadTime: '0:00', // This would come from a different tracking system
+      totalReactions,
+      reactions,
+      popularPosts
     };
   } catch (error) {
     console.error('Error getting blog engagement:', error);

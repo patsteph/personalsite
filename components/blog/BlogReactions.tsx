@@ -110,6 +110,8 @@ export default function BlogReactions({ postId, slug, initialReactions = default
         body: JSON.stringify({
           postId,
           reaction: type,
+          // Important: Always pass the action parameter (increment)
+          action: 'increment',
           // If changing reaction, indicate the previous one to remove
           previousReaction: hasReactedBefore ? 
             Object.entries(userReacted).find(([, value]) => value === true)?.[0] : 
