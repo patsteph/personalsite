@@ -1,0 +1,42 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /books/{bookId} {
+      allow read;
+      allow write: if request.auth != null;
+    }
+    match /blog-posts/{postId} {
+      allow read;
+      allow write: if request.auth != null;
+    }
+    match /signals/{signalId} {
+      allow get, list: if true; 
+      allow create, update, delete: if request.auth != null; // Simplified write
+    }
+    match /site-stats/{statsId} {
+      allow read;
+      allow write: if request.auth != null;
+    }
+    // Add rules for the stats collection used for blog reactions
+    match /stats/{statsId} {
+      allow read;
+      allow write: if request.auth != null;
+    }
+    match /trackingEvents/{eventId} {
+      allow read: if request.auth != null; 
+      allow list, get: if request.auth != null; 
+    }
+    match /feedback/{feedbackId} {
+      allow create: if true; // Anyone can submit feedback
+      allow read, update, delete: if request.auth != null; // Only authenticated users can read/manage feedback
+    }
+    match /admins/{userId} {
+       allow get: if request.auth != null && request.auth.uid == userId;
+       allow read: if request.auth != null; // Keeping broader read for server checks? Review if needed.
+       allow write: if request.auth != null;
+    }
+    match /admin_tokens/{tokenId} {
+       allow read, write: if request.auth != null; // Consider if only server needs this
+    }                                                           
+  }                                                                 
+}

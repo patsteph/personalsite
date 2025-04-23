@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { ReactionType } from '@/types/blog';
-import { collection, doc, getDoc, getFirestore, increment, runTransaction, updateDoc } from 'firebase/firestore';
+import { collection, doc, getDoc, getFirestore, increment, runTransaction, setDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase-client';
 
 interface BlogPostData {
@@ -167,10 +167,18 @@ export default async function handler(
         // Check if the stats document doesn't exist yet and needs to be created
         if (transactionError.message && transactionError.message.includes('No document to update')) {
           try {
+            console.log('Creating initial stats/blogStats document');
             // Create the stats document with initial values
             const statsDocRef = doc(firestore, 'stats', 'blogStats');
-            await updateDoc(statsDocRef, {
-              [`reactions.${reaction}`]: 1,
+            // Use setDoc instead of updateDoc for a new document
+            await setDoc(statsDocRef, {
+              reactions: {
+                [reaction]: 1,
+                thumbsUp: reaction === 'thumbsUp' ? 1 : 0,
+                celebrate: reaction === 'celebrate' ? 1 : 0,
+                brain: reaction === 'brain' ? 1 : 0,
+                meh: reaction === 'meh' ? 1 : 0
+              },
               totalReactions: 1
             });
             

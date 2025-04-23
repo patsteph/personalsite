@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { collection, doc, getDoc, getDocs, getFirestore, limit, orderBy, query } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, getFirestore, limit, orderBy, query, setDoc } from 'firebase/firestore';
 import { validateFirebaseIdToken } from '@/lib/api/server-auth';
 
 type FeedbackItem = {
@@ -173,7 +173,7 @@ async function getBlogEngagement() {
   try {
     const firestore = getFirestore();
     
-    // Get blog stats from the stats document
+    // Initialize default values for reactions
     let totalReactions = 0;
     let reactions = {
       thumbsUp: 0,
@@ -182,26 +182,74 @@ async function getBlogEngagement() {
       meh: 0
     };
     
-    // Get the stats document
+    // Try getting the stats document first
     const statsDocRef = doc(firestore, 'stats', 'blogStats');
     const statsDoc = await getDoc(statsDocRef);
     
+    let usedStatsDoc = false;
     if (statsDoc.exists()) {
       const data = statsDoc.data();
-      totalReactions = data.totalReactions || 0;
+      if (data.reactions && Object.values(data.reactions).some((val: any) => val > 0)) {
+        totalReactions = data.totalReactions || 0;
+        
+        // Map the reactions from the database to our expected format
+        const dbReactions = data.reactions || {};
+        reactions = {
+          thumbsUp: dbReactions.thumbsUp || 0,
+          celebrate: dbReactions.celebrate || 0,
+          insightful: dbReactions.insightful || dbReactions.brain || 0, // Support both naming conventions
+          meh: dbReactions.meh || 0
+        };
+        
+        usedStatsDoc = true;
+        console.log('Fetched blog reactions from Firestore stats doc:', reactions);
+      }
+    }
+    
+    // If the stats document doesn't exist or has no reactions, calculate from blog posts directly
+    if (!usedStatsDoc) {
+      console.log('Blog stats document does not exist or is empty, calculating from blog posts...');
       
-      // Map the reactions from the database to our expected format
-      const dbReactions = data.reactions || {};
-      reactions = {
-        thumbsUp: dbReactions.thumbsUp || 0,
-        celebrate: dbReactions.celebrate || 0,
-        insightful: dbReactions.insightful || dbReactions.brain || 0, // Support both naming conventions
-        meh: dbReactions.meh || 0
-      };
+      // Query blog posts to calculate total reactions
+      const postsColRef = collection(firestore, 'blog-posts');
+      const postsQuery = query(postsColRef, limit(100)); // Get up to 100 posts
+      const postsSnapshot = await getDocs(postsQuery);
       
-      console.log('Fetched blog reactions from Firestore:', reactions);
-    } else {
-      console.log('Blog stats document does not exist');
+      // Sum up all reactions from blog posts
+      postsSnapshot.forEach(doc => {
+        if (doc.exists()) {
+          const data = doc.data();
+          const postReactions = data.reactions || {};
+          
+          // Add to our counters
+          reactions.thumbsUp += postReactions.thumbsUp || 0;
+          reactions.celebrate += postReactions.celebrate || 0;
+          reactions.insightful += postReactions.brain || 0; // Map brain to insightful
+          reactions.meh += postReactions.meh || 0;
+        }
+      });
+      
+      // Calculate total
+      totalReactions = Object.values(reactions).reduce((sum, val) => sum + val, 0);
+      console.log('Calculated blog reactions from posts:', reactions);
+      
+      // Attempt to create the stats document with these values (ignore errors)
+      try {
+        await setDoc(statsDocRef, {
+          reactions: {
+            thumbsUp: reactions.thumbsUp,
+            celebrate: reactions.celebrate,
+            brain: reactions.insightful,
+            meh: reactions.meh
+          },
+          totalReactions: totalReactions,
+          lastUpdated: new Date()
+        });
+        console.log('Created stats/blogStats document with calculated values');
+      } catch (error) {
+        console.error('Could not create stats document:', error);
+        // We can still return the calculated values even if we couldn't save them
+      }
     }
     
     // Get popular blog posts (top 5 by reaction count)
