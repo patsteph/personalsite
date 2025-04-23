@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { getAdminFirestore } from '@/lib/firebase-admin';
-import { withApiAuth } from '@/lib/api/with-auth';
-import { CVData } from '@/types/cv';
+import { getAdminFirestore } from '../../../lib/firebase-admin';
+import { withApiAuth } from '../../../lib/api/with-auth';
+import { CVData } from '../../../types/cv';
 
 type ApiResponse = {
   success: boolean;
