@@ -1,15 +1,22 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-// Removed Firestore import. Use server-side API or stubbed logic.
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { db } from '@/lib/firebase-client';
 
 type FeedbackResponse = {
   success: boolean;
   message?: string;
   error?: string;
+  id?: string;
 };
 
 type FeedbackData = {
   category: string;
   feedback: string;
+  page: string;
+  timestamp?: string;
+  sessionId?: string;
+  referrer?: string | null;
+  userAgent?: string | null;
 };
 
 export default async function handler(
@@ -25,7 +32,7 @@ export default async function handler(
   }
 
   try {
-    const { category, feedback } = req.body as FeedbackData;
+    const { category, feedback, page, timestamp, sessionId, referrer, userAgent } = req.body as FeedbackData;
     
     // Validate required fields
     if (!category || !feedback) {
@@ -35,11 +42,42 @@ export default async function handler(
       });
     }
     
-    // TODO: Replace with server-side API call to store feedback
-    // Placeholder: Simulate successful feedback submission
+    // Ensure we have a Firestore instance
+    if (!db) {
+      console.error('Firestore instance not initialized');
+      return res.status(500).json({
+        success: false,
+        error: 'Database connection error'
+      });
+    }
+    
+    // Store feedback in Firestore
+    const feedbackCollectionRef = collection(db, 'feedback');
+    
+    // Prepare feedback document
+    const feedbackDoc = {
+      category,
+      feedback,
+      page: page || '/',
+      timestamp: serverTimestamp(), // Use server timestamp for consistent timing
+      clientTimestamp: timestamp || new Date().toISOString(), // Also store the client timestamp
+      sessionId: sessionId || null,
+      referrer: referrer || null,
+      userAgent: userAgent || null,
+      status: 'new', // Initial status
+      classification: null, // No sentiment classification initially
+      createdAt: serverTimestamp(),
+    };
+    
+    // Add document to Firestore
+    const docRef = await addDoc(feedbackCollectionRef, feedbackDoc);
+    
+    console.log(`Feedback stored with ID: ${docRef.id}`);
+    
     return res.status(200).json({ 
       success: true, 
-      message: 'Feedback submitted successfully (stub)' 
+      message: 'Feedback submitted successfully',
+      id: docRef.id
     });
   } catch (error: any) {
     console.error('Error processing feedback:', error);
