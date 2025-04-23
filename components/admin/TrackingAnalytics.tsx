@@ -28,6 +28,15 @@ interface DisplayableTrackingEvent extends Omit<TrackingEventDocument, 'timestam
   receivedAt: string;
 }
 
+// Interface for blog reactions data
+interface BlogReactionsData {
+  thumbsUp: number;
+  celebrate: number;
+  brain: number;
+  meh: number;
+  total: number;
+}
+
 const TrackingAnalytics: React.FC = () => {
   // Get all hooks at the top level, unconditionally
   const { user } = useAuth(); 
@@ -37,6 +46,14 @@ const TrackingAnalytics: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [feedbackLoading, setFeedbackLoading] = useState<boolean>(true);
   const [feedbackError, setFeedbackError] = useState<string | null>(null);
+  const [reactionsData, setReactionsData] = useState<BlogReactionsData>({
+    thumbsUp: 0,
+    celebrate: 0,
+    brain: 0,
+    meh: 0,
+    total: 0
+  });
+  const [reactionsLoading, setReactionsLoading] = useState<boolean>(true);
   
   // Calculate all stats from events data - MOVED before any conditional returns
   // This ensures hooks are always called in the same order
@@ -165,44 +182,53 @@ const TrackingAnalytics: React.FC = () => {
       setFeedbackError(null);
       
       try {
-        const firestoreDb = db as NonNullable<typeof db>;
-        const feedbackColRef = collection(firestoreDb, 'feedback');
+        const response = await fetch('/api/admin-analytics?dataType=feedback');
+        const result = await response.json();
         
-        // Create a query to get the most recent feedback items
-        const q = query(
-          feedbackColRef, 
-          orderBy('timestamp', 'desc'), 
-          limit(20)
-        );
-        
-        const querySnapshot = await getDocs(q);
-        
-        const fetchedFeedback: FeedbackItem[] = [];
-        querySnapshot.forEach((doc) => {
-          const data = doc.data();
-          fetchedFeedback.push({
-            id: doc.id,
-            category: data.category,
-            feedback: data.feedback,
-            page: data.page,
-            timestamp: data.timestamp?.toDate?.() 
-              ? data.timestamp.toDate().toISOString() 
-              : (data.clientTimestamp || new Date().toISOString()),
-            status: data.status || 'new',
-            classification: data.classification || null
-          });
-        });
-        
-        setFeedbackItems(fetchedFeedback);
-      } catch (err: any) {
-        console.error("Error fetching feedback data:", err);
-        setFeedbackError(`Failed to load feedback data: ${err.message}`);
+        if (result.success && result.data && Array.isArray(result.data.feedbackItems)) {
+          setFeedbackItems(result.data.feedbackItems);
+        } else {
+          throw new Error(result.error || 'Failed to fetch feedback data');
+        }
+      } catch (err) {
+        console.error('Error fetching feedback data:', err);
+        setFeedbackError(err instanceof Error ? err.message : 'An unknown error occurred');
       } finally {
         setFeedbackLoading(false);
       }
     };
     
+    const fetchBlogReactionsData = async () => {
+      if (!user) return;
+      
+      try {
+        setReactionsLoading(true);
+        
+        // Call the admin API endpoint to get blog engagement data including reactions
+        const response = await fetch('/api/admin-analytics?dataType=blog');
+        const result = await response.json();
+        
+        if (result.success && result.data) {
+          const blogData = result.data;
+          const reactions = blogData.reactions || {};
+          
+          setReactionsData({
+            thumbsUp: reactions.thumbsUp || 0,
+            celebrate: reactions.celebrate || 0,
+            brain: reactions.insightful || reactions.brain || 0, // Handle both naming conventions
+            meh: reactions.meh || 0,
+            total: blogData.totalReactions || 0
+          });
+        }
+      } catch (err) {
+        console.error('Error fetching blog reactions data:', err);
+      } finally {
+        setReactionsLoading(false);
+      }
+    };
+    
     fetchFeedbackData();
+    fetchBlogReactionsData();
   }, [user]);
 
   // Conditional rendering for loading and error states
@@ -219,7 +245,7 @@ const TrackingAnalytics: React.FC = () => {
       <h2 className="text-2xl font-semibold text-gray-800">Site Analytics Overview</h2>
       
       {/* Grid for Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* Summary Stats Card */}
         <div className="bg-white shadow-md rounded-lg p-6">
           <h3 className="text-lg font-medium text-gray-700 mb-3">Summary (Last {analyticsData.totalEvents} Events)</h3>
@@ -279,6 +305,73 @@ const TrackingAnalytics: React.FC = () => {
                 </li>
               ))}
             </ul>
+          )}
+        </div>
+        
+        {/* Blog Reactions Card */}
+        <div className="bg-white shadow-md rounded-lg p-6">
+          <h3 className="text-lg font-medium text-gray-700 mb-3">Blog Reactions</h3>
+          {reactionsLoading ? (
+            <div className="py-3 text-center text-gray-500">Loading reactions data...</div>
+          ) : reactionsData.total === 0 ? (
+            <p className="text-sm text-gray-500">No blog reactions recorded yet.</p>
+          ) : (
+            <>
+              <div className="mb-4">
+                <div className="font-semibold text-2xl text-blue-600">{reactionsData.total}</div>
+                <div className="text-xs text-gray-500">Total reactions</div>
+              </div>
+              <ul className="space-y-2">
+                <li className="text-sm">
+                  <div className="flex justify-between items-center">
+                    <span>👍 Like</span>
+                    <span className="font-semibold text-blue-600">{reactionsData.thumbsUp}</span>
+                  </div>
+                  <div className="mt-1 bg-gray-200 h-2 rounded-full w-full">
+                    <div 
+                      className="bg-blue-500 h-2 rounded-full" 
+                      style={{ width: `${reactionsData.total > 0 ? (reactionsData.thumbsUp / reactionsData.total) * 100 : 0}%` }}
+                    ></div>
+                  </div>
+                </li>
+                <li className="text-sm">
+                  <div className="flex justify-between items-center">
+                    <span>🎉 Celebrate</span>
+                    <span className="font-semibold text-blue-600">{reactionsData.celebrate}</span>
+                  </div>
+                  <div className="mt-1 bg-gray-200 h-2 rounded-full w-full">
+                    <div 
+                      className="bg-blue-500 h-2 rounded-full" 
+                      style={{ width: `${reactionsData.total > 0 ? (reactionsData.celebrate / reactionsData.total) * 100 : 0}%` }}
+                    ></div>
+                  </div>
+                </li>
+                <li className="text-sm">
+                  <div className="flex justify-between items-center">
+                    <span>🧠 Insightful</span>
+                    <span className="font-semibold text-blue-600">{reactionsData.brain}</span>
+                  </div>
+                  <div className="mt-1 bg-gray-200 h-2 rounded-full w-full">
+                    <div 
+                      className="bg-blue-500 h-2 rounded-full" 
+                      style={{ width: `${reactionsData.total > 0 ? (reactionsData.brain / reactionsData.total) * 100 : 0}%` }}
+                    ></div>
+                  </div>
+                </li>
+                <li className="text-sm">
+                  <div className="flex justify-between items-center">
+                    <span>😐 Meh</span>
+                    <span className="font-semibold text-blue-600">{reactionsData.meh}</span>
+                  </div>
+                  <div className="mt-1 bg-gray-200 h-2 rounded-full w-full">
+                    <div 
+                      className="bg-blue-500 h-2 rounded-full" 
+                      style={{ width: `${reactionsData.total > 0 ? (reactionsData.meh / reactionsData.total) * 100 : 0}%` }}
+                    ></div>
+                  </div>
+                </li>
+              </ul>
+            </>
           )}
         </div>
       </div>
