@@ -7,6 +7,7 @@ import { getTrackingSessionId, trackEvent } from '@/lib/tracking';
 import dynamic from 'next/dynamic';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 // Dynamically import the FeedbackWidget with no SSR to avoid hydration issues
 const FeedbackWidget = dynamic(() => import('./FeedbackWidget'), { ssr: false });
@@ -29,6 +30,18 @@ export const useTheme = () => useContext(ThemeContext);
 type AppProvidersProps = {
   children: ReactNode;
 };
+
+// Create a client
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false, // Don't refetch when window gains focus
+      retry: 1, // Only retry failed queries once
+      staleTime: 5 * 60 * 1000, // Data is fresh for 5 minutes
+      gcTime: 10 * 60 * 1000, // Garbage collection time (formerly cacheTime)
+    },
+  },
+});
 
 export default function AppProviders({ children }: AppProvidersProps) {
   // Hydration fix: Start with no providers until the client is hydrated
@@ -137,26 +150,28 @@ export default function AppProviders({ children }: AppProvidersProps) {
   }
   
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
-      <AuthProvider>
-        <TranslationProvider>
-          {router.pathname !== '/admin/login' && <FeedbackWidget />}
-          {children}
-          {/* Toast container for notifications */}
-          <ToastContainer 
-            position="top-right"
-            autoClose={5000}
-            hideProgressBar={false}
-            newestOnTop
-            closeOnClick
-            rtl={false}
-            pauseOnFocusLoss
-            draggable
-            pauseOnHover
-            theme={theme}
-          />
-        </TranslationProvider>
-      </AuthProvider>
-    </ThemeContext.Provider>
+    <QueryClientProvider client={queryClient}>
+      <ThemeContext.Provider value={{ theme, toggleTheme }}>
+        <AuthProvider>
+          <TranslationProvider>
+            {router.pathname !== '/admin/login' && <FeedbackWidget />}
+            {children}
+            {/* Toast container for notifications */}
+            <ToastContainer 
+              position="top-right"
+              autoClose={5000}
+              hideProgressBar={false}
+              newestOnTop
+              closeOnClick
+              rtl={false}
+              pauseOnFocusLoss
+              draggable
+              pauseOnHover
+              theme={theme}
+            />
+          </TranslationProvider>
+        </AuthProvider>
+      </ThemeContext.Provider>
+    </QueryClientProvider>
   );
 }

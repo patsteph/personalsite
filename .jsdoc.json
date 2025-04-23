@@ -1,0 +1,36 @@
+{
+  "tags": {
+    "allowUnknownTags": true,
+    "dictionaries": ["jsdoc", "closure"]
+  },
+  "source": {
+    "include": ["lib", "components", "pages"],
+    "includePattern": ".+\\.(ts|tsx)$",
+    "excludePattern": "node_modules"
+  },
+  "plugins": [
+    "plugins/markdown",
+    "node_modules/better-docs/typescript",
+    "node_modules/better-docs/category"
+  ],
+  "opts": {
+    "destination": "./docs",
+    "recurse": true,
+    "readme": "README.md",
+    "template": "node_modules/better-docs"
+  },
+  "templates": {
+    "cleverLinks": false,
+    "monospaceLinks": false,
+    "better-docs": {
+      "name": "Personal Website Documentation",
+      "logo": "public/favicon.ico",
+      "navigation": [
+        {
+          "label": "GitHub",
+          "href": "https://github.com/yourusername/personal-website"
+        }
+      ]
+    }
+  }
+}
