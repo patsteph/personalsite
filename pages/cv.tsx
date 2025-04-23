@@ -3,7 +3,7 @@ import Layout from '@/components/layout/Layout';
 import AboutSection from '@/components/cv/AboutSection';
 import ExperienceSection from '@/components/cv/ExperienceSection';
 import SkillsAdapter from '@/components/cv/SkillsAdapter';
-import EducationSection from '@/components/cv/EducationSection';
+import EducationAdapter from '@/components/cv/EducationAdapter';
 import TrainingSection from '@/components/cv/TrainingSection';
 import { getCVData } from '@/lib/cv';
 import { CVData } from '@/types/cv';
@@ -77,7 +77,7 @@ export default function CVPage({ cvData }: CVPageProps) {
       
       <TrainingSection certifications={cvData.Training || []} />
       
-      <EducationSection education={cvData.education} />
+      <EducationAdapter education={cvData.education} />
       
       {/* Visual Career Journey Modal */}
       {showCareerJourney && (

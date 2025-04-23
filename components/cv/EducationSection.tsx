@@ -1,8 +1,14 @@
-import { Education } from '@/types/cv';
 import { useTranslation } from '@/lib/translations';
 
+// Use a local type that matches the component's expectations
+type EducationItem = {
+  school: string;
+  location?: string;
+  year?: string;
+};
+
 type EducationSectionProps = {
-  education: Education[];
+  education: EducationItem[];
 };
 
 export default function EducationSection({ education }: EducationSectionProps) {

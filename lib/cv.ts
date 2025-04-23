@@ -26,9 +26,14 @@ export function getCVData(): CVData {
         period: '2020 - Present',
         description: 'Leading engineering teams to deliver high-quality products.'
       }],
-      skills: ['Leadership', 'Engineering', 'Product Management'],
+      skills: [
+        { name: 'Leadership', category: 'Soft Skills', proficiency: 5 },
+        { name: 'Engineering', category: 'Technical', proficiency: 5 },
+        { name: 'Product Management', category: 'Management', proficiency: 4 }
+      ],
       education: [{
-        school: 'University of Example',
+        institution: 'University of Example',
+        degree: 'Bachelor of Science',
         location: 'Example City',
         year: '2015'
       }],
