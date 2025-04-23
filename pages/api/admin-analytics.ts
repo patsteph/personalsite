@@ -1,7 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-// Temporarily comment out Firebase Admin SDK imports to debug deployment issue
-// import { initializeAdminApp, getAdminFirestore } from '@/lib/firebase-admin'; 
-// import { Timestamp, CollectionReference, DocumentData, QueryDocumentSnapshot } from 'firebase-admin/firestore'; 
+import { collection, doc, getDoc, getDocs, getFirestore, limit, orderBy, query } from 'firebase/firestore';
 import { validateFirebaseIdToken } from '@/lib/api/server-auth';
 
 type FeedbackItem = {
@@ -46,29 +44,10 @@ type AdminAnalyticsResponse = {
   error?: string;
 }
 
-// Temporarily comment out Firebase Admin SDK Firestore initialization
-// let db: FirebaseFirestore.Firestore | null;
-// try {
-//   console.log('Admin Analytics API: Initializing Firebase Admin...');
-//   initializeAdminApp();
-//   db = getAdminFirestore();
-//   console.log('Admin Analytics API: Firebase Admin initialized.');
-// } catch (initError: any) {
-//   console.error('Admin Analytics API: CRITICAL FIREBASE INIT ERROR:', initError);
-//   // @ts-ignore - This comment can likely be removed now
-//   db = null; // Ensure db is null if init fails
-// }
-
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<AdminAnalyticsResponse>
 ) {
-  // Temporarily remove check for db initialization failure
-  // if (!db) {
-  //   console.error('Admin Analytics API: Handler entered but Firebase Admin SDK failed to initialize.');
-  //   return res.status(500).json({ success: false, error: 'Internal Server Error: Firebase initialization failed.' });
-  // }
-
   const uid = await validateFirebaseIdToken(req);
   
   if (!uid) {
@@ -205,11 +184,98 @@ async function getBlogEngagement() {
   }
 }
 
-// Temporarily revert to placeholder data
 async function getFeedbackAnalytics(): Promise<FeedbackAnalyticsData> {
   try {
-    // TODO: Replace with server-side API call for feedback analytics
-    // Placeholder: return sample data
+    const firestore = getFirestore();
+    
+    const feedbackColRef = collection(firestore, 'feedback');
+    const q = query(feedbackColRef, orderBy('timestamp', 'desc'), limit(20));
+    const snapshot = await getDocs(q);
+    
+    const feedbackItems: FeedbackItem[] = [];
+    const categoryCounts: { [key: string]: number } = {};
+    
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+      const category = data.category || 'uncategorized';
+      
+      const timestamp = data.timestamp?.toDate ? 
+        data.timestamp.toDate().toISOString() : 
+        (data.clientTimestamp || new Date().toISOString());
+      
+      feedbackItems.push({
+        id: doc.id,
+        category,
+        feedback: data.feedback || '',
+        page: data.page || 'unknown',
+        timestamp,
+        status: data.status || 'new',
+        classification: data.classification || null
+      });
+      
+      categoryCounts[category] = (categoryCounts[category] || 0) + 1;
+    });
+    
+    const categoryStats: CategoryStat[] = Object.entries(categoryCounts)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count);
+    
+    let visitorCount = 0;
+    try {
+      const statsDocRef = doc(firestore, 'stats', 'siteStats');
+      const statsDoc = await getDoc(statsDocRef);
+      if (statsDoc.exists()) {
+        visitorCount = statsDoc.data().visitorCount || 0;
+      }
+    } catch (statsError) {
+      console.error('Error fetching visitor stats:', statsError);
+    }
+
+    const sentimentStats: SentimentStat[] = [
+      { name: 'Positive', value: 0 },
+      { name: 'Neutral', value: 0 },
+      { name: 'Negative', value: 0 },
+    ];
+    
+    feedbackItems.forEach(item => {
+      const text = item.feedback.toLowerCase();
+      if (text.match(/good|great|awesome|excellent|love|like|helpful|thanks|thank/)) {
+        sentimentStats[0].value++; // Positive
+      } else if (text.match(/bad|poor|terrible|hate|dislike|broken|issue|problem|fix/)) {
+        sentimentStats[2].value++; // Negative
+      } else {
+        sentimentStats[1].value++; // Neutral
+      }
+    });
+    
+    let reactionStats = { thumbsUp: 0, celebrate: 0, insightful: 0, meh: 0, total: 0 };
+    try {
+      const statsDocRef = doc(firestore, 'stats', 'blogStats');
+      const statsDoc = await getDoc(statsDocRef);
+      if (statsDoc.exists()) {
+        const data = statsDoc.data();
+        const reactions = data.reactions || {};
+        reactionStats = {
+          thumbsUp: reactions.thumbsUp || 0,
+          celebrate: reactions.celebrate || 0,
+          insightful: reactions.insightful || reactions.brain || 0, // Support both naming conventions
+          meh: reactions.meh || 0,
+          total: data.totalReactions || 0
+        };
+      }
+    } catch (reactionsError) {
+      console.error('Error fetching reaction stats:', reactionsError);
+    }
+    
+    return {
+      feedbackItems,
+      categoryStats,
+      sentimentStats,
+      reactionStats,
+      visitorCount
+    };
+  } catch (error) {
+    console.error('Error getting feedback analytics:', error);
     return {
       feedbackItems: [],
       categoryStats: [],
@@ -217,87 +283,5 @@ async function getFeedbackAnalytics(): Promise<FeedbackAnalyticsData> {
       reactionStats: { thumbsUp: 0, celebrate: 0, insightful: 0, meh: 0, total: 0 },
       visitorCount: 0
     };
-  } catch (error) {
-    console.error('Error getting feedback analytics (Placeholder):', error);
-    // Return empty structure on error to prevent frontend crash
-    return {
-      feedbackItems: [],
-      categoryStats: [],
-      sentimentStats: [],
-      reactionStats: { thumbsUp: 0, celebrate: 0, insightful: 0, meh: 0, total: 0 },
-      visitorCount: 0,
-    };
   }
 }
-
-/* 
-// Original implementation temporarily commented out:
-async function getFeedbackAnalytics(): Promise<FeedbackAnalyticsData> {
-  try {
-    // Ensure db is initialized before using
-    if (!db) {
-      throw new Error("Firestore database is not initialized.");
-    }
-
-    const feedbackCollection = db.collection('feedback');
-    const snapshot = await feedbackCollection.orderBy('timestamp', 'desc').get();
-
-    const feedbackItems: FeedbackItem[] = [];
-    const categoryCounts: { [key: string]: number } = {};
-
-    snapshot.forEach((doc: QueryDocumentSnapshot<DocumentData>) => {
-      const data = doc.data();
-      const category = data.category || 'uncategorized';
-
-      feedbackItems.push({
-        id: doc.id,
-        category: category,
-        feedback: data.feedback || '',
-        page: data.page || '',
-        // Convert timestamp to ISO string or keep as is depending on needs
-        timestamp: data.timestamp instanceof Timestamp ? data.timestamp.toDate().toISOString() : new Date().toISOString(),
-        classification: data.classification, // Assuming field exists
-        status: data.status || 'new', // Assuming field exists
-      });
-
-      // Count categories
-      categoryCounts[category] = (categoryCounts[category] || 0) + 1;
-    });
-
-    // Format category stats
-    const categoryStats: CategoryStat[] = Object.entries(categoryCounts).map(([name, count]) => ({
-      name,
-      count,
-    }));
-
-    // Placeholder for sentiment and reactions
-    const sentimentStats: SentimentStat[] = []; // TODO: Implement if sentiment data exists
-    const reactionStats: ReactionCounts = { // TODO: Implement if reaction data exists
-      thumbsUp: 0,
-      celebrate: 0,
-      insightful: 0,
-      meh: 0,
-      total: 0
-    };
-    const visitorCount = 0; // TODO: Implement visitor tracking if available
-
-    return {
-      feedbackItems,
-      categoryStats,
-      sentimentStats,
-      reactionStats,
-      visitorCount,
-    };
-  } catch (error) {
-    console.error('Error getting feedback analytics:', error);
-    // Return empty structure on error to prevent frontend crash
-    return {
-      feedbackItems: [],
-      categoryStats: [],
-      sentimentStats: [],
-      reactionStats: { thumbsUp: 0, celebrate: 0, insightful: 0, meh: 0, total: 0 },
-      visitorCount: 0,
-    };
-  }
-}
-*/
