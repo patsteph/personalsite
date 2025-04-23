@@ -90,8 +90,8 @@ export default function SimpleBookGrid({
         constraints.push(where('userRating', '>=', Number(ratingFilter)));
       }
       if (genreFilter) {
-        // Assumes 'genres' field in Firestore is an array - renamed from categories
-        constraints.push(where('genres', 'array-contains', genreFilter));
+        // Use the 'categories' field which stores genre information in book documents
+        constraints.push(where('categories', 'array-contains', genreFilter));
       }
       // --- End WHERE clauses ---
 
