@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Sidebar from './Sidebar';
 import AdminButton from '../ui/AdminButton';
 import { useTranslation } from '@/lib/translations';
+import { useEasterEggTrigger } from '@/lib/easter-eggs/useEasterEggTrigger';
 
 // Import page section types
 import { PageSection } from './types';
@@ -44,7 +45,9 @@ export default function Layout({
   const pageTitle = title || sectionTitles[section];
   const metaDescription = description || `Patrick Stephens personal website - ${pageTitle} section`;
   
-  // Dropdown language change removed - now using button-based language selection
+  // Easter egg triggers
+  const logoTripleClickProps = useEasterEggTrigger('triple-click');
+  const languageSectionProps = useEasterEggTrigger('rapid-clicks');
   
   return (
     <div className="min-h-screen bg-linen text-gray-800 theme-transition">
@@ -96,6 +99,7 @@ export default function Layout({
                 quality={85}
                 placeholder="blur"
                 blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="
+                {...logoTripleClickProps}
               />
             <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-[rgba(0,0,0,0.3)] to-transparent h-16"></div>
             </div>
@@ -114,7 +118,7 @@ export default function Layout({
             </div>
             
             {/* Language selection as horizontal text links */}
-            <div className="flex items-center justify-center space-x-3 flex-grow px-4">
+            <div className="flex items-center justify-center space-x-3 flex-grow px-4" {...languageSectionProps}>
               <button 
                 onClick={() => setLanguage('en')}
                 className={`text-sm hover:text-accent transition-colors ${language === 'en' ? 'font-bold text-accent' : 'text-gray-700'}`}

@@ -41,6 +41,7 @@
     "@types/cookie": "^0.6.0",
     "@types/js-cookie": "^3.0.6",
     "axios": "^1.8.4",
+    "canvas-confetti": "^1.9.3",
     "cookie": "^1.0.2",
     "cors": "^2.8.5",
     "date-fns": "^4.1.0",

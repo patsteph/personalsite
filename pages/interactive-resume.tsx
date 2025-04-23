@@ -58,7 +58,7 @@ export default function InteractiveResumePage({ cvData }: InteractiveResumeProps
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
       >
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex justify-between items-center mb-4">
           <h1 className="text-3xl md:text-4xl font-bold text-accent">
             {t('cv.interactive_title', 'Interactive Resume')}
           </h1>
@@ -70,6 +70,19 @@ export default function InteractiveResumePage({ cvData }: InteractiveResumeProps
               {t('cv.standard_view', 'Standard View')}
             </span>
           </Link>
+        </div>
+        
+        {/* Under Construction Banner */}
+        <div className="mb-8 bg-yellow-100 border-l-4 border-yellow-500 p-4 rounded">
+          <div className="flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-yellow-600 mr-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <div>
+              <p className="font-medium text-yellow-700">Under Construction</p>
+              <p className="text-sm text-yellow-600">This Interactive Resume is currently in development. The content shown is placeholder data and does not reflect my actual experience, skills, or qualifications.</p>
+            </div>
+          </div>
         </div>
         
         {/* Introduction with animation */}

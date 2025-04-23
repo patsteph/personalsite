@@ -9,6 +9,9 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
+// Dynamically import the Easter Egg listener to avoid SSR issues
+const EasterEggListener = dynamic(() => import('./easter-eggs/EasterEggListener'), { ssr: false });
+
 // Dynamically import the FeedbackWidget with no SSR to avoid hydration issues
 const FeedbackWidget = dynamic(() => import('./FeedbackWidget'), { ssr: false });
 
@@ -155,6 +158,8 @@ export default function AppProviders({ children }: AppProvidersProps) {
         <AuthProvider>
           <TranslationProvider>
             {router.pathname !== '/admin/login' && <FeedbackWidget />}
+            {/* Easter Egg Listener */}
+            <EasterEggListener />
             {children}
             {/* Toast container for notifications */}
             <ToastContainer 
