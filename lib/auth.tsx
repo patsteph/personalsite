@@ -20,6 +20,7 @@ import {
   signOut as apiSignOut,               // Keep for clearing backend session/cookie if necessary
   AppUser,                             // Keep our AppUser type
 } from './api/auth'; // Assuming api/auth.ts exports these
+import Cookies from 'js-cookie'; // Import js-cookie
 
 // Define the shape of the authentication context
 interface AuthContextType {
@@ -76,13 +77,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           // We don't have isAdmin here, remove or fetch separately if needed
         };
         setUser(appUser);
-        console.log('AuthProvider: --> Setting isAuthenticated = true, loading = false');
+        // Set the cookie for middleware check
+        Cookies.set('auth_success', 'true', { path: '/', secure: process.env.NODE_ENV === 'production', sameSite: 'lax' }); 
         setIsAuthenticated(true);
+        console.log('AuthProvider: --> Setting isAuthenticated = true, loading = false');
       } else {
         // User is signed out according to Firebase SDK
-        console.log('AuthProvider: --> Setting user = null, isAuthenticated = false, loading = false');
         setUser(null);
+        // Remove the cookie on logout
+        Cookies.remove('auth_success', { path: '/' });
         setIsAuthenticated(false);
+        console.log('AuthProvider: --> Setting user = null, isAuthenticated = false, loading = false');
       }
       setLoading(false); // Auth state determined, stop loading
     });
@@ -160,7 +165,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Sign out function - Signs out from Firebase SDK and clears local state
   const signOut = useCallback(async () => {
-    console.log('AuthProvider: signOut called.');
+    console.log('AuthProvider: signOut called. Removing auth cookie.');
+    // Remove the cookie on explicit sign out
+    Cookies.remove('auth_success', { path: '/' });
     setLoading(true);
     try {
       // Sign out from Firebase Client SDK
