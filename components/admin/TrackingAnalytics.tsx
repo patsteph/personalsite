@@ -18,33 +18,52 @@ interface DisplayableTrackingEvent extends Omit<TrackingEventDocument, 'timestam
 }
 
 const TrackingAnalytics: React.FC = () => {
+  // Get all hooks at the top level, unconditionally
   const { user } = useAuth(); 
   const [events, setEvents] = useState<DisplayableTrackingEvent[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Calculate summary stats - MOVED before any conditional returns
+  // This ensures the hook is always called in the same order
+  const summaryStats = useMemo(() => {
+    if (!events || events.length === 0) {
+      return { totalEvents: 0, uniqueSessions: 0 };
+    }
+    const uniqueSessionIds = new Set(events.map(e => e.sessionId));
+    return {
+      totalEvents: events.length,
+      uniqueSessions: uniqueSessionIds.size,
+    };
+  }, [events]);
 
+  // Fetch data effect
   useEffect(() => {
-    // Only fetch data if db is initialized AND user exists
-    if (!db || !user) {
-        // If db isn't ready or user isn't logged in, don't fetch yet.
-        // Set loading to false if user is definitively null (meaning not logged in)
-        // If db is null or user is null because auth is still loading, keep loading true.
-        if (user === null) {
-            setLoading(false);
-            setError("User is not authenticated.");
-        }
-        // Keep loading true if db is null or auth state is pending
-        return; 
+    // Check for missing dependencies and set error appropriately
+    if (!db) {
+      console.error("Firebase db is not initialized");
+      setError("Database connection error. Please check your configuration.");
+      setLoading(false);
+      return;
+    }
+    
+    if (!user) {
+      // Only set error if we know user is definitely null (not just loading)
+      if (user === null) {
+        setError("User is not authenticated.");
+        setLoading(false);
+      }
+      // Keep loading true if auth state is still pending
+      return;
     }
 
     const fetchTrackingData = async () => {
       setLoading(true);
       setError(null);
       try {
-        if (!db) {
-          throw new Error("Firestore is not initialized. Check Firebase client configuration.");
-        }
-        const eventsColRef = collection(db, 'trackingEvents');
+        // Type assertion to assure TypeScript db is not null here
+        const firestoreDb = db as NonNullable<typeof db>;
+        const eventsColRef = collection(firestoreDb, 'trackingEvents');
         
         const q = query(eventsColRef, orderBy('timestamp', 'desc'), limit(100));
         
@@ -57,7 +76,7 @@ const TrackingAnalytics: React.FC = () => {
             ...data,
             id: doc.id, 
             // Convert Timestamps to ISO strings for simple display
-            timestamp: data.timestamp.toDate().toISOString(),
+            timestamp: data.timestamp?.toDate().toISOString() || new Date().toISOString(),
             receivedAt: data.receivedAt?.toDate().toISOString() || 'N/A',
           });
         });
@@ -72,8 +91,9 @@ const TrackingAnalytics: React.FC = () => {
     };
 
     fetchTrackingData();
-  }, [user]); 
+  }, [user]);
 
+  // Conditional rendering for loading and error states
   if (loading) {
     return <div className="p-6 text-center">Loading analytics data...</div>;
   }
@@ -81,18 +101,6 @@ const TrackingAnalytics: React.FC = () => {
   if (error) {
     return <div className="p-6 text-center text-red-600">Error: {error}</div>;
   }
-
-  // Calculate some basic summary stats (client-side for now)
-  const summaryStats = useMemo(() => {
-    if (!events || events.length === 0) {
-      return { totalEvents: 0, uniqueSessions: 0 };
-    }
-    const uniqueSessionIds = new Set(events.map(e => e.sessionId));
-    return {
-      totalEvents: events.length,
-      uniqueSessions: uniqueSessionIds.size,
-    };
-  }, [events]);
 
   return (
     <div className="space-y-6">
