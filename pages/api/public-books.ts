@@ -1,11 +1,23 @@
 // pages/api/public-books.ts
 import type { NextApiRequest, NextApiResponse } from 'next';
-// Removed Firestore import. Use server-side API or stubbed logic.
+import { getAdminFirestore } from '@/lib/firebase-admin';
+import { Timestamp, QueryDocumentSnapshot, DocumentData } from 'firebase-admin/firestore';
 
 type BookResponse = {
   success: boolean;
-  data?: any;
+  data?: any; // Can be a single book or an array of books
   error?: string;
+}
+
+// Helper to convert Firestore doc data (with Timestamps) to API response format
+function convertFirestoreToApiResponse(docData: FirebaseFirestore.DocumentData): any {
+  const data = { ...docData };
+  for (const key in data) {
+    if (data[key] instanceof Timestamp) {
+      data[key] = data[key].toDate().toISOString();
+    }
+  }
+  return data;
 }
 
 export default async function handler(
@@ -20,76 +32,77 @@ export default async function handler(
     });
   }
   
-  // TODO: Replace with server-side API logic for public books
-  // Placeholder: Stubbed logic for fetching books
   try {
-    const { id } = req.query;
+    // Initialize Firestore
+    const db = getAdminFirestore();
+    if (!db) {
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to initialize Firestore'
+      });
+    }
+
+    const { id, favourite, genre } = req.query;
+    const booksCollection = db.collection('books');
+
+    // Handling single book request
     if (id && typeof id === 'string') {
-      // Simulate fetching a single book
+      // Get book by ID
+      const bookDoc = await booksCollection.doc(id).get();
+      
+      if (!bookDoc.exists) {
+        return res.status(404).json({
+          success: false,
+          error: 'Book not found'
+        });
+      }
+
+      // Format and return the book
+      const bookData = convertFirestoreToApiResponse({
+        id: bookDoc.id,
+        ...bookDoc.data()
+      });
+
       return res.status(200).json({
         success: true,
-        data: {
-          id,
-          title: 'Stubbed Book Title',
-          authors: ['Stubbed Author'],
-          status: 'read',
-          dateAdded: new Date().toISOString(),
-          categories: [],
-          userRating: 5,
-          averageRating: 4.5,
-          description: 'Stubbed book description.',
-          isbn: '1234567890',
-          publisher: 'Stubbed Publisher',
-          publishedDate: '2020-01-01',
-          pageCount: 300,
-          notes: '',
-          imageLinks: {}
-        }
+        data: bookData
       });
     } else {
-      // Simulate fetching all books
+      // Handling query for multiple books
+      let query = booksCollection.where('publiclyVisible', '==', true);
+      
+      // Apply favourite filter if requested
+      if (favourite === 'true') {
+        query = query.where('favourite', '==', true);
+      }
+      
+      // Apply genre filter if requested
+      if (genre && typeof genre === 'string') {
+        query = query.where('categories', 'array-contains', genre);
+      }
+
+      // Apply default sorting
+      query = query.orderBy('title');
+      
+      // Execute query
+      const booksSnapshot = await query.get();
+      const books = booksSnapshot.docs.map((doc: QueryDocumentSnapshot<DocumentData>) => {
+        return convertFirestoreToApiResponse({
+          id: doc.id,
+          ...doc.data()
+        });
+      });
+
       return res.status(200).json({
         success: true,
-        data: [
-          {
-            id: 'stubbed-book-1',
-            title: 'Stubbed Book 1',
-            authors: ['Author 1'],
-            status: 'read',
-            dateAdded: new Date().toISOString(),
-            categories: [],
-            userRating: 4,
-            averageRating: 4.2,
-            description: 'Description for stubbed book 1.',
-            isbn: '1111111111',
-            publisher: 'Publisher 1',
-            publishedDate: '2021-01-01',
-            pageCount: 250,
-            notes: '',
-            imageLinks: {}
-          },
-          {
-            id: 'stubbed-book-2',
-            title: 'Stubbed Book 2',
-            authors: ['Author 2'],
-            status: 'want-to-read',
-            dateAdded: new Date().toISOString(),
-            categories: [],
-            userRating: 5,
-            averageRating: 4.8,
-            description: 'Description for stubbed book 2.',
-            isbn: '2222222222',
-            publisher: 'Publisher 2',
-            publishedDate: '2022-02-02',
-            pageCount: 320,
-            notes: '',
-            imageLinks: {}
-          }
-        ]
+        data: books
       });
     }
   } catch (error: any) {
-    console.error('API error getting books:', error);
-    return res.status(500).json({ success: false, error: 'Internal server error' });
+    console.error('Error in public-books API:', error);
+    return res.status(500).json({
+      success: false,
+      error: `Server error: ${error.message}`
+    });
   }
 }

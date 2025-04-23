@@ -1,6 +1,7 @@
 // components/ProtectedRoute.tsx
 import { useEffect } from 'react';
 import { useAuth } from '@/lib/auth';
+import { hasAuthCookie, AUTH_COOKIE_NAME } from '@/lib/utils/cookies';
 
 // Simple inline loading component
 function SimpleLoading({ message = 'Loading...' }: { message?: string }) {
@@ -24,10 +25,10 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
     console.log('ProtectedRoute - Auth state:', { isAuthenticated, loading });
 
     if (!loading) {
-      // Check for server-set auth_success cookie
-      const hasAuthCookie = document.cookie.split(';').some(c => c.trim().startsWith('auth_success='));
-      if (!isAuthenticated && !hasAuthCookie) {
-        console.log('ProtectedRoute: No auth cookie and not authenticated, redirecting to login...');
+      // Check for server-set auth cookie
+      const hasCookie = hasAuthCookie();
+      if (!isAuthenticated && !hasCookie) {
+        console.log(`ProtectedRoute: No ${AUTH_COOKIE_NAME} cookie and not authenticated, redirecting to login...`);
         window.location.href = '/admin/login';
       }
     }
@@ -38,11 +39,11 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
     return <SimpleLoading message="Checking authentication..." />;
   }
 
-  // Allow access if server-set auth_success cookie is present
-  const hasAuthCookie = typeof window !== 'undefined' && document.cookie.split(';').some(c => c.trim().startsWith('auth_success='));
+  // Allow access if server-set auth cookie is present
+  const hasCookie = hasAuthCookie();
 
   // Render children if authenticated or cookie present
-  if (isAuthenticated || hasAuthCookie) {
+  if (isAuthenticated || hasCookie) {
     return <>{children}</>;
   }
   return null;

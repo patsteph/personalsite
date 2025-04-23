@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '@/lib/firebase-client';
+import { getAdminFirestore } from '@/lib/firebase-admin';
+import { FieldValue } from 'firebase-admin/firestore';
 
 type FeedbackResponse = {
   success: boolean;
@@ -42,35 +42,33 @@ export default async function handler(
       });
     }
     
-    // Ensure we have a Firestore instance
+    // Initialize Admin Firestore
+    const db = getAdminFirestore();
     if (!db) {
-      console.error('Firestore instance not initialized');
+      console.error('Admin Firestore instance not initialized');
       return res.status(500).json({
         success: false,
         error: 'Database connection error'
       });
     }
     
-    // Store feedback in Firestore
-    const feedbackCollectionRef = collection(db, 'feedback');
-    
-    // Prepare feedback document
+    // Prepare feedback document with Admin SDK formatting
     const feedbackDoc = {
       category,
       feedback,
       page: page || '/',
-      timestamp: serverTimestamp(), // Use server timestamp for consistent timing
-      clientTimestamp: timestamp || new Date().toISOString(), // Also store the client timestamp
+      timestamp: FieldValue.serverTimestamp(), // Use Admin SDK server timestamp
+      clientTimestamp: timestamp || new Date().toISOString(),
       sessionId: sessionId || null,
       referrer: referrer || null,
       userAgent: userAgent || null,
-      status: 'new', // Initial status
-      classification: null, // No sentiment classification initially
-      createdAt: serverTimestamp(),
+      status: 'new',
+      classification: null,
+      createdAt: FieldValue.serverTimestamp(),
     };
     
-    // Add document to Firestore
-    const docRef = await addDoc(feedbackCollectionRef, feedbackDoc);
+    // Add document to Firestore using Admin SDK
+    const docRef = await db.collection('feedback').add(feedbackDoc);
     
     console.log(`Feedback stored with ID: ${docRef.id}`);
     

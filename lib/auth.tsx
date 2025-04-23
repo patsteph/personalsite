@@ -7,220 +7,181 @@ import React, {
   useCallback,
 } from 'react';
 import { useRouter } from 'next/router';
-// Import Firebase client auth instance and SDK methods
-import { auth } from './firebase-client'; // Import the initialized auth instance
+import { auth } from './firebase-client';
 import { 
   onAuthStateChanged, 
   signOut as firebaseSignOut, 
-  User as FirebaseUser // Rename Firebase User type
+  User as FirebaseUser
 } from 'firebase/auth';
-// Import the API functions for SIGN IN and SIGN OUT (we still need these)
 import {
-  signInWithEmailAndPassword as apiSignIn, // Keep for triggering backend login
-  signOut as apiSignOut,               // Keep for clearing backend session/cookie if necessary
-  AppUser,                             // Keep our AppUser type
-} from './api/auth'; // Assuming api/auth.ts exports these
-import Cookies from 'js-cookie'; // Import js-cookie
+  signInWithEmailAndPassword as apiSignIn,
+  signOut as apiSignOut,
+  AppUser,
+} from './api/auth';
 
-// Define the shape of the authentication context
+// Import the standardized cookie utilities
+import { 
+  setAuthCookie, 
+  removeAuthCookie, 
+  AUTH_COOKIE_NAME
+} from './utils/cookies';
+
+// Configuration
+const REDIRECT_DELAY_MS = 300;
+const DEBUG_AUTH = process.env.NODE_ENV === 'development';
+
+/**
+ * Authentication context type definition
+ */
 interface AuthContextType {
   user: AppUser | null;
   isAuthenticated: boolean;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>; 
   signOut: () => Promise<void>;
-  // Removed refreshToken, checkSession as SDK handles this
 }
 
-// Create the authentication context with a default undefined value
+/**
+ * Auth context with undefined default value
+ */
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Define the props for the AuthProvider component
+/**
+ * AuthProvider props interface
+ */
 interface AuthProviderProps {
   children: ReactNode;
 }
 
-// Create the AuthProvider component
+/**
+ * Authentication Provider Component
+ * Manages authentication state and protected route access
+ */
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<AppUser | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [loading, setLoading] = useState<boolean>(true); // Start loading until auth state is determined
+  const [loading, setLoading] = useState<boolean>(true);
   const router = useRouter();
 
-  // Define protected and public routes within the admin scope
+  // Route definitions
   const protectedAdminRoutes = ['/admin', '/admin/books', '/admin/blog', '/admin/signals'];
   const publicAdminRoutes = ['/admin/login'];
 
-  // Effect to listen for Firebase Auth state changes
+  /**
+   * Firebase Auth state change listener
+   * Sets up listener on mount and cleans up on unmount
+   */
   useEffect(() => {
-    // Ensure auth is initialized before subscribing
     if (!auth) {
-      console.error('AuthProvider: Firebase auth instance is not available. Cannot subscribe to state changes.');
-      setLoading(false); // Stop loading, but auth won't work
+      if (DEBUG_AUTH) console.error('Firebase auth instance unavailable');
+      setLoading(false);
       return;
     }
 
-    console.log('AuthProvider: Setting up onAuthStateChanged listener.');
-    // onAuthStateChanged returns an unsubscribe function
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser: FirebaseUser | null) => {
-      console.log(`AuthProvider: onAuthStateChanged triggered. Incoming Firebase User: ${firebaseUser?.uid || 'null'}`);
+      if (DEBUG_AUTH) console.log(`Auth state changed: ${firebaseUser ? 'User signed in' : 'User signed out'}`);
+      
       if (firebaseUser) {
-        // User is signed in according to Firebase SDK
-        // Map the FirebaseUser to our AppUser type
-        // NOTE: Additional details like 'isAdmin' are NOT available here
-        //       unless fetched separately based on UID or included in custom claims.
+        // Map Firebase user to our app user type
         const appUser: AppUser = {
           uid: firebaseUser.uid,
           email: firebaseUser.email || undefined,
           displayName: firebaseUser.displayName || undefined,
           photoURL: firebaseUser.photoURL || undefined,
-          // We don't have isAdmin here, remove or fetch separately if needed
         };
-        setUser(appUser);
-        // Set the cookie for middleware check with maximum compatibility options
-        console.log('AuthProvider: Setting auth_success cookie for middleware check');
         
-        // Attempt to set cookie using different approaches for maximum compatibility
-        try {
-          // Approach 1: Standard js-cookie approach
-          Cookies.set('auth_success', 'true', { 
-            path: '/', 
-            // Don't set secure flag to ensure it works on all environments
-            secure: false,
-            sameSite: 'lax',
-            expires: 7 // Set to expire in 7 days
-          });
-          
-          // Approach 2: Also set via document.cookie as a fallback
-          document.cookie = `auth_success=true; path=/; max-age=${60*60*24*7}`;
-          
-          console.log('AuthProvider: auth_success cookie set successfully');
-        } catch (error) {
-          console.error('AuthProvider: Error setting auth_success cookie:', error);
-        }
+        setUser(appUser);
+        setAuthCookie();
         setIsAuthenticated(true);
-        console.log('AuthProvider: --> Setting isAuthenticated = true, loading = false');
       } else {
-        // User is signed out according to Firebase SDK
         setUser(null);
-        // Remove the cookie on logout
-        Cookies.remove('auth_success', { path: '/' });
+        removeAuthCookie();
         setIsAuthenticated(false);
-        console.log('AuthProvider: --> Setting user = null, isAuthenticated = false, loading = false');
       }
-      setLoading(false); // Auth state determined, stop loading
+      
+      setLoading(false);
     });
 
-    // Cleanup subscription on unmount
-    return () => {
-      console.log('AuthProvider: >>> Cleaning up onAuthStateChanged listener. <<<');
-      unsubscribe();
-    };
-  }, []); // Empty dependency array ensures this runs only once on mount
+    return () => unsubscribe();
+  }, []);
 
-  // Effect for handling route protection
+  /**
+   * Route protection effect
+   * Redirects users based on authentication state and current route
+   */
   useEffect(() => {
-    console.log(`AuthProvider: Protection Effect RUNNING. State: loading=${loading}, isAuth=${isAuthenticated}, path=${router.pathname}`);
-
-    // Don't run protection logic until auth state is determined
-    if (loading) {
-      console.log('AuthProvider: Still loading, skipping protection check.');
-      return;
-    }
+    if (loading) return;
 
     const currentPath = router.pathname;
-
-    // Check if the current path is a protected admin route
-    const isProtectedRoute = protectedAdminRoutes.some(route => currentPath.startsWith(route));
-
-    // If it's a protected route and user is NOT authenticated, redirect to login
+    const isProtectedRoute = protectedAdminRoutes.some(route => 
+      currentPath.startsWith(route)
+    );
+    
+    // Redirect unauthenticated users from protected routes to login
     if (isProtectedRoute && !isAuthenticated) {
-      console.log('AuthProvider: User not authenticated for protected route, redirecting to login.');
+      if (DEBUG_AUTH) console.log('Redirecting to login: protected route access attempted');
       router.push('/admin/login');
-      return; // Exit after redirect
-    }
-
-    // If it's the login page and user IS authenticated, redirect to admin dashboard
-    if (publicAdminRoutes.includes(currentPath) && isAuthenticated) {
-      console.log('AuthProvider: User authenticated on login page, redirecting to dashboard.');
-      
-      // CHANGED STRATEGY: Use window.location for a FULL page navigation instead of router.push
-      // This ensures the request fully hits the server and triggers middleware
-      try {
-        console.log('AuthProvider: ---> Using window.location for FULL page navigation to /admin');
-        
-        // Small delay to ensure cookie is set before navigation
-        setTimeout(() => {
-          window.location.href = '/admin';
-        }, 300);
-        
-        console.log('AuthProvider: ---> Full page navigation initiated');
-      } catch (error) {
-        console.error('AuthProvider: >>> ERROR during navigation to /admin <<<', error);
-      } 
-     }
- 
-     // console.log(`AuthProvider: No redirect needed for path ${currentPath}.`);
-  }, [loading, isAuthenticated, router.pathname]);
-
-  // Sign in function - Triggers backend login, relies on onAuthStateChanged for state update
-  const signIn = useCallback(async (email: string, password: string): Promise<void> => {
-    // If user is already authenticated, don't re-initiate the process
-    if (isAuthenticated) {
-      console.log('AuthProvider: User already authenticated, skipping sign-in process.');
-      // Optionally, trigger redirect check explicitly if needed, but the useEffect should handle it.
-      // setLoading(false); // Ensure loading is false if we abort here.
       return;
     }
+    
+    // Redirect authenticated users from login page to admin dashboard
+    if (publicAdminRoutes.includes(currentPath) && isAuthenticated) {
+      if (DEBUG_AUTH) console.log('Redirecting to admin: already authenticated');
+      
+      // Use window.location for full page navigation to trigger middleware
+      setTimeout(() => {
+        window.location.href = '/admin';
+      }, REDIRECT_DELAY_MS);
+    }
+  }, [loading, isAuthenticated, router.pathname, protectedAdminRoutes, publicAdminRoutes]);
 
-    console.log('AuthProvider: signIn called.');
+
+
+  /**
+   * Sign in function - Uses Firebase SDK via API wrapper
+   */
+  const signIn = useCallback(async (email: string, password: string): Promise<void> => {
+    if (isAuthenticated) return;
+
     setLoading(true);
     try {
-      // Call the API wrapper function, which now uses Firebase Client SDK
-      // No need to set user state here, onAuthStateChanged will handle it
-      await apiSignIn(email, password); 
-      console.log('AuthProvider: Client SDK signIn successful. Waiting for onAuthStateChanged...');
-      // No page reload needed, the listener should fire.
+      await apiSignIn(email, password);
+      // Auth state change listener will handle the rest
     } catch (error) {
-      console.error('AuthProvider: signIn error:', error);
       setUser(null);
       setIsAuthenticated(false);
-      setLoading(false); // Ensure loading stops on error
-      throw error; // Re-throw the error for the caller
+      setLoading(false);
+      throw error;
     }
-  }, [router, isAuthenticated]); // Add router and isAuthenticated to dependency array
+  }, [isAuthenticated]);
 
-  // Sign out function - Signs out from Firebase SDK and clears local state
+  /**
+   * Sign out function - Handles Firebase signout and redirects to login
+   */
   const signOut = useCallback(async () => {
-    console.log('AuthProvider: signOut called. Removing auth cookie.');
-    // Remove the cookie on explicit sign out
-    Cookies.remove('auth_success', { path: '/' });
+    removeAuthCookie();
     setLoading(true);
+    
     try {
       // Sign out from Firebase Client SDK
       if (auth) {
         await firebaseSignOut(auth);
-        console.log('AuthProvider: Firebase SDK signOut successful.');
-      } else {
-         console.warn('AuthProvider: Firebase auth instance not available for sign out.');
       }
-      // Call the original API sign-out (clears localStorage token, notifies backend)
+      
+      // Call the API signout to clear any server-side state
       await apiSignOut();
-      console.log('AuthProvider: apiSignOut successful.');
-      // We NO LONGER manually set user state here.
-      // The onAuthStateChanged listener will detect the sign-out.
-      router.push('/admin/login'); // Redirect to login page after sign out
+      
+      // Redirect to login page
+      router.push('/admin/login');
     } catch (error) {
-      console.error('AuthProvider: signOut error:', error);
-      // Even on error, ensure local state reflects sign-out attempt
+      // Even on error, ensure local state reflects sign-out
       setUser(null);
       setIsAuthenticated(false);
-      setLoading(false); // Ensure loading stops on error
-      throw error; // Re-throw the error
+      setLoading(false);
+      throw error;
     }
-  }, [router]); // Add router to dependency array
+  }, [router]);
 
-  // Provide the authentication context to child components
   return (
     <AuthContext.Provider value={{ user, isAuthenticated, loading, signIn, signOut }}>
       {children}
@@ -228,7 +189,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   );
 };
 
-// Custom hook to use the authentication context
+/**
+ * Custom hook to use the authentication context
+ * Must be used within an AuthProvider component
+ */
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
   if (context === undefined) {
