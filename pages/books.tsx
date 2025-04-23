@@ -34,7 +34,8 @@ export default function BooksPage({ initialBooks, initialStats, totalBooks, erro
 
   // Extract unique genres from initial books for the dropdown
   const genres = useMemo(() => {
-    const allGenres = initialBooks.flatMap(book => book.genres || []);
+    // Use categories field instead of non-existent genres field
+    const allGenres = initialBooks.flatMap(book => book.categories || []);
     // Use Set for uniqueness and filter out any empty/null values
     return [...new Set(allGenres)].filter(Boolean).sort();
   }, [initialBooks]);
