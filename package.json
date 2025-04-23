@@ -46,6 +46,7 @@
     "date-fns": "^4.1.0",
     "firebase": "^11.4.0",
     "firebase-admin": "^13.2.0",
+    "framer-motion": "^12.8.0",
     "gray-matter": "^4.0.3",
     "js-cookie": "^3.0.5",
     "next": "^15.2.4",

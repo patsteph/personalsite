@@ -2,6 +2,7 @@ import { GetStaticProps } from 'next';
 import { useState, useMemo } from 'react';
 import Layout from '@/components/layout/Layout';
 import SimpleBookGrid from '@/components/books/SimpleBookGrid';
+import BookRecommender from '@/components/books/BookRecommender';
 import { Book } from '@/types/book';
 import { useTranslation } from '@/lib/translations';
 import { getAdminFirestore } from '@/lib/firebase-admin';
@@ -40,6 +41,16 @@ export default function BooksPage({ initialBooks, initialStats, totalBooks, erro
     return [...new Set(allGenres)].filter(Boolean).sort();
   }, [initialBooks]);
   // --- End Filter State ---
+  
+  // State for book recommendations
+  const [showRecommender, setShowRecommender] = useState<boolean>(false);
+  const [selectedBook, setSelectedBook] = useState<Book | null>(null);
+  
+  // Handle book selection for modals
+  const handleViewBook = (book: Book) => {
+    setSelectedBook(book);
+    // If you have a modal component, open it here
+  };
 
   // Handle potential error passed from getStaticProps
   if (error) {
@@ -91,6 +102,16 @@ export default function BooksPage({ initialBooks, initialStats, totalBooks, erro
 
       {/* Filter Controls Section */}
       <div className="bg-slate-100 p-4 rounded-lg shadow-sm mb-8 max-w-3xl mx-auto">
+        <div className="mb-4 flex justify-between items-center">
+          <h2 className="text-xl font-semibold text-gray-700">Find Books</h2>
+          <button
+            onClick={() => setShowRecommender(!showRecommender)}
+            className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          >
+            {showRecommender ? 'Hide AI Recommendations' : 'Get AI Recommendations'}
+          </button>
+        </div>
+        
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {/* Status Filter */}
           <div>
@@ -144,9 +165,17 @@ export default function BooksPage({ initialBooks, initialStats, totalBooks, erro
         </div>
       </div>
 
-      {/* Pass filters and totalBooks to SimpleBookGrid */}
+      {/* AI Book Recommender */}
+      {showRecommender && (
+        <BookRecommender 
+          books={initialBooks} 
+          onViewBook={handleViewBook}
+        />
+      )}
+
+      {/* Book Grid */}
       <SimpleBookGrid
-        initialBooks={initialBooks} // Still pass initial for first load
+        initialBooks={initialBooks}
         totalBooks={totalBooks}
         statusFilter={statusFilter}
         ratingFilter={ratingFilter}

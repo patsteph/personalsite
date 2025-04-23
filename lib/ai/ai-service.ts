@@ -14,6 +14,7 @@ export interface AIServiceConfig {
   apiKey?: string; // If not provided, will use the one from environment variables
   temperature?: number;
   maxTokens?: number;
+  isAdminRequest?: boolean; // Whether this request is from an admin area (allows using all providers)
 }
 
 // Response from AI models
@@ -31,6 +32,20 @@ export interface AIResponse {
 // Base interface for all AI tasks
 export interface AITask {
   execute(input: string, config?: AIServiceConfig): Promise<AIResponse>;
+}
+
+/**
+ * Determines the appropriate AI provider based on whether the request is from an admin area
+ * Admin requests can use either provider (as specified), while public requests only use OpenAI
+ */
+export function getAIProvider(config: AIServiceConfig): 'anthropic' | 'openai' {
+  // If this is an admin request, honor the requested provider
+  if (config.isAdminRequest) {
+    return config.provider;
+  }
+  
+  // For public-facing features, always use OpenAI
+  return 'openai';
 }
 
 /**
@@ -60,13 +75,16 @@ export function createAIService(defaultProvider: AIProvider = 'anthropic') {
     const finalConfig = { ...defaultConfig, ...config };
     
     try {
+      // Determine the actual provider to use based on admin status
+      const provider = getAIProvider(finalConfig);
+      
       // Route to the appropriate provider implementation
-      if (finalConfig.provider === 'anthropic') {
+      if (provider === 'anthropic') {
         return await callAnthropic(prompt, finalConfig);
-      } else if (finalConfig.provider === 'openai') {
+      } else if (provider === 'openai') {
         return await callOpenAI(prompt, finalConfig);
       } else {
-        throw new Error(`Unsupported AI provider: ${finalConfig.provider}`);
+        throw new Error(`Unsupported AI provider: ${provider}`);
       }
     } catch (error) {
       console.error('AI Service Error:', error);

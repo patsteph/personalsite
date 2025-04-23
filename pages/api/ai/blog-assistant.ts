@@ -48,8 +48,11 @@ export default async function handler(
       });
     }
 
-    // Configure AI service
-    const config: Partial<AIServiceConfig> = {};
+    // Configure AI service with admin privileges
+    const config: Partial<AIServiceConfig> = {
+      isAdminRequest: true // This is an admin endpoint, so allow all providers
+    };
+    
     if (provider) config.provider = provider;
     if (temperature !== undefined) config.temperature = temperature;
 

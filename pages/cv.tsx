@@ -2,7 +2,7 @@ import { GetStaticProps } from 'next';
 import Layout from '@/components/layout/Layout';
 import AboutSection from '@/components/cv/AboutSection';
 import ExperienceSection from '@/components/cv/ExperienceSection';
-import SkillsSection from '@/components/cv/SkillsSection';
+import SkillsAdapter from '@/components/cv/SkillsAdapter';
 import EducationSection from '@/components/cv/EducationSection';
 import TrainingSection from '@/components/cv/TrainingSection';
 import { getCVData } from '@/lib/cv';
@@ -11,6 +11,7 @@ import { useTranslation } from '@/lib/translations';
 import { useState } from 'react';
 import { trackUserAction } from '@/lib/analytics';
 import Image from 'next/image';
+import Link from 'next/link';
 
 // Props type definition
 type CVPageProps = {
@@ -39,9 +40,17 @@ export default function CVPage({ cvData }: CVPageProps) {
   
   return (
     <Layout section="cv">
-      <h1 className="text-3xl md:text-4xl font-bold text-accent mb-8">
-        {t('cv.title', 'Curriculum Vitae')}
-      </h1>
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl md:text-4xl font-bold text-accent">
+          {t('cv.title', 'Curriculum Vitae')}
+        </h1>
+        <Link href="/interactive-resume" className="inline-block bg-accent hover:bg-steel-blue text-white font-medium py-2 px-4 rounded transition-colors">
+          {t('cv.interactive_view', 'Interactive View')}
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-1 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </Link>
+      </div>
       
       {/* Visual Career Journey Link - Compact Version */}
       <div className="mb-4 bg-white rounded-lg shadow p-3 text-center">
@@ -64,7 +73,7 @@ export default function CVPage({ cvData }: CVPageProps) {
       
       <ExperienceSection experience={cvData.experience} />
       
-      <SkillsSection skills={cvData.skills} />
+      <SkillsAdapter skills={cvData.skills} />
       
       <TrainingSection certifications={cvData.Training || []} />
       
