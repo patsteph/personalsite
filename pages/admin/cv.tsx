@@ -3,9 +3,14 @@ import { useRouter } from 'next/router';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { CVData } from '@/types/cv';
 import toast from 'react-hot-toast';
-import { fetchJson } from '@/lib/fetch-json';
+import { fetchJson, ApiResponse } from '@/lib/fetch-json';
 import CVEditor from '@/components/admin/CVEditor';
 import AdminLoading from '@/components/admin/AdminLoading';
+
+// Define the specific API response type for CV data
+interface CVApiResponse extends ApiResponse {
+  data?: CVData;
+}
 
 export default function CVAdminPage() {
   const router = useRouter();
@@ -19,7 +24,7 @@ export default function CVAdminPage() {
     async function fetchCvData() {
       try {
         setLoading(true);
-        const response = await fetchJson('/api/admin/cv');
+        const response = await fetchJson<CVApiResponse>('/api/admin/cv');
         
         if (response.success && response.data) {
           setCvData(response.data);
@@ -43,7 +48,7 @@ export default function CVAdminPage() {
   const handleSave = async (updatedData: CVData) => {
     try {
       setSaving(true);
-      const response = await fetchJson('/api/admin/cv', {
+      const response = await fetchJson<CVApiResponse>('/api/admin/cv', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -66,7 +71,7 @@ export default function CVAdminPage() {
   };
   
   return (
-    <AdminLayout title="CV Management" section="cv">
+    <AdminLayout loading={loading}>
       <div className="max-w-5xl mx-auto">
         <h1 className="text-2xl font-bold text-gray-800 mb-6">
           CV Management

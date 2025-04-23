@@ -3,8 +3,8 @@ import AdminLayout from '@/components/admin/AdminLayout';
 import { useEasterEggs } from '@/lib/easter-eggs/manager';
 import EasterEggTracker from '@/components/easter-eggs/EasterEggTracker';
 import { useTranslation } from '@/lib/translations';
-import { withAuth } from '@/lib/auth';
-import { GetServerSideProps } from 'next';
+import { withAuth } from '@/lib/api/with-auth';
+import { GetServerSideProps, GetServerSidePropsContext } from 'next';
 
 function EasterEggsAdminPage() {
   const { t } = useTranslation();
@@ -98,7 +98,7 @@ function EasterEggsAdminPage() {
   );
 }
 
-export const getServerSideProps: GetServerSideProps = withAuth(async (context) => {
+export const getServerSideProps: GetServerSideProps = withAuth(async (context: GetServerSidePropsContext) => {
   return {
     props: {}, // Will be passed to the page component as props
   };

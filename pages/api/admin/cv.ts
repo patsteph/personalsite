@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getAdminFirestore } from '@/lib/firebase-admin';
-import { withAuth } from '@/lib/api/with-auth';
+import { withApiAuth } from '@/lib/api/with-auth';
 import { CVData } from '@/types/cv';
 
 type ApiResponse = {
@@ -88,4 +88,4 @@ async function handler(
   }
 }
 
-export default withAuth(handler);
+export default withApiAuth(handler);
