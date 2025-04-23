@@ -5,6 +5,8 @@ import { AuthProvider } from '@/lib/auth';
 import { TranslationProvider } from '@/lib/translations';
 import { getTrackingSessionId, trackEvent } from '@/lib/tracking';
 import dynamic from 'next/dynamic';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 // Dynamically import the FeedbackWidget with no SSR to avoid hydration issues
 const FeedbackWidget = dynamic(() => import('./FeedbackWidget'), { ssr: false });
@@ -138,8 +140,21 @@ export default function AppProviders({ children }: AppProvidersProps) {
     <ThemeContext.Provider value={{ theme, toggleTheme }}>
       <AuthProvider>
         <TranslationProvider>
+          {router.pathname !== '/admin/login' && <FeedbackWidget />}
           {children}
-          <FeedbackWidget />
+          {/* Toast container for notifications */}
+          <ToastContainer 
+            position="top-right"
+            autoClose={5000}
+            hideProgressBar={false}
+            newestOnTop
+            closeOnClick
+            rtl={false}
+            pauseOnFocusLoss
+            draggable
+            pauseOnHover
+            theme={theme}
+          />
         </TranslationProvider>
       </AuthProvider>
     </ThemeContext.Provider>
