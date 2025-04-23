@@ -22,11 +22,18 @@ export async function middleware(req) {
     // Check for the auth session cookie
     const sessionStorageAuth = req.cookies.get('auth_success');
     
+    // Log all cookies for debugging
+    console.log(`Middleware: Checking cookies for protected route: ${pathname}`);
+    console.log('Middleware: auth_success cookie found:', sessionStorageAuth ? 'YES' : 'NO');
+    console.log('Middleware: All cookies:', [...req.cookies.getAll().map(c => c.name)]);
+    
     // Redirect to login if the 'auth_success' cookie is not found
-    // Removed check for 'auth_session' as it's not set by client-side auth
     if (!sessionStorageAuth) {
+      console.log('Middleware: No auth_success cookie found, redirecting to login');
       return NextResponse.redirect(new URL('/admin/login', req.url));
     }
+    
+    console.log('Middleware: auth_success cookie found, allowing access to admin route');
   }
   
   // Special handling for blog posts to ensure they work even with prebuild issues

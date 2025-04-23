@@ -77,8 +77,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           // We don't have isAdmin here, remove or fetch separately if needed
         };
         setUser(appUser);
-        // Set the cookie for middleware check
-        Cookies.set('auth_success', 'true', { path: '/', secure: process.env.NODE_ENV === 'production', sameSite: 'lax' }); 
+        // Set the cookie for middleware check with maximum compatibility options
+        console.log('AuthProvider: Setting auth_success cookie for middleware check');
+        
+        // Attempt to set cookie using different approaches for maximum compatibility
+        try {
+          // Approach 1: Standard js-cookie approach
+          Cookies.set('auth_success', 'true', { 
+            path: '/', 
+            // Don't set secure flag to ensure it works on all environments
+            secure: false,
+            sameSite: 'lax',
+            expires: 7 // Set to expire in 7 days
+          });
+          
+          // Approach 2: Also set via document.cookie as a fallback
+          document.cookie = `auth_success=true; path=/; max-age=${60*60*24*7}`;
+          
+          console.log('AuthProvider: auth_success cookie set successfully');
+        } catch (error) {
+          console.error('AuthProvider: Error setting auth_success cookie:', error);
+        }
         setIsAuthenticated(true);
         console.log('AuthProvider: --> Setting isAuthenticated = true, loading = false');
       } else {
