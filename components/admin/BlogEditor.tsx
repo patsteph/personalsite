@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { BlogPost } from '@/types/blog';
 import dynamic from 'next/dynamic';
 import { uploadImageWithThumbnail } from '@/lib/api/storage';
+import BlogAIAssistant from './BlogAIAssistant';
 // Dynamically import the rich text editor to avoid SSR issues
 const SimpleMDEditor = dynamic(() => import('./SimpleMDEditor'), {
   ssr: false,
@@ -431,6 +432,14 @@ export default function BlogEditor({ initialPost, onSave }: BlogEditorProps) {
           {errors.content && (
             <p className="mt-1 text-sm text-red-500">{errors.content}</p>
           )}
+        </div>
+        
+        {/* AI Writing Assistant */}
+        <div className="col-span-2">
+          <BlogAIAssistant 
+            content={post.content} 
+            onApplyChanges={handleContentChange}
+          />
         </div>
         
         {/* Published Status */}
