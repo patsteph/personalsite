@@ -143,12 +143,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // If it's the login page and user IS authenticated, redirect to admin dashboard
     if (publicAdminRoutes.includes(currentPath) && isAuthenticated) {
       console.log('AuthProvider: User authenticated on login page, redirecting to dashboard.');
+      
+      // CHANGED STRATEGY: Use window.location for a FULL page navigation instead of router.push
+      // This ensures the request fully hits the server and triggers middleware
       try {
-        console.log('AuthProvider: ---> Calling router.push("/admin") NOW.');
-        router.push('/admin');
-        console.log('AuthProvider: ---> router.push("/admin") call completed without throwing error.');
+        console.log('AuthProvider: ---> Using window.location for FULL page navigation to /admin');
+        
+        // Small delay to ensure cookie is set before navigation
+        setTimeout(() => {
+          window.location.href = '/admin';
+        }, 300);
+        
+        console.log('AuthProvider: ---> Full page navigation initiated');
       } catch (error) {
-        console.error('AuthProvider: >>> ERROR during router.push("/admin") <<<', error);
+        console.error('AuthProvider: >>> ERROR during navigation to /admin <<<', error);
       } 
      }
  
