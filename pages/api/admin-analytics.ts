@@ -207,7 +207,7 @@ async function getBlogEngagement() {
     // Get popular blog posts (top 5 by reaction count)
     const popularPosts = [];
     try {
-      const postsColRef = collection(firestore, 'blogPosts');
+      const postsColRef = collection(firestore, 'blog-posts');
       const postsQuery = query(postsColRef, limit(10)); // We'll sort them client-side by reactions
       const postsSnapshot = await getDocs(postsQuery);
       

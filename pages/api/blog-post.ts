@@ -101,7 +101,7 @@ export default async function handler(
         // Transaction to update both the individual blog post and the global stats
         await runTransaction(firestore, async (transaction) => {
           // Reference to the blog post document
-          const postDocRef = doc(firestore, 'blogPosts', postId);
+          const postDocRef = doc(firestore, 'blog-posts', postId);
           
           // Reference to the global stats document where we keep aggregate counts
           const statsDocRef = doc(firestore, 'stats', 'blogStats');
@@ -175,7 +175,7 @@ export default async function handler(
             });
             
             // Also update the individual post
-            const postDocRef = doc(firestore, 'blogPosts', postId);
+            const postDocRef = doc(firestore, 'blog-posts', postId);
             await updateDoc(postDocRef, {
               [`reactions.${reaction}`]: 1
             });
