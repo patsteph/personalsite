@@ -1,10 +1,25 @@
 import { useEffect, useRef, useState } from 'react';
 import { useEasterEggs } from '@/lib/easter-eggs/manager';
 import { registerAllEasterEggs } from '@/lib/easter-eggs/implementations';
+import { EasterEggTrigger } from '@/lib/easter-eggs/types';
+
+/**
+ * Throttle function to limit the rate of function calls
+ */
+function throttle<T extends (...args: any[]) => any>(func: T, limit: number): (...args: Parameters<T>) => void {
+  let inThrottle = false;
+  return function(this: any, ...args: Parameters<T>) {
+    if (!inThrottle) {
+      func.apply(this, args);
+      inThrottle = true;
+      setTimeout(() => inThrottle = false, limit);
+    }
+  };
+}
 
 /**
  * Component that listens for Easter egg triggers
- * This should be included at the application root to catch all events
+ * This is included at the application root to detect all possible events
  */
 export default function EasterEggListener() {
   const { checkTrigger } = useEasterEggs();
@@ -24,7 +39,7 @@ export default function EasterEggListener() {
   
   // Konami code listener
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
+    const handleKeyDown = throttle((e: KeyboardEvent) => {
       // Add the key to the sequence
       keysPressed.current = [...keysPressed.current, e.key];
       
@@ -34,13 +49,13 @@ export default function EasterEggListener() {
       }
       
       // Check for Konami code
-      checkTrigger('konami', keysPressed.current);
+      checkTrigger('konami' as EasterEggTrigger, keysPressed.current);
       
       // Check for other key combinations (like 'dev')
       if (keysPressed.current.slice(-3).join('') === 'dev') {
-        checkTrigger('secret-key-combo', ['d', 'e', 'v']);
+        checkTrigger('secret-key-combo' as EasterEggTrigger, ['d', 'e', 'v']);
       }
-    };
+    }, 100);
     
     window.addEventListener('keydown', handleKeyDown);
     
@@ -49,80 +64,141 @@ export default function EasterEggListener() {
     };
   }, [checkTrigger]);
   
-  // Click listener for triple-click and rapid-click Easter eggs
+  // Triple-click event listener
   useEffect(() => {
-    const handleClick = (e: MouseEvent) => {
-      // Check for triple clicks on elements with data-egg="triple-click"
-      const target = e.target as HTMLElement;
-      if (target.closest('[data-egg="triple-click"]')) {
-        clickCounter.current += 1;
-        
-        if (clickCounter.current === 3) {
-          checkTrigger('triple-click', 3);
-          clickCounter.current = 0;
-        }
-        
-        // Reset counter after a short delay
-        if (clickTimer.current) {
-          clearTimeout(clickTimer.current);
-        }
-        
-        clickTimer.current = setTimeout(() => {
-          clickCounter.current = 0;
-        }, 500);
+    // Tracking variables for triple-click
+    let tripleClickCount = 0;
+    let lastTripleClickTime = 0;
+    let triggerLock = false;
+    let lockTimer: NodeJS.Timeout | null = null;
+    
+    const handleTripleClick = throttle((e: MouseEvent) => {
+      if (triggerLock) return; // Prevent multiple rapid triggers
+      
+      const currentTime = new Date().getTime();
+      
+      // Reset count if too much time has passed
+      if (currentTime - lastTripleClickTime > 500) {
+        tripleClickCount = 0;
       }
       
-      // Check for rapid clicks in the same area
-      const isSameArea = Math.abs(e.clientX - clickPosition.current.x) < 20 && 
-                         Math.abs(e.clientY - clickPosition.current.y) < 20;
+      tripleClickCount++;
+      lastTripleClickTime = currentTime;
       
-      if (isSameArea) {
-        clickCounter.current += 1;
-        
-        if (clickCounter.current >= 10) {
-          checkTrigger('rapid-clicks', 10);
-          clickCounter.current = 0;
+      if (tripleClickCount === 3) {
+        try {
+          // Check if the triple-click happened on an element with data-easter-egg
+          const element = e.target as HTMLElement;
+          const parentWithAttr = element.closest('[data-easter-egg="triple-click"]');
+          
+          if (parentWithAttr) {
+            // Lock to prevent multiple rapid activations
+            triggerLock = true;
+            if (lockTimer) clearTimeout(lockTimer);
+            lockTimer = setTimeout(() => { triggerLock = false; }, 2000);
+            
+            checkTrigger('triple-click' as EasterEggTrigger, []);
+          }
+        } catch (error) {
+          console.error('Error handling triple click:', error);
         }
-      } else {
+        
+        tripleClickCount = 0;
+      }
+    }, 50);
+    
+    document.addEventListener('click', handleTripleClick);
+    
+    return () => {
+      document.removeEventListener('click', handleTripleClick);
+      if (lockTimer) clearTimeout(lockTimer);
+    };
+  }, [checkTrigger]);
+  
+  // Rapid click detection
+  useEffect(() => {
+    let activationLock = false;
+    let lockTimer: NodeJS.Timeout | null = null;
+    
+    const handleRapidClick = throttle((e: MouseEvent) => {
+      if (activationLock) return; // Prevent multiple rapid activations
+      
+      clickCounter.current += 1;
+      
+      // Track position of clicks to ensure they're in roughly the same spot
+      const { clientX, clientY } = e;
+      const isCloseToLastClick = 
+        Math.abs(clientX - clickPosition.current.x) < 20 && 
+        Math.abs(clientY - clickPosition.current.y) < 20;
+      
+      if (!isCloseToLastClick) {
+        // Reset the counter if clicked in a different area
         clickCounter.current = 1;
-        clickPosition.current = { x: e.clientX, y: e.clientY };
       }
       
-      // Reset rapid click counter after a delay
+      // Update the position
+      clickPosition.current = { x: clientX, y: clientY };
+      
+      // Clear existing timer
       if (clickTimer.current) {
         clearTimeout(clickTimer.current);
       }
       
+      // Set a new timer to reset the counter after 2 seconds of inactivity
       clickTimer.current = setTimeout(() => {
         clickCounter.current = 0;
       }, 2000);
-    };
+      
+      // Check if we've reached the rapid click threshold
+      if (clickCounter.current >= 10) {
+        try {
+          // Lock to prevent multiple rapid activations
+          activationLock = true;
+          if (lockTimer) clearTimeout(lockTimer);
+          lockTimer = setTimeout(() => { activationLock = false; }, 3000);
+          
+          checkTrigger('rapid-clicks' as EasterEggTrigger, []);
+          clickCounter.current = 0;
+        } catch (error) {
+          console.error('Error handling rapid clicks:', error);
+        }
+      }
+    }, 50); // Throttle to 50ms (20 clicks per second max)
     
-    window.addEventListener('click', handleClick);
+    document.addEventListener('click', handleRapidClick);
     
     return () => {
-      window.removeEventListener('click', handleClick);
+      document.removeEventListener('click', handleRapidClick);
+      if (clickTimer.current) clearTimeout(clickTimer.current);
+      if (lockTimer) clearTimeout(lockTimer);
     };
   }, [checkTrigger]);
   
-  // URL hash change listener for special URL Easter eggs
+  // URL hash change listener (throttled to prevent excessive history API calls)
   useEffect(() => {
-    const checkUrlEasterEggs = () => {
-      const hash = window.location.hash.replace('#', '');
-      
-      if (hash) {
-        checkTrigger('special-url', hash);
+    // Throttle to max once per second
+    const checkUrlForEasterEggs = throttle(() => {
+      try {
+        const hash = window.location.hash;
+        
+        // Check for birthday Easter egg
+        if (hash.includes('birthday')) {
+          checkTrigger('url-hash' as EasterEggTrigger, ['birthday']);
+        }
+      } catch (error) {
+        console.error('Error checking URL for Easter eggs:', error);
       }
-    };
+    }, 1000);
     
-    // Check on component mount
-    checkUrlEasterEggs();
+    // Check on init (with a delay to ensure the page is fully loaded)
+    const initTimeout = setTimeout(checkUrlForEasterEggs, 1000);
     
-    // Listen for hash changes
-    window.addEventListener('hashchange', checkUrlEasterEggs);
+    // Check when hash changes
+    window.addEventListener('hashchange', checkUrlForEasterEggs);
     
     return () => {
-      window.removeEventListener('hashchange', checkUrlEasterEggs);
+      clearTimeout(initTimeout);
+      window.removeEventListener('hashchange', checkUrlForEasterEggs);
     };
   }, [checkTrigger]);
   
