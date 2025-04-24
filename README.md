@@ -528,7 +528,7 @@ Ensure all environment variables are configured in your hosting platform:
 <p>Feel free to use this as a starting point for your own website or contribute to the project.</p>
 
 [![GitHub stars](https://img.shields.io/github/stars/patsteph/personal-website?style=social)](https://github.com/patsteph/personal-website/stargazers)
-[![Follow](https://img.shields.io/twitter/follow/patsteph?style=social)](https://twitter.com/patsteph)
+[![Follow](https://img.shields.io/twitter/follow/stephenscisco?style=social)](https://twitter.com/stephenscisco)
 
 <p>
 Made with ❤️ by Patrick Stephens<br>
