@@ -1,87 +1,230 @@
+<div align="center">
+
 # Patrick Stephens - Personal Website
+
+[![Vercel Status](https://img.shields.io/github/deployments/patsteph/personal-website/production?logo=vercel&label=vercel&style=for-the-badge)](https://vercel.com)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.4-blue?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-15.3-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-38B2AC?style=for-the-badge&logo=tailwind-css)](https://tailwindcss.com/)
+[![Firebase](https://img.shields.io/badge/Firebase-10.7-FFCA28?style=for-the-badge&logo=firebase&logoColor=black)](https://firebase.google.com/)
+[![OpenAI](https://img.shields.io/badge/AI_Powered-OpenAI-412991?style=for-the-badge&logo=openai)](https://openai.com/)
 
 ![Website Screenshot](public/images/headers/welcome.jpg)
 
-A modern, responsive personal website built with Next.js, TypeScript, Tailwind CSS, and Firebase. This website showcases my professional experience, book collection, blog posts, and curated signals.
+</div>
+
+A modern, responsive personal website built with Next.js, TypeScript, Tailwind CSS, and Firebase. This full-stack application showcases my professional experience, book collection, blog posts, and curated signals, powered by AI-enhanced features for content recommendations and management.
 
 ## ✨ Features
 
-- **📱 Responsive Design**: Clean two-column layout that adapts beautifully to all devices
-- **📚 Interactive Bookshelf**: Virtual bookshelf displaying my reading collection
-- **✏️ Blog Platform**: Markdown-based blog with featured images and syntax highlighting
-- **📄 CV/Resume Display**: Professional experience, skills, and education in an elegant format
-- **📡 Signals**: Curated collection of newsletters and articles I recommend
-- **🌐 Multi-language Support**: Content localization for English, Spanish, German, Japanese, and Ukrainian
-- **🔒 Admin Interface**: Firebase authentication for content management
-- **🚀 Optimized Build**: Static site generation with incremental regeneration
+<div align="center">
+<table>
+<tr>
+  <td>
+    <h3>📱 Responsive Design</h3>
+    <p>Clean two-column layout that adapts beautifully to all devices with mobile-first approach</p>
+  </td>
+  <td>
+    <h3>📚 Interactive Bookshelf</h3>
+    <p>Virtual bookshelf displaying reading collection with AI-powered recommendations</p>
+  </td>
+</tr>
+<tr>
+  <td>
+    <h3>🤖 AI Integration</h3>
+    <p>OpenAI-powered features including book recommendations and blog content assistant</p>
+  </td>
+  <td>
+    <h3>✏️ Blog Platform</h3>
+    <p>Markdown-based blog with featured images, syntax highlighting, and reactions</p>
+  </td>
+</tr>
+<tr>
+  <td>
+    <h3>📄 CV Management</h3>
+    <p>Professional experience, skills, and education with admin editor interface</p>
+  </td>
+  <td>
+    <h3>📡 Signals</h3>
+    <p>Curated collection of newsletters and articles with filtering and tagging</p>
+  </td>
+</tr>
+<tr>
+  <td>
+    <h3>🌐 Multi-language</h3>
+    <p>Content localization for English, Spanish, German, Japanese, and Ukrainian</p>
+  </td>
+  <td>
+    <h3>🔒 Secure Admin</h3>
+    <p>Firebase authentication with server-side protection and role-based access</p>
+  </td>
+</tr>
+<tr>
+  <td>
+    <h3>📊 Analytics Dashboard</h3>
+    <p>Track user engagement, page views, and content performance</p>
+  </td>
+  <td>
+    <h3>🚀 Optimized Build</h3>
+    <p>Static site generation with incremental regeneration for optimal performance</p>
+  </td>
+</tr>
+</table>
+</div>
 
 ## 🛠️ Technology Stack
 
 <div align="center">
-  <img src="https://img.shields.io/badge/Next.js-black?style=for-the-badge&logo=next.js&logoColor=white" alt="Next.js" />
-  <img src="https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
-  <img src="https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white" alt="Tailwind CSS" />
-  <img src="https://img.shields.io/badge/Firebase-FFCA28?style=for-the-badge&logo=firebase&logoColor=black" alt="Firebase" />
-  <img src="https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white" alt="Vercel" />
+<table>
+<tr>
+  <td align="center" width="96">
+    <img src="https://techstack-generator.vercel.app/react-icon.svg" alt="React" width="65" height="65" />
+    <br>React
+  </td>
+  <td align="center" width="96">
+    <img src="https://techstack-generator.vercel.app/ts-icon.svg" alt="TypeScript" width="65" height="65" />
+    <br>TypeScript
+  </td>
+  <td align="center" width="96">
+    <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/nextjs/nextjs-original.svg" alt="Next.js" width="65" height="65" />
+    <br>Next.js 15
+  </td>
+  <td align="center" width="96">
+    <img src="https://cdn.worldvectorlogo.com/logos/tailwindcss.svg" alt="Tailwind CSS" width="65" height="65" />
+    <br>Tailwind
+  </td>
+  <td align="center" width="96">
+    <img src="https://techstack-generator.vercel.app/firebase-icon.svg" alt="Firebase" width="65" height="65" />
+    <br>Firebase
+  </td>
+</tr>
+<tr>
+  <td align="center" width="96">
+    <img src="https://user-images.githubusercontent.com/25181517/192108372-f71d70ac-7ae6-4c0d-8395-51d8870c2ef0.png" alt="Git" width="65" height="65" />
+    <br>Git
+  </td>
+  <td align="center" width="96">
+    <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/jest/jest-plain.svg" alt="Jest" width="65" height="65" />
+    <br>Jest
+  </td>
+  <td align="center" width="96">
+    <img src="https://techstack-generator.vercel.app/eslint-icon.svg" alt="ESLint" width="65" height="65" />
+    <br>ESLint
+  </td>
+  <td align="center" width="96">
+    <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/markdown/markdown-original.svg" alt="MDX" width="65" height="65" />
+    <br>MDX
+  </td>
+  <td align="center" width="96">
+    <img src="https://www.vectorlogo.zone/logos/openai/openai-icon.svg" alt="OpenAI" width="65" height="65" />
+    <br>OpenAI
+  </td>
+</tr>
+</table>
 </div>
 
-- **Next.js 15**: React framework for server-side rendering and static site generation
-- **TypeScript**: Type safety and improved developer experience
-- **Tailwind CSS**: Utility-first CSS framework for rapid UI development
-- **Firebase**: Authentication (client-side) and intended backend (Firestore) for API routes
-- **MDX**: Enhanced Markdown for blog content with component support
+### Core Technologies
+
+- **Next.js 15**: Full-stack React framework with App Router, Server Components, and optimized builds
+- **TypeScript**: End-to-end type safety for robust code quality and enhanced developer experience
+- **Tailwind CSS**: Utility-first framework for responsive, maintainable UI development
+- **Firebase**: Complete backend solution with Authentication, Firestore, and Storage
+- **AI Integration**: Modular AI architecture supporting OpenAI, Anthropic, and expandable to other providers
+- **MDX**: Enhanced Markdown for blog content with React component support
 
 ## 🏛️ Architecture Overview
 
-### API Pattern
+### System Architecture
 
-The application utilizes Next.js API routes for data fetching and manipulation. Client components interact with these APIs via dedicated modules in `lib/api/`.
+The website follows a modern full-stack architecture with clear separation between client and server components, secure API endpoints, and multi-layered security.
 
 ```mermaid
 flowchart TD
-    A[Client Component] --> B[API Client Module (lib/api/*)];
-    B --> C[fetch()];
-    C --> D[Next.js API Route (pages/api/*)];
-    subgraph Server-Side
-        D --> E{Process Request};
-        E --> F[Backend Interaction (e.g., Firestore)];
-        F --> G[Return Data/Status];
+    Client[Client Layer] --> Auth[Auth Context]
+    Client --> UI[UI Components]
+    UI --> Hooks[Custom Hooks]
+    Auth --> Token[Token Management]
+    Hooks --> API[API Client]
+    API --> Fetch[fetch with credentials]
+    Fetch --> ServerAPI[Server API Layer]
+    
+    subgraph Backend
+        ServerAPI --> Middleware[Auth Middleware]
+        Middleware --> Handlers[API Handlers]
+        Handlers --> FirebaseAdmin[Firebase Admin SDK]
+        Handlers --> AIService[AI Services]
+        FirebaseAdmin --> Firestore[(Firestore DB)]
+        AIService --> OpenAI[OpenAI API]
     end
-    G --> C;
-    C --> B;
-    B --> A[Update UI];
-
-    style Server-Side fill:#f9f,stroke:#333,stroke-width:2px
+    
+    style Backend fill:#f4f4f9,stroke:#333,stroke-width:2px
 ```
 
-Key aspects:
-- **Client Interaction**: UI components use functions from `lib/api/*` to request data or trigger actions.
-- **API Routes**: Logic resides in `pages/api/*`. These routes handle requests, perform necessary operations (currently stubbed, intended to interact with Firestore or other backends), and return standardized JSON responses.
-- **Data Fetching**: Server-side rendering (`getStaticProps`, `getServerSideProps`) also uses the `lib/api/*` modules to fetch data during build time or request time, requiring the `NEXT_PUBLIC_SITE_URL` environment variable to be set correctly for the build environment.
-- **No Direct Backend Access**: Client components do not interact directly with backend services like Firestore; all interactions are proxied through the API routes.
+### API and Data Flow
+
+The application uses a tiered API approach with proper separation of concerns between client and server operations.
+
+```mermaid
+flowchart LR
+    A[Client Component] --> B[API Client Module\nlib/api/*];
+    B --> C[fetch with credentials];
+    C --> D[Next.js API Route\npages/api/*];
+    
+    subgraph Server-Side
+        D --> E[Auth Check];
+        E -->|Authenticated| F[Process Request];
+        F --> G1[Firestore Operations] & G2[OpenAI Integration] & G3[External APIs];
+        G1 & G2 & G3 --> H[Format Response];
+        E -->|Unauthorized| U[Return 401];
+    end
+    
+    H --> I[Return Data];
+    I --> C;
+    C --> B;
+    B --> A;
+    U --> C;
+    
+    style Server-Side fill:#f9f0ff,stroke:#333,stroke-width:2px
+```
+
+### Key Architectural Aspects
+
+- **Enhanced API Client**: Functions in `lib/api/*` include authentication headers and proper error handling
+- **Secure API Routes**: All admin routes validate auth tokens server-side and restrict access based on user roles
+- **Tiered AI Services**: 
+  - Admin features use configurable AI providers (OpenAI/Anthropic) with provider selection
+  - Public features use cost-optimized models (gpt-4.1-nano) for better performance/cost ratio
+- **Server-Side Validation**: All data is validated and sanitized on both client and server
+- **Cookies for Auth**: Session cookies handle authentication state instead of localStorage
 
 ### Authentication Flow
 
-The website implements a multi-layered authentication approach:
+The website implements a comprehensive authentication system with multiple security layers:
 
 ```mermaid
-graph TD
+flowchart TD
     A[User] -->|Access Admin Page| B[Edge Middleware]
     B -->|Check Auth Cookie| C{Cookie Valid?}
     C -->|No| D[Redirect to Login]
-    C -->|Yes| E[Client-side Auth Check]
-    E -->|Token Valid?| F[Render Admin UI]
+    C -->|Yes| E[Auth Context Check]
+    E -->|Valid Session| F[Render Admin UI]
     E -->|Invalid| D
-    F -->|Make API Request| G[API Endpoint]
-    G -->|Verify Firebase Token| H{Token Valid?}
-    H -->|Yes| I[Perform Operation]
-    H -->|No| J[Return 401 Unauthorized]
+    
+    F -->|API Request| G[API Endpoint]
+    G -->|validateAuthToken| H{Server Validation}
+    H -->|Valid| I[Perform Operation]
+    H -->|Invalid| J[Return 401]
+    
+    K[Login Form] -->|Submit| L[Firebase Auth]
+    L -->|Success| M[Set Auth Cookie]
+    M --> N[Redirect to Admin]
 ```
 
-1. **Edge Middleware**: Protects admin routes at the network edge
-2. **Client Protection**: ProtectedRoute component verifies authentication state
-3. **Server Verification**: API routes independently verify Firebase tokens
-4. **Automatic Session Management**: Token refresh and timeout handling
+1. **Edge Middleware**: First defense layer at the network edge
+2. **Auth Context Provider**: Client-side session management with auto-refresh
+3. **Cookie-Based Auth**: Secure HTTP-only cookies for session state
+4. **Server-Side Verification**: API endpoints independently verify auth tokens
+5. **Role-Based Access**: Different permission levels for various admin functions
 
 ## 🚀 Getting Started
 
@@ -149,110 +292,246 @@ graph TD
 
 6. **Open [http://localhost:3000](http://localhost:3000) to see your website**
 
-## 📁 Project Structure
+## 💡 Project Structure
 
 ```
 personal-website/
-├── components/            # React components
-│   ├── admin/             # Admin interface components
-│   ├── blog/              # Blog components
-│   ├── books/             # Book components
-│   ├── contact/           # Contact components
-│   ├── cv/                # CV/Resume components
-│   ├── layout/            # Layout components
-│   ├── signals/           # Signals components
-│   └── ui/                # Reusable UI components
-├── content/               # Static content (blog posts, CV data)
-├── lib/                   # Utility functions and services
-│   ├── api/               # API client modules (used by components and server-side props)
+├── components/            # React components organized by feature
+│   ├── admin/             # Admin dashboard and management components
+│   ├── blog/              # Blog post display and interaction components
+│   ├── books/             # Book collection and recommendation components
+│   ├── contact/           # Contact form and related components
+│   ├── cv/                # CV/Resume display and editor components
+│   ├── easter-eggs/        # Easter egg implementations and triggers
+│   ├── layout/            # Layout components (headers, footers, navigation)
+│   ├── signals/           # Signal curation and display components
+│   └── ui/                # Reusable UI components and design system
+├── content/               # Static content (blog posts, default data)
+├── lib/                   # Core functionality and business logic
+│   ├── ai/                # AI service implementation for various features
+│   │   ├── ai-service.ts     # Provider-agnostic AI service abstraction
+│   │   ├── blog-assistant.ts # Blog content creation assistant
+│   │   └── book-recommender.ts # Book recommendation engine
+│   ├── api/               # API client modules for data access
 │   ├── auth.tsx           # Authentication context and hooks (client-side)
-│   ├── firebase.ts        # Firebase client initialization (primarily for Auth)
-│   └── firebase-admin.ts  # Firebase Admin SDK initialization (intended for server-side API routes)
-├── middleware.js          # Edge middleware for route protection
-├── pages/                 # Next.js pages
-│   ├── admin/             # Admin pages (protected)
-│   ├── api/               # API routes
-│   ├── blog/              # Blog pages
-│   └── ...                # Other pages
-├── public/                # Static assets
-│   └── images/            # Image files
-├── styles/                # Global styles
-└── types/                 # TypeScript type definitions
+│   ├── firebase-client.ts  # Firebase client initialization
+│   ├── firebase-admin.ts  # Firebase Admin SDK for server-side operations
+│   ├── hooks/             # Custom React hooks for shared functionality
+│   ├── tracking.ts        # Analytics and event tracking implementation
+│   ├── translations.tsx    # Multi-language support with i18n
+│   └── utils/             # Utility functions and helpers
+├── middleware.js          # Edge middleware for route protection and redirects
+├── pages/                 # Next.js page components and API routes
+│   ├── admin/             # Admin pages (protected with authentication)
+│   ├── api/               # Server-side API endpoints
+│   │   ├── admin/          # Admin-only API endpoints (protected)
+│   │   ├── ai/             # AI-related API endpoints
+│   │   ├── auth/           # Authentication API endpoints
+│   │   └── ...             # Other API endpoints
+│   ├── blog/              # Blog pages and article views
+│   ├── books/             # Book collection and recommendation pages
+│   └── ...                # Other public-facing pages
+├── public/                # Static assets and client-side config
+│   ├── images/            # Image files organized by category
+│   └── locales/           # Translation files for supported languages 
+├── scripts/               # Build and deployment scripts
+├── styles/                # Global styles and Tailwind configuration
+├── types/                 # TypeScript type definitions
+├── __tests__/             # Test suite with Jest and Testing Library
+└── __mocks__/             # Mock implementations for testing
 ```
 
-## 🔌 Main Features Explained
+## 🔌 Key Features Explained
 
-### Virtual Bookshelf
+### AI-Powered Book Recommendations
 
-The bookshelf feature displays books I'm reading with:
-- Book cover displays in a card 
-- ISBN lookup to automatically fetch book metadata
-- Filterable by read status, genre, and my rating
-- Full book details with my personal notes
+<div align="center">
+<img src="public/images/icons/book.svg" alt="Book Recommendation" width="80" />
+</div>
 
-### Blog Platform
+The bookshelf goes beyond just displaying books with an intelligent recommendation system:
 
-The blog system utilizes:
-- Markdown files (`content/blog`) for static post content.
-- Next.js API routes (`pages/api/blog*`) for dynamic operations like fetching post lists, retrieving single posts, and potentially handling comments or reactions in the future (currently stubbed).
-- MDX support allows embedding React components within blog content.
-- Features include code syntax highlighting and reading time estimation.
+- **Extensible AI Architecture**: Built to support multiple AI providers - add your own Anthropic, Cohere, or other AI provider keys
+- **Smart Recommendation Engine**: Powered by OpenAI's gpt-4.1-nano model for cost-effective, high-quality recommendations
+- **Preference Learning**: Analyzes reading history, ratings, and genres to suggest personalized books
+- **Duplicate Detection**: Prevents adding the same book twice with intelligent ISBN and title matching
+- **Google Books API Integration**: Automatic metadata retrieval by ISBN or title search
+- **Rich Filtering System**: Filter by read status, genre, author, rating, and more
+- **Personal Notes**: Add private notes and thoughts about each book
 
-### Signals
+### Admin Dashboard with Analytics
 
-The signals feature curates newsletters and articles I recommend:
-- Two content types: Newsletters and Articles
-- Filterable by type, featured status, and tags
-- Social media sharing
-- Admin interface for content management
+<div align="center">
+<img src="public/images/icons/chart.svg" alt="Analytics" width="80" />
+</div>
 
-### Multi-language Support
+The enhanced admin interface provides full site management:
 
-The website supports multiple languages with:
-- Internationalized routes
-- Language selection in the footer
-- Translation files for UI elements
-- Content localization
+- **Real-time Analytics**: Track page views, traffic sources, and user engagement
+- **Blog Management**: Create, edit, and publish articles with an AI writing assistant
+- **CV Editor**: Update professional experience and skills with a visual editor
+- **Book Collection Management**: Add, edit, and categorize books in your collection
+- **User Feedback Analysis**: Review and categorize user feedback with sentiment analysis
+- **Content Performance**: Monitor which content performs best with your audience
 
-## 🔐 Security Considerations
+### AI Blog Assistant
 
-1. **Firebase Admin SDK Private Key**:
-   - Stored securely as an environment variable
-   - Never committed to the repository
-   - Properly escaped with `\n` for newlines
+<div align="center">
+<img src="public/images/icons/ai.svg" alt="AI Assistant" width="80" />
+</div>
 
-2. **Protected Routes**:
-   - Edge middleware provides first-layer protection
-   - ProtectedRoute component enforces client-side authentication
-   - API routes verify tokens server-side
+The blog platform leverages AI to enhance content creation:
 
-3. **Session Management**:
-   - Automatic timeout after 60 minutes of inactivity
-   - Token refresh every 10 minutes
-   - Activity monitoring to keep sessions alive
+- **Extensible Multi-Provider Architecture**: Swap between AI providers with a unified interface
+- **Built-in Support**: OpenAI GPT and Anthropic Claude integration ready to use
+- **Provider Selection UI**: Admin users can choose their preferred AI model in the interface
+- **Content Generation**: Get AI assistance for blog post ideas, outlines, and drafts
+- **Markdown Integration**: Seamless transition between AI suggestions and Markdown editor
+- **Code Optimization**: Improve code snippets in technical posts
+- **SEO Suggestions**: Get AI-powered recommendations for better search visibility
+- **Multi-language Support**: Create and translate content across five supported languages
+
+### Interactive CV Management
+
+<div align="center">
+<img src="public/images/icons/cv.svg" alt="CV Management" width="80" />
+</div>
+
+The CV section offers a complete professional profile management system:
+
+- **Visual CV Editor**: Add and organize experience, skills, and education
+- **PDF Export**: Generate professional PDF versions of your CV
+- **Skill Visualization**: Interactive skill categorization and level indicators
+- **Timeline View**: Visual representation of career progression
+- **Testimonials**: Showcase recommendations and endorsements
+- **Project Portfolio**: Highlight key projects with descriptions and technologies
+
+## 🔐 Security Implementation
+
+<div align="center">
+<table>
+<tr>
+  <td align="center">
+    <img src="public/images/icons/lock.svg" alt="Security" width="50" height="50" />
+    <h3>Authentication</h3>
+  </td>
+  <td align="center">
+    <img src="public/images/icons/shield.svg" alt="API Protection" width="50" height="50" />
+    <h3>API Protection</h3>
+  </td>
+  <td align="center">
+    <img src="public/images/icons/key.svg" alt="Key Management" width="50" height="50" />
+    <h3>Key Management</h3>
+  </td>
+</tr>
+</table>
+</div>
+
+### Multi-Layer Authentication System
+
+- **Cookie-Based Auth**: Secure HTTP-only cookies instead of localStorage tokens
+- **Server-Side Validation**: All admin API endpoints validate session tokens 
+- **Edge Protection**: Middleware enforces authentication at the network edge
+- **Role-Based Access Control**: Different permission levels for various admin functions
+- **Auto Session Refresh**: Background token refresh keeps sessions secure
+
+### API Security Architecture
+
+- **Request Validation**: All inputs are sanitized and validated server-side
+- **CORS Protection**: Strict origin policies prevent cross-site request forgery
+- **Rate Limiting**: API endpoints are protected against abuse with request limits
+- **Error Sanitization**: Sensitive information is removed from error responses
+- **Content Security Policy**: Strict CSP headers to prevent injection attacks
+
+### Sensitive Information Handling
+
+- **Environment Variables**: All credentials stored in environment variables
+- **Secret Rotation**: Regular rotation of API keys and secrets
+- **Secure Builds**: Runtime configuration generation with secret protection
+- **Least Privilege**: Admin SDK uses minimal required permissions
+- **Audit Logging**: All authentication attempts are logged for security review
 
 ## 🚀 Deployment
 
-This project is optimized for deployment on Vercel:
+This project is optimized for deployment on Vercel but can be hosted on any platform supporting Next.js applications.
 
-1. Connect your GitHub repository to Vercel
-2. Configure environment variables in Vercel's dashboard
-3. Deploy with the Next.js framework preset
+### Vercel Deployment (Recommended)
 
-For other hosting platforms, follow the standard Next.js deployment guidelines.
+```bash
+# Install Vercel CLI if not already installed
+npm install -g vercel
 
-## 📋 Future Enhancements
+# Log in to Vercel
+vercel login
 
-- [X] Add light/dark theme toggle
-- [X] Implement dynamic image optimization
-- [ ] Add RSS feed for blog posts
-- [ ] Create PWA support for offline access
-- [X] Add commenting system to blog posts
-- [X] Add Feedback system to site
-- [X] Add Analytics to the admin dashboard
+# Deploy to preview
+vercel
+
+# Deploy to production
+vercel --prod
+```
+
+### Environment Configuration
+
+Ensure all environment variables are configured in your hosting platform:
+
+- Firebase credentials (client and admin)
+- OpenAI API keys
+- Site configuration variables
+- Content security settings
+
+## 📈 10 Future Enhancements
+
+<div align="center">
+<table>
+<tr>
+<td>
+
+### Implemented ✅
+
+- [x] Light/dark theme toggle with system preference detection
+- [x] Dynamic image optimization with Next.js Image component
+- [x] Multi-provider AI integration (OpenAI and Anthropic)
+- [x] Blog reaction system with analytics
+- [x] User feedback collection and analysis
+- [x] Interactive CV management system
+- [x] Admin analytics dashboard
+
+</td>
+<td>
+
+### Coming Soon 💫
+
+- [ ] **Voice Search Integration**: Add speech recognition for hands-free navigation
+- [ ] **Interactive Blog Playground**: Create interactive code examples in blog posts
+- [ ] **Event Calendar**: Showcase speaking engagements and upcoming events
+- [ ] **Mobile App Companion**: React Native app with offline reading capabilities
+- [ ] **Expanded i18n Support**: Add more languages and localized content
+- [ ] **AI-Generated Summaries**: Auto-summarize long blog posts
+- [ ] **Content Recommendation Engine**: Suggest related content based on reading habits
+- [ ] **Social Login Options**: Add GitHub, Google, and Twitter login integration
+- [ ] **E-commerce Integration**: Sell digital products and merchandise
+- [ ] **Interactive Tutorials**: Step-by-step guides with interactive elements
+
+</td>
+</tr>
+</table>
+</div>
 
 ---
 
-<p align="center">
-  Made with ❤️ by Patrick Stephens
+<div align="center">
+<img src="public/images/icons/logo.svg" alt="Logo" width="80" height="80" />
+
+<h3>🌟 Thanks for exploring my personal website project! 🌟</h3>
+
+<p>Feel free to use this as a starting point for your own website or contribute to the project.</p>
+
+[![GitHub stars](https://img.shields.io/github/stars/patsteph/personal-website?style=social)](https://github.com/patsteph/personal-website/stargazers)
+[![Follow](https://img.shields.io/twitter/follow/patsteph?style=social)](https://twitter.com/patsteph)
+
+<p>
+Made with ❤️ by Patrick Stephens<br>
+<sub>Copyright © 2025 Patrick Stephens | MIT License</sub>
 </p>
+</div>
