@@ -13,6 +13,8 @@ export interface ApiResponse {
 export async function fetchJson<T extends ApiResponse>(url: string, options?: RequestInit): Promise<T> {
   try {
     const response = await fetch(url, {
+      // Always include credentials to ensure cookies are sent with request
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
         ...(options?.headers || {})

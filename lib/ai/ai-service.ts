@@ -173,7 +173,7 @@ export function createAIService(defaultProvider: AIProvider = 'anthropic') {
           'Authorization': `Bearer ${apiKey}`
         },
         body: JSON.stringify({
-          model: 'gpt-4o',
+          model: 'gpt-4.1-nano',
           messages: [
             {
               role: 'user',
