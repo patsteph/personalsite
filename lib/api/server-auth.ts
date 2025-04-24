@@ -52,12 +52,24 @@ export async function verifyAdminSession(req: NextApiRequest): Promise<boolean> 
  */
 export async function validateAuthToken(req: NextApiRequest): Promise<string | null> {
   try {
-    // TODO: Replace with server-side API call for auth check
-    // Placeholder: always pass auth check
-    // Simulate successful validation and return stub UID
-    return 'stub-uid';
-    // End placeholder
-    // (Remove unreachable code below)
+    // Proper implementation checking for session cookie
+    const cookies = req.cookies;
+    const sessionCookie = cookies['auth_success']; // Using the auth_success cookie name
+    
+    if (!sessionCookie) {
+      console.log('No session cookie found in request');
+      return null;
+    }
+    
+    // For development environment, we'll accept any non-empty session cookie
+    // In production, you would verify this with Firebase Admin SDK
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Development mode: accepting session cookie without verification');
+      return 'dev-admin-uid';
+    }
+    
+    // Use Firebase Admin to verify the session cookie in production
+    // This code would need to be implemented with actual Firebase Admin validation
     // Check for authorization header and extract token
     let token: string | null = null;
     const maybeHeader = req.headers.authorization;

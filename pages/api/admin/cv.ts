@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getAdminFirestore } from '@/lib/firebase-admin';
-import { withApiAuth } from '@/lib/api/with-auth';
+import { validateFirebaseIdToken } from '@/lib/api/server-auth';
 import { CVData } from '@/types/cv';
 
 type ApiResponse = {
@@ -88,4 +88,28 @@ async function handler(
   }
 }
 
-export default withApiAuth(handler);
+/**
+ * Wrapper to manually handle authentication
+ */
+export default async function(req: NextApiRequest, res: NextApiResponse) {
+  try {
+    // Manually validate the authentication token
+    const uid = await validateFirebaseIdToken(req);
+    
+    if (!uid) {
+      return res.status(401).json({
+        success: false,
+        error: 'Unauthorized access'
+      });
+    }
+    
+    // Proceed to handler if authenticated
+    return handler(req, res);
+  } catch (error) {
+    console.error('CV API authentication error:', error);
+    return res.status(401).json({
+      success: false,
+      error: 'Unauthorized access'
+    });
+  }
+};
