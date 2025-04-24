@@ -79,8 +79,17 @@ export default async function handler(
       });
     }
     
-    let statsData = {};
-    statsData = {
+    if (analyticsType === 'blog') {
+      // Get blog engagement data when dataType=blog
+      const blogEngagement = await getBlogEngagement();
+      return res.status(200).json({
+        success: true,
+        data: blogEngagement
+      });
+    }
+    
+    // Default general analytics data
+    let statsData = {
       visits: 0,
       blogVisits: 0,
       bookVisits: 0,

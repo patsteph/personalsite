@@ -1,6 +1,6 @@
 import React, { useState, ChangeEvent, FormEvent } from 'react';
 import { Book, BookStatus } from '@/types/book';
-import { fetchBookByISBN, searchBooks, addBook, updateBook, deleteBook } from '@/lib/books';
+import { fetchBookByISBN, searchBooks, addBook, updateBook, deleteBook, checkBookExists } from '@/lib/books';
 import { useTranslation } from '@/lib/translations';
 
 type BookFormProps = {
@@ -18,6 +18,8 @@ export default function BookForm({ existingBook, onSuccess }: BookFormProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [duplicateBooks, setDuplicateBooks] = useState<Book[]>([]);
+  const [showDuplicateWarning, setShowDuplicateWarning] = useState(false);
   const [searchMode, setSearchMode] = useState<'isbn' | 'title'>('isbn'); // Track which search mode we're in
   const { t } = useTranslation();
   
@@ -89,6 +91,8 @@ export default function BookForm({ existingBook, onSuccess }: BookFormProps) {
     
     setLoading(true);
     setError('');
+    setDuplicateBooks([]);
+    setShowDuplicateWarning(false);
     
     try {
       const completeBookData = {
@@ -138,6 +142,23 @@ export default function BookForm({ existingBook, onSuccess }: BookFormProps) {
       
       // Log the sanitized data to help with debugging
       console.log("Formatted book data:", completeBookData);
+
+      // Check for duplicate books before adding
+      try {
+        const isbn = completeBookData.isbn || '';
+        const title = completeBookData.title || '';
+        const duplicateCheck = await checkBookExists(isbn, title);
+        
+        if (duplicateCheck.exists) {
+          setDuplicateBooks(duplicateCheck.duplicates);
+          setShowDuplicateWarning(true);
+          setLoading(false);
+          return; // Don't proceed with adding the book yet
+        }
+      } catch (duplicateError) {
+        console.error('Error checking for duplicates:', duplicateError);
+        // Continue with adding book even if duplicate check fails
+      }
 
       await addBook(completeBookData);
       setSuccess('Book added successfully!');
@@ -277,6 +298,71 @@ export default function BookForm({ existingBook, onSuccess }: BookFormProps) {
       {success && (
         <div className="bg-green-100 text-green-700 p-3 rounded mb-4">
           {success}
+        </div>
+      )}
+      
+      {/* Duplicate Warning */}
+      {showDuplicateWarning && duplicateBooks.length > 0 && (
+        <div className="mb-6 p-4 border border-yellow-500 bg-yellow-50 rounded">
+          <h3 className="font-bold text-yellow-700 mb-2">Potential Duplicate{duplicateBooks.length > 1 ? 's' : ''} Found ({duplicateBooks.length})</h3>
+          <p className="mb-3 text-sm">The following book{duplicateBooks.length > 1 ? 's' : ''} with similar details already exist in your collection:</p>
+          <div className="max-h-60 overflow-y-auto mb-3 border border-yellow-200 rounded">
+            {duplicateBooks.map((book, index) => (
+              <div key={book.id} className={`p-3 text-sm ${index % 2 === 0 ? 'bg-yellow-50' : 'bg-white'}`}>
+                <div className="font-semibold">{book.title}</div>
+                <div>Author: {book.authors?.join(', ')}</div>
+                <div>ISBN: {book.isbn}</div>
+                <div>Status: {book.status}</div>
+              </div>
+            ))}
+          </div>
+          <div className="flex justify-end space-x-2">
+            <button 
+              type="button"
+              onClick={() => setShowDuplicateWarning(false)}
+              className="px-3 py-1 text-sm bg-white border border-yellow-500 text-yellow-700 rounded hover:bg-yellow-50"
+            >
+              Cancel
+            </button>
+            <button 
+              type="button"
+              onClick={async () => {
+                setShowDuplicateWarning(false);
+                // Continue with adding the book despite duplicate
+                if (!bookData) return;
+                
+                try {
+                  const completeBookData = {
+                    ...bookData,
+                    ...(bookData.averageRating !== undefined ? {} : { averageRating: null }),
+                    status,
+                    notes,
+                    dateAdded: new Date().toISOString(),
+                  } as Book;
+                  
+                  await addBook(completeBookData);
+                  setSuccess('Book added successfully despite duplicate!');
+                  
+                  // Reset form
+                  setIsbn('');
+                  setStatus('to-read');
+                  setNotes('');
+                  setBookData(null);
+                  
+                  // Call success callback
+                  if (onSuccess) {
+                    onSuccess();
+                  }
+                } catch (error) {
+                  console.error('Error adding book:', error);
+                  setError(`Error adding book: ${error instanceof Error ? error.message : 'Please try again.'}`);
+                }
+              }}
+              className="px-3 py-1 text-sm bg-yellow-500 text-white rounded hover:bg-yellow-600"
+            >
+              Add Anyway
+            </button>
+          </div>
         </div>
       )}
       

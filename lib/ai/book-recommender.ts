@@ -44,7 +44,25 @@ export class BookRecommender implements AITask {
    * Build prompt for book recommendations based on user preferences
    */
   buildPrompt(input: string, options?: BookRecommendationInput): string {
-    const parsedInput = options || JSON.parse(input) as BookRecommendationInput;
+    let parsedInput: BookRecommendationInput;
+    
+    if (options) {
+      parsedInput = options;
+    } else {
+      try {
+        // Only attempt to parse if input is not empty
+        if (input && input.trim()) {
+          parsedInput = JSON.parse(input) as BookRecommendationInput;
+        } else {
+          // Default empty object if input is empty
+          parsedInput = {} as BookRecommendationInput;
+        }
+      } catch (error) {
+        console.error('Error parsing book recommendation input:', error);
+        // Fallback to empty object if parsing fails
+        parsedInput = {} as BookRecommendationInput;
+      }
+    }
     
     // Create a context about the user's preferences
     let context = 'I need book recommendations based on the following information:';

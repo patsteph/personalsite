@@ -308,6 +308,67 @@ export const getBookById = async (id: string): Promise<BookWithId | null> => {
 };
 
 // Get all books
+// Check if a book already exists in the collection
+export const checkBookExists = async (isbn: string, title: string): Promise<{ exists: boolean, count: number, duplicates: BookWithId[] }> => {
+  try {
+    let token: string | null = null;
+    if (auth?.currentUser) {
+      try {
+        token = await auth.currentUser.getIdToken(true);
+      } catch (error) {
+        console.error('Failed to get ID token for checkBookExists:', error);
+      }
+    }
+
+    if (!token) {
+      throw new Error('Authentication required to check if book exists.');
+    }
+
+    // Get all books and check manually (since Firestore doesn't have great OR query support)
+    const response = await fetch('/api/books', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to check for duplicate books. Status: ${response.status}`);
+    }
+
+    const result = await response.json();
+    
+    if (!result.success || !result.books) {
+      throw new Error('Error fetching books data');
+    }
+
+    // Find books with matching ISBN or very similar title
+    const duplicates = result.books.filter((book: BookWithId) => {
+      // Check for ISBN match (exact)
+      if (isbn && book.isbn && book.isbn.replace(/-/g, '') === isbn.replace(/-/g, '')) {
+        return true;
+      }
+      
+      // Check for title match (case insensitive)
+      if (title && book.title && book.title.toLowerCase().trim() === title.toLowerCase().trim()) {
+        return true;
+      }
+      
+      return false;
+    });
+
+    return {
+      exists: duplicates.length > 0,
+      count: duplicates.length,
+      duplicates
+    };
+  } catch (error) {
+    console.error('Error in checkBookExists:', error);
+    throw error;
+  }
+};
+
 export const getBooks = async (): Promise<BookWithId[]> => {
   console.log('Attempting to fetch books...');
 
