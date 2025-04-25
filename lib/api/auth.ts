@@ -23,7 +23,7 @@ export interface AppUser {
 /**
  * Sign in user with email and password using Firebase Client SDK
  */
-export async function signInWithEmailAndPassword(
+export async function signIn(
   email: string, 
   password: string
 ): Promise<UserCredential> {

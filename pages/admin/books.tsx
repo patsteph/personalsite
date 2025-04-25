@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import Layout from '@/components/layout/Layout';
@@ -17,6 +17,7 @@ export default function AdminBooksPage() {
   const [books, setBooks] = useState<Book[]>([]);
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [showDuplicates, setShowDuplicates] = useState(true);
   
   // After auth state is determined, set page loading to false
   useEffect(() => {
@@ -39,6 +40,57 @@ export default function AdminBooksPage() {
       console.error('Error loading books:', error);
     }
   };
+  
+  // Detect duplicate books in the collection
+  const duplicateGroups = useMemo(() => {
+    const duplicatesByIsbn = new Map<string, Book[]>();
+    const duplicatesByTitle = new Map<string, Book[]>();
+    
+    // Group books by ISBN (ignore empty ISBNs)
+    books.forEach(book => {
+      if (book.isbn) {
+        const normalizedIsbn = book.isbn.replace(/-/g, '').trim();
+        if (normalizedIsbn) {
+          const existing = duplicatesByIsbn.get(normalizedIsbn) || [];
+          duplicatesByIsbn.set(normalizedIsbn, [...existing, book]);
+        }
+      }
+    });
+    
+    // Group books by title (case insensitive)
+    books.forEach(book => {
+      if (book.title) {
+        const normalizedTitle = book.title.toLowerCase().trim();
+        if (normalizedTitle) {
+          const existing = duplicatesByTitle.get(normalizedTitle) || [];
+          duplicatesByTitle.set(normalizedTitle, [...existing, book]);
+        }
+      }
+    });
+    
+    // Filter out groups with only one book
+    return {
+      byIsbn: Array.from(duplicatesByIsbn.values()).filter(group => group.length > 1),
+      byTitle: Array.from(duplicatesByTitle.values()).filter(group => group.length > 1)
+    };
+  }, [books]);
+  
+  // Get all duplicate book IDs for highlighting
+  const duplicateBookIds = useMemo(() => {
+    const ids = new Set<string>();
+    
+    // Add ISBN duplicates
+    duplicateGroups.byIsbn.forEach(group => {
+      group.forEach(book => ids.add(book.id));
+    });
+    
+    // Add title duplicates that aren't already counted
+    duplicateGroups.byTitle.forEach(group => {
+      group.forEach(book => ids.add(book.id));
+    });
+    
+    return ids;
+  }, [duplicateGroups]);
   
   // Handle successful login
   const handleLoginSuccess = () => {
@@ -131,20 +183,37 @@ export default function AdminBooksPage() {
         {/* Book list */}
         <div className="md:col-span-1">
           <div className="bg-white rounded-lg shadow p-4">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-steel-blue">
-                Books ({books.length})
-              </h2>
+            <div className="mb-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold text-steel-blue">
+                  Books ({books.length})
+                </h2>
+                
+                <button
+                  onClick={() => {
+                    setSelectedBook(null);
+                    setShowAddForm(true);
+                  }}
+                  className="text-steel-blue hover:text-accent text-sm"
+                >
+                  + Add New Book
+                </button>
+              </div>
               
-              <button
-                onClick={() => {
-                  setSelectedBook(null);
-                  setShowAddForm(true);
-                }}
-                className="text-steel-blue hover:text-accent text-sm"
-              >
-                + Add New Book
-              </button>
+              {/* Duplicate information */}
+              {duplicateBookIds.size > 0 && (
+                <div className="mt-2 flex items-center justify-between">
+                  <div className="text-sm text-amber-700">
+                    <span className="font-medium">{duplicateBookIds.size} potential duplicates found</span>
+                  </div>
+                  <button 
+                    onClick={() => setShowDuplicates(!showDuplicates)}
+                    className="text-xs text-gray-600 hover:text-steel-blue"
+                  >
+                    {showDuplicates ? 'Hide indicators' : 'Show indicators'}
+                  </button>
+                </div>
+              )}
             </div>
             
             {books.length > 0 ? (
@@ -155,11 +224,19 @@ export default function AdminBooksPage() {
                     className={`
                       p-3 rounded-lg transition-colors
                       ${selectedBook?.id === book.id ? 'bg-light-accent border-l-4 border-steel-blue' : 'hover:bg-gray-50'}
+                      ${showDuplicates && duplicateBookIds.has(book.id) ? 'border-l-4 border-amber-500' : ''}
                     `}
                   >
                     <div className="flex justify-between">
                       <div className="w-5/6 cursor-pointer" onClick={() => handleSelectBook(book.id)}>
-                        <div className="font-medium truncate">{book.title}</div>
+                        <div className="font-medium truncate">
+                          {book.title}
+                          {showDuplicates && duplicateBookIds.has(book.id) && (
+                            <span className="ml-2 px-1.5 py-0.5 bg-amber-100 text-amber-800 rounded-md text-xs font-semibold">
+                              Duplicate
+                            </span>
+                          )}
+                        </div>
                         <div className="text-sm text-gray-600 truncate">
                           {book.authors.join(', ')}
                         </div>

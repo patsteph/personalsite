@@ -72,9 +72,18 @@ export async function trackEvent(
     });
 
     if (!response.ok) {
-      console.error(`Failed to track event: ${response.status} ${response.statusText}`);
+      const errorText = await response.text().catch(() => 'Could not read response text');
+      console.error(`Failed to track event: ${response.status} ${response.statusText}`, {
+        status: response.status,
+        statusText: response.statusText,
+        responseText: errorText
+      });
     }
   } catch (error) {
-    console.error('Error tracking event:', error);
+    console.error('Error tracking event:', {
+      message: error instanceof Error ? error.message : String(error),
+      name: error instanceof Error ? error.name : 'Unknown',
+      stack: error instanceof Error ? error.stack : undefined
+    });
   }
 }

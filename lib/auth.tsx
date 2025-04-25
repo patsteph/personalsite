@@ -14,7 +14,7 @@ import {
   User as FirebaseUser
 } from 'firebase/auth';
 import {
-  signInWithEmailAndPassword as apiSignIn,
+  signIn as apiSignIn,
   signOut as apiSignOut,
   AppUser,
 } from './api/auth';
