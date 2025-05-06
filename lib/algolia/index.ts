@@ -1,8 +1,9 @@
 // Direct Algolia API client using fetch instead of the algoliasearch library
 const ALGOLIA_APP_ID = process.env.NEXT_PUBLIC_ALGOLIA_APP_ID || 'BIG74MXLH5';
 const ALGOLIA_API_KEY = process.env.NEXT_PUBLIC_ALGOLIA_SEARCH_API_KEY || '7a9ce8a20d3d485a2f7d0979acd0a6a1';
-// Use the standard search endpoint
-const ALGOLIA_BASE_URL = `https://${ALGOLIA_APP_ID}-dsn.algolia.net/1/indexes`;
+// Try both standard endpoints - first the search API, then the regular API if that fails
+const ALGOLIA_SEARCH_URL = `https://${ALGOLIA_APP_ID}-dsn.algolia.net/1/indexes`;
+const ALGOLIA_REGULAR_URL = `https://${ALGOLIA_APP_ID}.algolia.net/1/indexes`;
 
 // Generic search function for any index
 export async function searchIndex(indexName: string, query: string = '', params: any = {}) {
@@ -10,7 +11,7 @@ export async function searchIndex(indexName: string, query: string = '', params:
     console.log(`Searching Algolia index '${indexName}' with query: '${query}' and params:`, params);
     
     // Format request to match Algolia API requirements
-    const response = await fetch(`${ALGOLIA_BASE_URL}/${indexName}/query`, {
+    const response = await fetch(`${ALGOLIA_SEARCH_URL}/${indexName}/query`, {
       method: 'POST',
       headers: {
         'X-Algolia-API-Key': ALGOLIA_API_KEY,
@@ -45,10 +46,11 @@ export async function searchIndex(indexName: string, query: string = '', params:
 }
 
 // Convenience functions for specific indices
+// Use the correct index name as specified
 export const booksIndex = {
-  search: (query: string, params: any = {}) => searchIndex('books', query, params)
+  search: (query: string, params: any = {}) => searchIndex('algoSearch', query, params)
 };
 
 export const blogIndex = {
-  search: (query: string, params: any = {}) => searchIndex('blog-posts', query, params)
+  search: (query: string, params: any = {}) => searchIndex('personal-website_blog-posts', query, params)
 };
