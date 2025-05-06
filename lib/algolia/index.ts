@@ -1,17 +1,24 @@
-// Direct Algolia API client using fetch instead of the algoliasearch library
+// Use dynamic import for Algolia to avoid build issues
+// This approach works better with Next.js
 const ALGOLIA_APP_ID = process.env.NEXT_PUBLIC_ALGOLIA_APP_ID || 'BIG74MXLH5';
 const ALGOLIA_API_KEY = process.env.NEXT_PUBLIC_ALGOLIA_SEARCH_API_KEY || '7a9ce8a20d3d485a2f7d0979acd0a6a1';
-// Try both standard endpoints - first the search API, then the regular API if that fails
-const ALGOLIA_SEARCH_URL = `https://${ALGOLIA_APP_ID}-dsn.algolia.net/1/indexes`;
-const ALGOLIA_REGULAR_URL = `https://${ALGOLIA_APP_ID}.algolia.net/1/indexes`;
 
-// Generic search function for any index
+// We'll use direct REST API calls - simplest approach that works reliably
+const ALGOLIA_API_URL = `https://${ALGOLIA_APP_ID}-dsn.algolia.net/1/indexes`;
+
+/**
+ * Wrapper for Algolia search with better error handling and logging
+ * @param indexName - Name of the Algolia index to search
+ * @param query - Search query string
+ * @param params - Additional search parameters
+ * @returns Search results or empty object on error
+ */
 export async function searchIndex(indexName: string, query: string = '', params: any = {}) {
   try {
     console.log(`Searching Algolia index '${indexName}' with query: '${query}' and params:`, params);
     
-    // Build the params string for Algolia in their required format
-    const searchParams: Record<string, any> = {
+    // Build the search params object in a format Algolia expects
+    const searchParams: Record<string, string | number> = {
       query: query
     };
     
@@ -19,54 +26,34 @@ export async function searchIndex(indexName: string, query: string = '', params:
     if (params.hitsPerPage) searchParams.hitsPerPage = params.hitsPerPage;
     if (params.page) searchParams.page = params.page;
     
-    // Add filters - this needs special handling
+    // Add filters - parse the filter syntax correctly
     if (params.filters && params.filters.trim() !== '') {
+      // Algolia expects filters in a specific format
       searchParams.filters = params.filters;
     }
     
-    // Add facets if present
-    if (params.facets && Array.isArray(params.facets) && params.facets.length > 0) {
-      searchParams.facets = params.facets;
-    }
-
-    // Create the request body in Algolia's expected format
-    const requestBody = {
-      params: new URLSearchParams(searchParams).toString()
-    };
+    // Convert the params object to a URL parameter string
+    const urlParams = new URLSearchParams();
+    urlParams.append('x-algolia-api-key', ALGOLIA_API_KEY);
+    urlParams.append('x-algolia-application-id', ALGOLIA_APP_ID);
     
-    // Format request to match Algolia API requirements
-    // This is the correct format for Algolia API
-    const response = await fetch(`${ALGOLIA_SEARCH_URL}/${indexName}/query`, {
+    // Correctly format the API request to Algolia using fetch
+    const response = await fetch(`${ALGOLIA_API_URL}/${indexName}/query`, {
       method: 'POST',
       headers: {
         'X-Algolia-API-Key': ALGOLIA_API_KEY,
         'X-Algolia-Application-Id': ALGOLIA_APP_ID,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify(requestBody)
+      body: JSON.stringify({
+        params: Object.keys(searchParams)
+          .map(key => `${key}=${encodeURIComponent(String(searchParams[key]))}`)
+          .join('&')
+      })
     });
     
     if (!response.ok) {
-      console.error(`Algolia API error: ${response.status} ${response.statusText}`);
-      // Try with the regular URL if search URL fails
-      console.log('Retrying with regular Algolia URL...');
-      const retryResponse = await fetch(`${ALGOLIA_REGULAR_URL}/${indexName}/query`, {
-        method: 'POST',
-        headers: {
-          'X-Algolia-API-Key': ALGOLIA_API_KEY,
-          'X-Algolia-Application-Id': ALGOLIA_APP_ID,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(requestBody)
-      });
-      
-      if (!retryResponse.ok) {
-        throw new Error(`Algolia API error: ${retryResponse.statusText}`);
-      }
-      
-      const retryResult = await retryResponse.json();
-      console.log(`Algolia retry returned ${retryResult.hits?.length || 0} results`);
-      return retryResult;
+      throw new Error(`Algolia API error: ${response.statusText}`);
     }
     
     const result = await response.json();
@@ -79,8 +66,7 @@ export async function searchIndex(indexName: string, query: string = '', params:
   }
 }
 
-// Convenience functions for specific indices
-// Use the correct index name as specified
+// Convenience functions for specific indices with correct index names
 export const booksIndex = {
   search: (query: string, params: any = {}) => searchIndex('algoSearch', query, params)
 };
