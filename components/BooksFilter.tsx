@@ -107,13 +107,13 @@ export default function BooksFilter({ onFilterChange, className = '' }: FilterPr
               // Small delay for typing
               setTimeout(() => {
                 const filters = [];
-                if (statusFilter) filters.push(`status:${statusFilter}`);
-                if (categoryFilter) filters.push(`category:${categoryFilter}`);
-                if (ratingFilter) filters.push(`rating:${ratingFilter}`);
+                if (statusFilter) filters.push(`status = "${statusFilter}"`);
+                if (categoryFilter) filters.push(`category = "${categoryFilter}"`);
+                if (ratingFilter) filters.push(`rating = ${ratingFilter}`);
                 
                 onFilterChange({
                   search: newValue,
-                  filters: filters.join(' AND ')
+                  filters: filters.length > 0 ? filters.join(' AND ') : ''
                 });
               }, 300);
             }
@@ -123,13 +123,13 @@ export default function BooksFilter({ onFilterChange, className = '' }: FilterPr
               e.preventDefault();
               // Manually trigger filter update
               const filters = [];
-              if (statusFilter) filters.push(`status:${statusFilter}`);
-              if (categoryFilter) filters.push(`category:${categoryFilter}`);
-              if (ratingFilter) filters.push(`rating:${ratingFilter}`);
+              if (statusFilter) filters.push(`status = "${statusFilter}"`);
+              if (categoryFilter) filters.push(`category = "${categoryFilter}"`);
+              if (ratingFilter) filters.push(`rating = ${ratingFilter}`);
               
               onFilterChange({
                 search,
-                filters: filters.join(' AND ')
+                filters: filters.length > 0 ? filters.join(' AND ') : ''
               });
             }
           }}

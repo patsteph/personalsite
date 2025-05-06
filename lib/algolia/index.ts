@@ -10,15 +10,14 @@ export async function searchIndex(indexName: string, query: string = '', params:
   try {
     console.log(`Searching Algolia index '${indexName}' with query: '${query}' and params:`, params);
     
-    // Create the params string for Algolia - this is the correct format they expect
-    const searchParams = new URLSearchParams();
-    searchParams.append('query', query);
+    // Create the request object for Algolia
+    const requestObject: any = { query };
     
-    // Add other params
-    if (params.hitsPerPage) searchParams.append('hitsPerPage', params.hitsPerPage.toString());
-    if (params.page) searchParams.append('page', params.page.toString());
-    if (params.filters) searchParams.append('filters', params.filters);
-    if (params.facets) searchParams.append('facets', JSON.stringify(params.facets));
+    // Add other params directly to the request object
+    if (params.hitsPerPage) requestObject.hitsPerPage = params.hitsPerPage;
+    if (params.page) requestObject.page = params.page;
+    if (params.filters && params.filters.trim() !== '') requestObject.filters = params.filters;
+    if (params.facets) requestObject.facets = params.facets;
     
     // Format request to match Algolia API requirements
     const response = await fetch(`${ALGOLIA_SEARCH_URL}/${indexName}/query`, {
@@ -28,14 +27,30 @@ export async function searchIndex(indexName: string, query: string = '', params:
         'X-Algolia-Application-Id': ALGOLIA_APP_ID,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        params: searchParams.toString()
-      })
+      body: JSON.stringify(requestObject)
     });
     
     if (!response.ok) {
       console.error(`Algolia API error: ${response.status} ${response.statusText}`);
-      throw new Error(`Algolia API error: ${response.statusText}`);
+      // Try with the regular URL if search URL fails
+      console.log('Retrying with regular Algolia URL...');
+      const retryResponse = await fetch(`${ALGOLIA_REGULAR_URL}/${indexName}/query`, {
+        method: 'POST',
+        headers: {
+          'X-Algolia-API-Key': ALGOLIA_API_KEY,
+          'X-Algolia-Application-Id': ALGOLIA_APP_ID,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestObject)
+      });
+      
+      if (!retryResponse.ok) {
+        throw new Error(`Algolia API error: ${retryResponse.statusText}`);
+      }
+      
+      const retryResult = await retryResponse.json();
+      console.log(`Algolia retry returned ${retryResult.hits?.length || 0} results`);
+      return retryResult;
     }
     
     const result = await response.json();

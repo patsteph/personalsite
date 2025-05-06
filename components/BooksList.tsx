@@ -36,8 +36,43 @@ type BookDetailProps = {
   onClose: () => void;
 };
 
+import { searchBook, formatGoogleBookData } from '../lib/google-books';
+
 // Book Detail modal component
 const BookDetail = ({ book, onClose }: BookDetailProps) => {
+  const [googleBook, setGoogleBook] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+
+  // Fetch additional book details from Google Books API
+  useEffect(() => {
+    const fetchGoogleBookData = async () => {
+      if (!book) return;
+      
+      setLoading(true);
+      try {
+        const result = await searchBook(book.title, book.author);
+        if (result) {
+          setGoogleBook(formatGoogleBookData(result));
+        }
+      } catch (error) {
+        console.error('Error fetching Google book data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchGoogleBookData();
+  }, [book]);
+  
+  // Extract book cover URL from various possible sources
+  const coverUrl = book.imageUrl || 
+    (book.imageLinks && (book.imageLinks.thumbnail || book.imageLinks.smallThumbnail)) ||
+    (googleBook && googleBook.imageLinks && (googleBook.imageLinks.thumbnail || googleBook.imageLinks.smallThumbnail)) ||
+    'https://via.placeholder.com/240x340?text=No+Cover';
+    
+  // Get user rating or fall back to rating or default
+  const userRating = typeof book.userRating === 'number' ? book.userRating : book.rating || 0;
+  
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-auto">
@@ -55,11 +90,17 @@ const BookDetail = ({ book, onClose }: BookDetailProps) => {
         <div className="p-4 flex flex-col md:flex-row gap-6">
           <div className="flex-shrink-0">
             <Image 
-              src={book.imageUrl || 'https://via.placeholder.com/240x340?text=No+Cover'}
+              src={coverUrl}
               alt={book.title}
               width={240}
               height={340}
               className="rounded shadow-md"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.onerror = null;
+                target.src = 'https://via.placeholder.com/240x340?text=No+Cover';
+              }}
+              priority={true}
             />
           </div>
           <div className="flex-1">
@@ -67,23 +108,72 @@ const BookDetail = ({ book, onClose }: BookDetailProps) => {
             
             <div className="mb-4 flex items-center">
               <div className="text-yellow-500 mr-2">
-                {'★'.repeat(Math.min(book.rating || 0, 5))}{'☆'.repeat(5 - Math.min(book.rating || 0, 5))}
+                {'★'.repeat(Math.min(userRating, 5))}{'☆'.repeat(5 - Math.min(userRating, 5))}
               </div>
-              <span>({book.rating || 0}/5)</span>
+              <span>({userRating}/5)</span>
             </div>
             
             <div className="space-y-2 mb-4">
               <div><span className="font-semibold">Status:</span> {book.status}</div>
-              <div><span className="font-semibold">Category:</span> {book.category || (book.categories && book.categories.join(', '))}</div>
+              <div><span className="font-semibold">Category:</span> {book.category || (book.categories && book.categories.join(', ')) || 'Uncategorized'}</div>
               {book.dateFinished && (
                 <div><span className="font-semibold">Date Finished:</span> {new Date(book.dateFinished).toLocaleDateString()}</div>
               )}
             </div>
             
+            {/* Google Books additional information */}
+            {googleBook && (
+              <div className="mt-4 border-t pt-4">
+                {googleBook.description && (
+                  <div className="mb-3">
+                    <h3 className="font-semibold mb-2">Description:</h3>
+                    <p className="text-sm text-gray-700" style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                      {googleBook.description}
+                    </p>
+                  </div>
+                )}
+                
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  {googleBook.publisher && (
+                    <div><span className="font-semibold">Publisher:</span> {googleBook.publisher}</div>
+                  )}
+                  {googleBook.publishedDate && (
+                    <div><span className="font-semibold">Published:</span> {googleBook.publishedDate}</div>
+                  )}
+                  {googleBook.pageCount && (
+                    <div><span className="font-semibold">Pages:</span> {googleBook.pageCount}</div>
+                  )}
+                  {googleBook.categories && googleBook.categories.length > 0 && (
+                    <div><span className="font-semibold">Google Categories:</span> {googleBook.categories.join(', ')}</div>
+                  )}
+                </div>
+                
+                {googleBook.previewLink && (
+                  <div className="mt-4">
+                    <a 
+                      href={googleBook.previewLink} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 inline-block"
+                    >
+                      View on Google Books
+                    </a>
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {/* User notes */}
             {book.notes && (
-              <div className="mt-4">
-                <h3 className="font-semibold mb-2">Notes:</h3>
+              <div className="mt-4 border-t pt-4">
+                <h3 className="font-semibold mb-2">My Notes:</h3>
                 <p className="text-gray-700">{book.notes}</p>
+              </div>
+            )}
+            
+            {loading && (
+              <div className="flex justify-center items-center mt-4 pt-4">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-700"></div>
               </div>
             )}
           </div>

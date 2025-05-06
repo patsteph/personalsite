@@ -14,6 +14,7 @@ type BooksPageProps = {
     read: number;
     reading: number;
     toRead: number;
+    other: number; // Added other category for books with non-standard status
   };
   error?: string; // Add optional error prop
 };
@@ -70,7 +71,7 @@ export default function BooksPage({ initialStats, error }: BooksPageProps) {
       <div className="mb-8 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg shadow-sm border border-gray-200">
         {/* Subheading style seems consistent, keep as text-gray-700 */}
         <h2 className="text-xl font-semibold text-gray-700 mb-3">Collection Stats</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-center">
           <div>
             {/* Revert stats colors */}
             <span className="block text-2xl font-bold text-indigo-600">{stats.total}</span>
@@ -87,6 +88,10 @@ export default function BooksPage({ initialStats, error }: BooksPageProps) {
           <div>
             <span className="block text-2xl font-bold text-purple-600">{stats.toRead}</span>
             <span className="text-sm text-gray-600">To Read</span>
+          </div>
+          <div>
+            <span className="block text-2xl font-bold text-gray-600">{stats.other}</span>
+            <span className="text-sm text-gray-600">Other</span>
           </div>
         </div>
       </div>
@@ -148,11 +153,21 @@ export async function getStaticProps() {
       return status === 'To Read' || status === 'toRead' || status === 'to read';
     });
     
+    // Calculate books with other status (not in the main categories)
+    const otherBooks = allBooks.filter(doc => {
+      const status = doc.data().status;
+      const isRead = status === 'Read' || status === 'read';
+      const isReading = status === 'Currently Reading' || status === 'reading' || status === 'currentlyReading';
+      const isToRead = status === 'To Read' || status === 'toRead' || status === 'to read';
+      return !isRead && !isReading && !isToRead;
+    });
+    
     const initialStats = {
       total: allBooks.length,
       read: readBooks.length,
       reading: readingBooks.length,
       toRead: toReadBooks.length,
+      other: otherBooks.length
     };
 
     return {
@@ -166,9 +181,7 @@ export async function getStaticProps() {
     // Return error state
     return {
       props: {
-        initialBooks: [],
-        initialStats: { total: 0, read: 0, reading: 0, toRead: 0 },
-        totalBooks: 0,
+        initialStats: { total: 0, read: 0, reading: 0, toRead: 0, other: 0 },
         error: `Failed to load initial books: ${error.message || 'Unknown error'}`, // Pass error message
       },
       revalidate: 60, // Revalidate quickly after error
