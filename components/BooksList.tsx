@@ -11,6 +11,11 @@ type Book = {
   status: string;
   rating: number;
   imageUrl?: string;
+  // Add image links for Google Books API format
+  imageLinks?: {
+    smallThumbnail?: string;
+    thumbnail?: string;
+  };
 };
 
 type BooksListProps = {
@@ -22,25 +27,31 @@ type BooksListProps = {
 };
 
 const BookCard = ({ book }: { book: Book }) => {
-  // Set a default image if none exists
-  const imageUrl = book.imageUrl || 'https://via.placeholder.com/100x150?text=No+Cover';
+  // State to handle image loading errors
+  const [imgError, setImgError] = useState(false);
   
-  // Make sure we're working with valid image URLs
-  const sanitizedImageUrl = imageUrl.startsWith('http') ? imageUrl : `https://${imageUrl}`;
-  
-  // Log image URL for debugging
-  console.log('Book image:', book.title, sanitizedImageUrl);
+  // Extract fields that might contain cover images
+  const bookCover = book.imageUrl || 
+    (book.imageLinks && book.imageLinks.thumbnail) || 
+    (book.imageLinks && book.imageLinks.smallThumbnail) ||
+    null;
+    
+  // Choose between book cover or standard placeholder
+  const coverUrl = imgError || !bookCover
+    ? 'https://via.placeholder.com/100x150?text=No+Cover' // Standard placeholder
+    : bookCover;
   
   return (
     <div className="book-card border border-gray-200 rounded-lg p-4 flex flex-col hover:shadow-md transition-shadow">
       <div className="book-image mb-3 self-center">
         <Image 
-          src={sanitizedImageUrl} 
+          src={coverUrl} 
           alt={book.title}
           width={100}
           height={150}
           style={{ objectFit: 'cover' }}
           className="rounded shadow-sm"
+          onError={() => setImgError(true)}
         />
       </div>
       <div className="book-info flex-1 flex flex-col">

@@ -64,34 +64,36 @@ export default function BooksFilter({ onFilterChange, className = '' }: FilterPr
   
   return (
     <div className={`filters ${className}`}>
-      {/* Search */}
+      {/* Search - Auto-search after 3 characters */}
       <div className="mb-6">
-        <div className="flex">
-          <input
-            type="text"
-            placeholder="Search books..."
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            onKeyPress={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                // Manually trigger filter update
+        <input
+          type="text"
+          placeholder="Search books..."
+          className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          value={search}
+          onChange={(e) => {
+            const newValue = e.target.value;
+            setSearch(newValue);
+            
+            // Auto-search after 3+ characters or empty string (show all)
+            if (newValue.length >= 3 || newValue === '') {
+              // Small delay for typing
+              setTimeout(() => {
                 const filters = [];
                 if (statusFilter) filters.push(`status:${statusFilter}`);
                 if (categoryFilter) filters.push(`category:${categoryFilter}`);
                 if (ratingFilter) filters.push(`rating:${ratingFilter}`);
                 
                 onFilterChange({
-                  search,
+                  search: newValue,
                   filters: filters.join(' AND ')
                 });
-              }
-            }}
-          />
-          <button 
-            className="bg-indigo-600 text-white px-4 py-2 rounded-r-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            onClick={() => {
+              }, 300);
+            }
+          }}
+          onKeyPress={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
               // Manually trigger filter update
               const filters = [];
               if (statusFilter) filters.push(`status:${statusFilter}`);
@@ -102,11 +104,9 @@ export default function BooksFilter({ onFilterChange, className = '' }: FilterPr
                 search,
                 filters: filters.join(' AND ')
               });
-            }}
-          >
-            Search
-          </button>
-        </div>
+            }
+          }}
+        />
       </div>
       
       {/* Status Filter */}
