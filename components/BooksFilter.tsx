@@ -23,21 +23,21 @@ export default function BooksFilter({ onFilterChange, className = '' }: FilterPr
     let filters = [];
     
     if (statusFilter) {
-      filters.push(`status:${statusFilter}`);
+      filters.push(`status = "${statusFilter}"`);
     }
     
     if (categoryFilter) {
-      filters.push(`category:${categoryFilter}`);
+      filters.push(`category = "${categoryFilter}"`);
     }
     
     if (ratingFilter) {
-      filters.push(`rating:${ratingFilter}`);
+      filters.push(`rating = ${ratingFilter}`);
     }
     
     // Notify parent component
     onFilterChange({
       search,
-      filters: filters.join(' AND ')
+      filters: filters.length > 0 ? filters.join(' AND ') : ''
     });
   };
   

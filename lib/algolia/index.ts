@@ -10,16 +10,32 @@ export async function searchIndex(indexName: string, query: string = '', params:
   try {
     console.log(`Searching Algolia index '${indexName}' with query: '${query}' and params:`, params);
     
-    // Create the request object for Algolia
-    const requestObject: any = { query };
+    // Build the params string for Algolia in their required format
+    const searchParams: Record<string, any> = {
+      query: query
+    };
     
-    // Add other params directly to the request object
-    if (params.hitsPerPage) requestObject.hitsPerPage = params.hitsPerPage;
-    if (params.page) requestObject.page = params.page;
-    if (params.filters && params.filters.trim() !== '') requestObject.filters = params.filters;
-    if (params.facets) requestObject.facets = params.facets;
+    // Add pagination params
+    if (params.hitsPerPage) searchParams.hitsPerPage = params.hitsPerPage;
+    if (params.page) searchParams.page = params.page;
+    
+    // Add filters - this needs special handling
+    if (params.filters && params.filters.trim() !== '') {
+      searchParams.filters = params.filters;
+    }
+    
+    // Add facets if present
+    if (params.facets && Array.isArray(params.facets) && params.facets.length > 0) {
+      searchParams.facets = params.facets;
+    }
+
+    // Create the request body in Algolia's expected format
+    const requestBody = {
+      params: new URLSearchParams(searchParams).toString()
+    };
     
     // Format request to match Algolia API requirements
+    // This is the correct format for Algolia API
     const response = await fetch(`${ALGOLIA_SEARCH_URL}/${indexName}/query`, {
       method: 'POST',
       headers: {
@@ -27,7 +43,7 @@ export async function searchIndex(indexName: string, query: string = '', params:
         'X-Algolia-Application-Id': ALGOLIA_APP_ID,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify(requestObject)
+      body: JSON.stringify(requestBody)
     });
     
     if (!response.ok) {
@@ -41,7 +57,7 @@ export async function searchIndex(indexName: string, query: string = '', params:
           'X-Algolia-Application-Id': ALGOLIA_APP_ID,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(requestObject)
+        body: JSON.stringify(requestBody)
       });
       
       if (!retryResponse.ok) {
