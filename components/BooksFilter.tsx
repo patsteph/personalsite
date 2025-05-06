@@ -51,13 +51,13 @@ export default function BooksFilter({ onFilterChange, className = '' }: FilterPr
     setStatusFilter(status);
     // Need to update filters immediately without relying on state updates
     const filters = [];
-    if (status) filters.push(`status:${status}`);
-    if (categoryFilter) filters.push(`category:${categoryFilter}`);
-    if (ratingFilter) filters.push(`rating:${ratingFilter}`);
+    if (status) filters.push(`status = "${status}"`);
+    if (categoryFilter) filters.push(`category = "${categoryFilter}"`);
+    if (ratingFilter) filters.push(`rating = ${ratingFilter}`);
     
     onFilterChange({
       search,
-      filters: filters.join(' AND ')
+      filters: filters.length > 0 ? filters.join(' AND ') : ''
     });
   };
   
@@ -65,13 +65,13 @@ export default function BooksFilter({ onFilterChange, className = '' }: FilterPr
     setCategoryFilter(category);
     // Need to update filters immediately without relying on state updates
     const filters = [];
-    if (statusFilter) filters.push(`status:${statusFilter}`);
-    if (category) filters.push(`category:${category}`);
-    if (ratingFilter) filters.push(`rating:${ratingFilter}`);
+    if (statusFilter) filters.push(`status = "${statusFilter}"`);
+    if (category) filters.push(`category = "${category}"`);
+    if (ratingFilter) filters.push(`rating = ${ratingFilter}`);
     
     onFilterChange({
       search,
-      filters: filters.join(' AND ')
+      filters: filters.length > 0 ? filters.join(' AND ') : ''
     });
   };
   
@@ -79,13 +79,13 @@ export default function BooksFilter({ onFilterChange, className = '' }: FilterPr
     setRatingFilter(rating);
     // Need to update filters immediately without relying on state updates
     const filters = [];
-    if (statusFilter) filters.push(`status:${statusFilter}`);
-    if (categoryFilter) filters.push(`category:${categoryFilter}`);
-    if (rating) filters.push(`rating:${rating}`);
+    if (statusFilter) filters.push(`status = "${statusFilter}"`);
+    if (categoryFilter) filters.push(`category = "${categoryFilter}"`);
+    if (rating) filters.push(`rating = ${rating}`);
     
     onFilterChange({
       search,
-      filters: filters.join(' AND ')
+      filters: filters.length > 0 ? filters.join(' AND ') : ''
     });
   };
   
