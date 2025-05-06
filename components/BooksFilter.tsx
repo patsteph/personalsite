@@ -17,7 +17,8 @@ export default function BooksFilter({ onFilterChange, className = '' }: FilterPr
   const categories = ["Fiction", "Non-Fiction", "Science Fiction", "Fantasy", "Business", "Self-Help", "Biography"];
   const ratings = [5, 4, 3, 2, 1];
   
-  useEffect(() => {
+  // Function to update filters and trigger search
+  const applyFilters = () => {
     // Build Algolia filters
     let filters = [];
     
@@ -38,19 +39,74 @@ export default function BooksFilter({ onFilterChange, className = '' }: FilterPr
       search,
       filters: filters.join(' AND ')
     });
-  }, [search, statusFilter, categoryFilter, ratingFilter, onFilterChange]);
+  };
+  
+  // Apply initial filters on mount
+  useEffect(() => {
+    applyFilters();
+  }, []);
+  
+  // Helper functions to update filters and immediately trigger search
+  const updateStatusFilter = (status: string) => {
+    setStatusFilter(status);
+    setTimeout(() => applyFilters(), 10); // Small timeout to ensure state update is processed
+  };
+  
+  const updateCategoryFilter = (category: string) => {
+    setCategoryFilter(category);
+    setTimeout(() => applyFilters(), 10);
+  };
+  
+  const updateRatingFilter = (rating: string) => {
+    setRatingFilter(rating);
+    setTimeout(() => applyFilters(), 10);
+  };
   
   return (
     <div className={`filters ${className}`}>
       {/* Search */}
       <div className="mb-6">
-        <input
-          type="text"
-          placeholder="Search books..."
-          className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+        <div className="flex">
+          <input
+            type="text"
+            placeholder="Search books..."
+            className="flex-1 px-4 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            onKeyPress={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                // Manually trigger filter update
+                const filters = [];
+                if (statusFilter) filters.push(`status:${statusFilter}`);
+                if (categoryFilter) filters.push(`category:${categoryFilter}`);
+                if (ratingFilter) filters.push(`rating:${ratingFilter}`);
+                
+                onFilterChange({
+                  search,
+                  filters: filters.join(' AND ')
+                });
+              }
+            }}
+          />
+          <button 
+            className="bg-indigo-600 text-white px-4 py-2 rounded-r-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            onClick={() => {
+              // Manually trigger filter update
+              const filters = [];
+              if (statusFilter) filters.push(`status:${statusFilter}`);
+              if (categoryFilter) filters.push(`category:${categoryFilter}`);
+              if (ratingFilter) filters.push(`rating:${ratingFilter}`);
+              
+              onFilterChange({
+                search,
+                filters: filters.join(' AND ')
+              });
+            }}
+          >
+            Search
+          </button>
+        </div>
       </div>
       
       {/* Status Filter */}
@@ -59,7 +115,7 @@ export default function BooksFilter({ onFilterChange, className = '' }: FilterPr
         <select
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
           value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
+          onChange={(e) => updateStatusFilter(e.target.value)}
         >
           <option value="">All Statuses</option>
           {statuses.map(status => (
@@ -74,7 +130,7 @@ export default function BooksFilter({ onFilterChange, className = '' }: FilterPr
         <select
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
           value={categoryFilter}
-          onChange={(e) => setCategoryFilter(e.target.value)}
+          onChange={(e) => updateCategoryFilter(e.target.value)}
         >
           <option value="">All Categories</option>
           {categories.map(category => (
@@ -89,7 +145,7 @@ export default function BooksFilter({ onFilterChange, className = '' }: FilterPr
         <select
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
           value={ratingFilter}
-          onChange={(e) => setRatingFilter(e.target.value)}
+          onChange={(e) => updateRatingFilter(e.target.value)}
         >
           <option value="">Any Rating</option>
           {ratings.map(rating => (

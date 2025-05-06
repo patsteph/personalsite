@@ -26,7 +26,8 @@ export default function BooksPage({ initialStats, error }: BooksPageProps) {
   const [showRecommender, setShowRecommender] = useState<boolean>(false);
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
   
-  // State for Algolia search filters
+  // State for Algolia search filters - use key to force component remounting
+  const [searchKey, setSearchKey] = useState(Date.now());
   const [searchFilters, setSearchFilters] = useState({
     search: '',
     filters: ''
@@ -103,8 +104,14 @@ export default function BooksPage({ initialStats, error }: BooksPageProps) {
         </div>
         
         <div className="books-container">
-          <BooksFilter onFilterChange={handleFilterChange} />
-          <BooksList filters={searchFilters} />
+          <BooksFilter 
+            key={`filter-${searchKey}`}
+            onFilterChange={handleFilterChange} 
+          />
+          <BooksList 
+            key={`list-${searchKey}`}
+            filters={searchFilters} 
+          />
         </div>
       </div>
 

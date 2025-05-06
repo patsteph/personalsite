@@ -22,26 +22,40 @@ type BooksListProps = {
 };
 
 const BookCard = ({ book }: { book: Book }) => {
+  // Set a default image if none exists
+  const imageUrl = book.imageUrl || 'https://via.placeholder.com/100x150?text=No+Cover';
+  
+  // Make sure we're working with valid image URLs
+  const sanitizedImageUrl = imageUrl.startsWith('http') ? imageUrl : `https://${imageUrl}`;
+  
+  // Log image URL for debugging
+  console.log('Book image:', book.title, sanitizedImageUrl);
+  
   return (
-    <div className="book-card">
-      {book.imageUrl && (
-        <div className="book-image">
-          <Image 
-            src={book.imageUrl} 
-            alt={book.title}
-            width={100}
-            height={150}
-            style={{ objectFit: 'cover' }}
-          />
-        </div>
-      )}
-      <div className="book-info">
-        <h3>{book.title}</h3>
-        <p className="author">by {book.author}</p>
-        <div className="book-meta">
-          <span className="category">{book.category || (book.categories ? book.categories[0] : '')}</span>
-          <span className="status">{book.status}</span>
-          <span className="rating">{'★'.repeat(book.rating)}{'☆'.repeat(5 - book.rating)}</span>
+    <div className="book-card border border-gray-200 rounded-lg p-4 flex flex-col hover:shadow-md transition-shadow">
+      <div className="book-image mb-3 self-center">
+        <Image 
+          src={sanitizedImageUrl} 
+          alt={book.title}
+          width={100}
+          height={150}
+          style={{ objectFit: 'cover' }}
+          className="rounded shadow-sm"
+        />
+      </div>
+      <div className="book-info flex-1 flex flex-col">
+        <h3 className="font-semibold text-lg">{book.title}</h3>
+        <p className="text-gray-600 text-sm mb-2">by {book.author}</p>
+        <div className="book-meta mt-auto grid grid-cols-1 gap-1 text-sm">
+          <span className="inline-block px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
+            {book.category || (book.categories && book.categories.length > 0 ? book.categories[0] : 'Uncategorized')}
+          </span>
+          <span className="inline-block px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
+            {book.status || 'Unspecified'}
+          </span>
+          <span className="text-yellow-500">
+            {'★'.repeat(Math.min(book.rating || 0, 5))}{'☆'.repeat(5 - Math.min(book.rating || 0, 5))}
+          </span>
         </div>
       </div>
     </div>
@@ -56,24 +70,47 @@ export default function BooksList({ filters, className = '' }: BooksListProps) {
   const debouncedFilters = useRef(filters);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   
-  // Load initial random sample of books on component mount
+  // Load initial sample of books, using localStorage to reduce API calls
   useEffect(() => {
     const fetchInitialBooks = async () => {
       try {
-        // Show a random sample of books when first loaded
-        const response = await booksIndex.search('', {
-          hitsPerPage: 10,
-          filters: ''
-        });
+        // Check if we have cached books in localStorage
+        const cachedBooks = localStorage.getItem('cachedBooks');
+        const cacheTimestamp = localStorage.getItem('booksCacheTimestamp');
+        const now = new Date().getTime();
+        const cacheAge = cacheTimestamp ? now - parseInt(cacheTimestamp) : Infinity;
         
-        const hits = response.hits || [];
-        const nbHits = response.nbHits || 0;
-        
-        setBooks(hits as Book[]);
-        setTotalHits(nbHits);
+        // Use cache if it exists and is less than 24 hours old
+        if (cachedBooks && cacheAge < 24 * 60 * 60 * 1000) {
+          console.log('Using cached books data');
+          const parsedCache = JSON.parse(cachedBooks);
+          setBooks(parsedCache.books || []);
+          setTotalHits(parsedCache.totalHits || 0);
+        } else {
+          // Fetch from Algolia if cache is missing or outdated
+          console.log('Fetching fresh books data from Algolia');
+          const response = await booksIndex.search('', {
+            hitsPerPage: 10,
+            filters: ''
+          });
+          
+          const hits = response.hits || [];
+          const nbHits = response.nbHits || 0;
+          
+          // Store in state
+          setBooks(hits as Book[]);
+          setTotalHits(nbHits);
+          
+          // Update cache
+          localStorage.setItem('cachedBooks', JSON.stringify({
+            books: hits,
+            totalHits: nbHits
+          }));
+          localStorage.setItem('booksCacheTimestamp', now.toString());
+        }
       } catch (err) {
-        console.error('Error fetching initial books:', err);
-        setError('Failed to load initial books. Please try again.');
+        console.error('Error loading books:', err);
+        setError('Failed to load books. Please try again.');
       } finally {
         setLoading(false);
       }
