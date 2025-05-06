@@ -50,11 +50,37 @@ const BookCard = ({ book }: { book: Book }) => {
 
 export default function BooksList({ filters, className = '' }: BooksListProps) {
   const [books, setBooks] = useState<Book[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [totalHits, setTotalHits] = useState(0);
   const debouncedFilters = useRef(filters);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Load initial random sample of books on component mount
+  useEffect(() => {
+    const fetchInitialBooks = async () => {
+      try {
+        // Show a random sample of books when first loaded
+        const response = await booksIndex.search('', {
+          hitsPerPage: 10,
+          filters: ''
+        });
+        
+        const hits = response.hits || [];
+        const nbHits = response.nbHits || 0;
+        
+        setBooks(hits as Book[]);
+        setTotalHits(nbHits);
+      } catch (err) {
+        console.error('Error fetching initial books:', err);
+        setError('Failed to load initial books. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchInitialBooks();
+  }, []);
   
   useEffect(() => {
     if (timeoutRef.current) {

@@ -127,10 +127,19 @@ export async function getStaticProps() {
     const booksSnapshot = await db.collection('books').get();
     const allBooks = booksSnapshot.docs;
     
-    // Calculate stats
-    const readBooks = allBooks.filter(doc => doc.data().status === 'Read');
-    const readingBooks = allBooks.filter(doc => doc.data().status === 'Currently Reading');
-    const toReadBooks = allBooks.filter(doc => doc.data().status === 'To Read');
+    // Calculate stats - account for different case variations
+    const readBooks = allBooks.filter(doc => {
+      const status = doc.data().status;
+      return status === 'Read' || status === 'read';
+    });
+    const readingBooks = allBooks.filter(doc => {
+      const status = doc.data().status;
+      return status === 'Currently Reading' || status === 'reading' || status === 'currentlyReading';
+    });
+    const toReadBooks = allBooks.filter(doc => {
+      const status = doc.data().status;
+      return status === 'To Read' || status === 'toRead' || status === 'to read';
+    });
     
     const initialStats = {
       total: allBooks.length,
