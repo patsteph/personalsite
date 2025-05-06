@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { booksIndex } from '../lib/algolia';
 
@@ -53,42 +53,53 @@ export default function BooksList({ filters, className = '' }: BooksListProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [totalHits, setTotalHits] = useState(0);
+  const debouncedFilters = useRef(filters);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   useEffect(() => {
-    const searchBooks = async () => {
-      setLoading(true);
-      setError('');
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    
+    timeoutRef.current = setTimeout(() => {
+      debouncedFilters.current = filters;
       
-      try {
-        // Real Algolia search implementation
-        const searchParams: any = {
-          hitsPerPage: 50
-        };
+      const searchBooks = async () => {
+        setLoading(true);
+        setError('');
         
-        // Add filters if provided
-        if (filters.filters) {
-          searchParams.filters = filters.filters;
+        try {
+          const searchParams: any = {
+            hitsPerPage: 50
+          };
+          
+          if (filters.filters) {
+            searchParams.filters = filters.filters;
+          }
+          
+          const response = await booksIndex.search(filters.search, searchParams);
+          
+          const hits = response.hits || [];
+          const nbHits = response.nbHits || 0;
+          
+          setBooks(hits as Book[]);
+          setTotalHits(nbHits);
+        } catch (err) {
+          console.error('Error searching books:', err);
+          setError('Failed to search books. Please try again.');
+        } finally {
+          setLoading(false);
         }
-        
-        // Execute search against Algolia
-        const response = await booksIndex.search(filters.search, searchParams);
-        
-        // Process response
-        const hits = response.hits || [];
-        const nbHits = response.nbHits || 0;
-        
-        setBooks(hits as Book[]);
-        setTotalHits(nbHits);
-      } catch (err) {
-        console.error('Error searching books:', err);
-        setError('Failed to search books. Please try again.');
-        setBooks([]);
-      } finally {
-        setLoading(false);
+      };
+      
+      searchBooks();
+    }, 300);
+    
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
       }
     };
-    
-    searchBooks();
   }, [filters]);
   
   if (loading) {

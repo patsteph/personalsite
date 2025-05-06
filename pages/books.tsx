@@ -1,55 +1,45 @@
-import { GetStaticProps } from 'next';
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import Layout from '@/components/layout/Layout';
-import SimpleBookGrid from '@/components/books/SimpleBookGrid';
 import BookRecommender from '@/components/books/BookRecommender';
 import { Book } from '@/types/book';
 import { useTranslation } from '@/lib/translations';
 import { getAdminFirestore } from '@/lib/firebase-admin';
-import { Timestamp, QueryDocumentSnapshot, Query } from 'firebase-admin/firestore';
-
-const BOOKS_PER_PAGE = 24; // Define page size
+import BooksFilter from '../components/BooksFilter';
+import BooksList from '../components/BooksList';
 
 // Props type definition
 type BooksPageProps = {
-  initialBooks: Book[];
   initialStats: {
     total: number;
     read: number;
     reading: number;
     toRead: number;
   };
-  // Add total count for pagination awareness on client
-  totalBooks: number;
   error?: string; // Add optional error prop
 };
 
-export default function BooksPage({ initialBooks, initialStats, totalBooks, error }: BooksPageProps) {
+export default function BooksPage({ initialStats, error }: BooksPageProps) {
   const { t } = useTranslation();
   const stats = initialStats;
-
-  // --- Filter State ---
-  const [statusFilter, setStatusFilter] = useState<string>(''); // 'Read', 'Currently Reading', 'To Read', or ''
-  const [ratingFilter, setRatingFilter] = useState<number | ''>(''); // 1-5 or ''
-  const [genreFilter, setGenreFilter] = useState<string>(''); // genre string or ''
-
-  // Extract unique genres from initial books for the dropdown
-  const genres = useMemo(() => {
-    // Use categories field instead of non-existent genres field
-    const allGenres = initialBooks.flatMap(book => book.categories || []);
-    // Use Set for uniqueness and filter out any empty/null values
-    return [...new Set(allGenres)].filter(Boolean).sort();
-  }, [initialBooks]);
-  // --- End Filter State ---
   
   // State for book recommendations
   const [showRecommender, setShowRecommender] = useState<boolean>(false);
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
   
+  // State for Algolia search filters
+  const [searchFilters, setSearchFilters] = useState({
+    search: '',
+    filters: ''
+  });
+  
   // Handle book selection for modals
   const handleViewBook = (book: Book) => {
     setSelectedBook(book);
-    // If you have a modal component, open it here
+  };
+
+  // Handle filter changes from the BooksFilter component
+  const handleFilterChange = (filters: any) => {
+    setSearchFilters(filters);
   };
 
   // Handle potential error passed from getStaticProps
@@ -100,8 +90,8 @@ export default function BooksPage({ initialBooks, initialStats, totalBooks, erro
         </div>
       </div>
 
-      {/* Filter Controls Section */}
-      <div className="bg-slate-100 p-4 rounded-lg shadow-sm mb-8 max-w-3xl mx-auto">
+      {/* Filter Controls Section with Custom Algolia Components */}
+      <div className="bg-slate-100 p-4 rounded-lg shadow-sm mb-8">
         <div className="mb-4 flex justify-between items-center">
           <h2 className="text-xl font-semibold text-gray-700">Find Books</h2>
           <button
@@ -112,149 +102,46 @@ export default function BooksPage({ initialBooks, initialStats, totalBooks, erro
           </button>
         </div>
         
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {/* Status Filter */}
-          <div>
-            <label htmlFor="status-filter" className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-            <select
-              id="status-filter"
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
-            >
-              <option value="">All Statuses</option>
-              <option value="Read">Read</option>
-              <option value="Currently Reading">Currently Reading</option>
-              <option value="To Read">To Read</option>
-            </select>
-          </div>
-
-          {/* Rating Filter/Sort */}
-          <div>
-            <label htmlFor="rating-filter" className="block text-sm font-medium text-gray-700 mb-1">Min Rating</label>
-            <select
-              id="rating-filter"
-              value={ratingFilter}
-              onChange={(e) => setRatingFilter(e.target.value ? parseInt(e.target.value) : '')}
-              className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
-            >
-              <option value="">Any Rating</option>
-              <option value="5">★★★★★</option>
-              <option value="4">★★★★☆ & Up</option>
-              <option value="3">★★★☆☆ & Up</option>
-              <option value="2">★★☆☆☆ & Up</option>
-              <option value="1">★☆☆☆☆ & Up</option>
-            </select>
-          </div>
-
-          {/* Genre Filter */}
-          <div>
-            <label htmlFor="genre-filter" className="block text-sm font-medium text-gray-700 mb-1">Genre</label>
-            <select
-              id="genre-filter"
-              value={genreFilter}
-              onChange={(e) => setGenreFilter(e.target.value)}
-              className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
-            >
-              <option value="">All Genres</option>
-              {genres.map(genre => (
-                <option key={genre} value={genre}>{genre}</option>
-              ))}
-            </select>
-          </div>
+        <div className="books-container">
+          <BooksFilter onFilterChange={handleFilterChange} />
+          <BooksList filters={searchFilters} />
         </div>
       </div>
 
       {/* AI Book Recommender */}
       {showRecommender && (
         <BookRecommender 
-          books={initialBooks} 
+          books={[]} // Algolia will handle book data
           onViewBook={handleViewBook}
         />
       )}
-
-      {/* Book Grid */}
-      <SimpleBookGrid
-        initialBooks={initialBooks}
-        totalBooks={totalBooks}
-        statusFilter={statusFilter}
-        ratingFilter={ratingFilter}
-        genreFilter={genreFilter}
-      />
     </Layout>
   );
 }
 
-// Helper function to safely convert potential Timestamp object to ISO string
-const toISOString = (dateValue: any): string | null => {
-  if (!dateValue) return null;
-  // Check for Firestore Timestamp structure (_seconds or seconds)
-  const seconds = dateValue.seconds ?? dateValue._seconds;
-  const nanoseconds = dateValue.nanoseconds ?? dateValue._nanoseconds;
-  if (typeof seconds === 'number' && typeof nanoseconds === 'number') {
-    return new Date(seconds * 1000 + nanoseconds / 1000000).toISOString();
-  }
-  // Check if it's already a Date object or ISO string
-  if (dateValue instanceof Date) return dateValue.toISOString();
-  if (typeof dateValue === 'string') return dateValue; // Assume it's already ISO
-  return null; // Cannot convert
-};
-
-// Serialize book data
-const serializeBook = (doc: QueryDocumentSnapshot): Book => {
-  const data = doc.data() as Record<string, any>; // Use Record for safer access
-  return {
-    id: doc.id,
-    title: data.title || 'Untitled Book',
-    authors: data.authors || ['Unknown Author'],
-    status: data.status || 'toRead',
-    dateAdded: toISOString(data.dateAdded),
-    lastUpdated: toISOString(data.lastUpdated),
-    isbn: data.isbn || '',
-    publishedDate: data.publishedDate || '',
-    description: data.description || '',
-    pageCount: data.pageCount || 0,
-    categories: data.categories || [],
-    averageRating: data.averageRating || 0,
-    // Handle undefined userRating explicitly
-    userRating: data.userRating === undefined ? null : data.userRating,
-    imageLinks: data.imageLinks || { smallThumbnail: '', thumbnail: '' },
-    notes: data.notes || '',
-  } as Book;
-};
-
-
-// Fetch data at build time
-export const getStaticProps: GetStaticProps<BooksPageProps> = async () => {
-  console.log('Books getStaticProps: Fetching initial books and stats...');
+export async function getStaticProps() {
   try {
-    const firestore = getAdminFirestore();
-    const booksRef = firestore.collection('books');
-
-    // 1. Fetch all book statuses for accurate stats calculation
-    // Select only the 'status' field to minimize data transfer
-    const allBooksSnapshot = await booksRef.select('status').get();
-    const allStatuses = allBooksSnapshot.docs.map(doc => doc.data().status || 'toRead');
-
-    const totalBooks = allStatuses.length;
-    const stats = {
-      total: totalBooks,
-      read: allStatuses.filter(status => status === 'read').length,
-      reading: allStatuses.filter(status => status === 'reading').length,
-      toRead: allStatuses.filter(status => status === 'toRead').length,
+    const db = getAdminFirestore();
+    
+    // Get book collection stats
+    const booksSnapshot = await db.collection('books').get();
+    const allBooks = booksSnapshot.docs;
+    
+    // Calculate stats
+    const readBooks = allBooks.filter(doc => doc.data().status === 'Read');
+    const readingBooks = allBooks.filter(doc => doc.data().status === 'Currently Reading');
+    const toReadBooks = allBooks.filter(doc => doc.data().status === 'To Read');
+    
+    const initialStats = {
+      total: allBooks.length,
+      read: readBooks.length,
+      reading: readingBooks.length,
+      toRead: toReadBooks.length,
     };
-
-    // 2. Fetch the first page of books (full data), ordered by title
-    const firstPageSnapshot = await booksRef.orderBy('title').limit(BOOKS_PER_PAGE).get();
-    const initialBooks: Book[] = firstPageSnapshot.docs.map(serializeBook);
-
-    console.log(`Books getStaticProps: Fetched ${initialBooks.length} initial books, calculated stats for ${totalBooks} total books.`);
 
     return {
       props: {
-        initialBooks,
-        initialStats: stats,
-        totalBooks: totalBooks, // Pass total count
+        initialStats,
       },
       revalidate: 3600, // Revalidate every hour
     };
