@@ -1,43 +1,60 @@
-// Use dynamic import for Algolia to avoid build issues
-// This approach works better with Next.js
+/**
+ * Simple, reliable Algolia search implementation
+ * This version avoids complex parameter handling
+ */
+
 const ALGOLIA_APP_ID = process.env.NEXT_PUBLIC_ALGOLIA_APP_ID || 'BIG74MXLH5';
 const ALGOLIA_API_KEY = process.env.NEXT_PUBLIC_ALGOLIA_SEARCH_API_KEY || '7a9ce8a20d3d485a2f7d0979acd0a6a1';
-
-// We'll use direct REST API calls - simplest approach that works reliably
 const ALGOLIA_API_URL = `https://${ALGOLIA_APP_ID}-dsn.algolia.net/1/indexes`;
 
 /**
- * Wrapper for Algolia search with better error handling and logging
- * @param indexName - Name of the Algolia index to search
- * @param query - Search query string
- * @param params - Additional search parameters
- * @returns Search results or empty object on error
+ * Search the Algolia index with the given query and parameters
  */
 export async function searchIndex(indexName: string, query: string = '', params: any = {}) {
   try {
     console.log(`Searching Algolia index '${indexName}' with query: '${query}' and params:`, params);
     
-    // Build the search params object in a format Algolia expects
-    const searchParams: Record<string, string | number> = {
-      query: query
-    };
+    // Create a simple object with all search parameters
+    let paramString = `query=${encodeURIComponent(query)}`;
     
-    // Add pagination params
-    if (params.hitsPerPage) searchParams.hitsPerPage = params.hitsPerPage;
-    if (params.page) searchParams.page = params.page;
-    
-    // Add filters - parse the filter syntax correctly
-    if (params.filters && params.filters.trim() !== '') {
-      // Algolia expects filters in a specific format
-      searchParams.filters = params.filters;
+    // Add page and hits per page if provided
+    if (params.hitsPerPage) {
+      paramString += `&hitsPerPage=${params.hitsPerPage}`;
     }
     
-    // Convert the params object to a URL parameter string
-    const urlParams = new URLSearchParams();
-    urlParams.append('x-algolia-api-key', ALGOLIA_API_KEY);
-    urlParams.append('x-algolia-application-id', ALGOLIA_APP_ID);
+    if (params.page) {
+      paramString += `&page=${params.page}`;
+    }
     
-    // Correctly format the API request to Algolia using fetch
+    // Handle filters - we replace the filter syntax with one known to work
+    if (params.filters && params.filters.trim() !== '') {
+      let filters = params.filters;
+      
+      // Simple direct replacement of common filter patterns
+      if (filters.includes('status =')) {
+        // Extract the status value and format it directly
+        const match = filters.match(/status = "([^"]+)"/i);
+        if (match && match[1]) {
+          filters = `status:${match[1]}`;
+        }
+      } else if (filters.includes('category =')) {
+        // Extract the category value and format it directly
+        const match = filters.match(/category = "([^"]+)"/i);
+        if (match && match[1]) {
+          filters = `category:${match[1]}`;
+        }
+      } else if (filters.includes('rating =')) {
+        // Extract the rating value and format it directly
+        const match = filters.match(/rating = (\d+)/i);
+        if (match && match[1]) {
+          filters = `rating:${match[1]}`;
+        }
+      }
+      
+      paramString += `&filters=${encodeURIComponent(filters)}`;
+    }
+    
+    // Make the API request
     const response = await fetch(`${ALGOLIA_API_URL}/${indexName}/query`, {
       method: 'POST',
       headers: {
@@ -46,13 +63,12 @@ export async function searchIndex(indexName: string, query: string = '', params:
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        params: Object.keys(searchParams)
-          .map(key => `${key}=${encodeURIComponent(String(searchParams[key]))}`)
-          .join('&')
+        params: paramString
       })
     });
     
     if (!response.ok) {
+      console.error(`Algolia API error: ${response.status} ${response.statusText}`);
       throw new Error(`Algolia API error: ${response.statusText}`);
     }
     
