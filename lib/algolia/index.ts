@@ -10,6 +10,16 @@ export async function searchIndex(indexName: string, query: string = '', params:
   try {
     console.log(`Searching Algolia index '${indexName}' with query: '${query}' and params:`, params);
     
+    // Create the params string for Algolia - this is the correct format they expect
+    const searchParams = new URLSearchParams();
+    searchParams.append('query', query);
+    
+    // Add other params
+    if (params.hitsPerPage) searchParams.append('hitsPerPage', params.hitsPerPage.toString());
+    if (params.page) searchParams.append('page', params.page.toString());
+    if (params.filters) searchParams.append('filters', params.filters);
+    if (params.facets) searchParams.append('facets', JSON.stringify(params.facets));
+    
     // Format request to match Algolia API requirements
     const response = await fetch(`${ALGOLIA_SEARCH_URL}/${indexName}/query`, {
       method: 'POST',
@@ -19,14 +29,7 @@ export async function searchIndex(indexName: string, query: string = '', params:
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        query: query,
-        // Include any additional parameters directly
-        hitsPerPage: params.hitsPerPage || 20,
-        page: params.page || 0,
-        filters: params.filters || '',
-        facets: params.facets || [],
-        attributesToRetrieve: params.attributesToRetrieve || ['*'],
-        attributesToHighlight: params.attributesToHighlight || ['*']
+        params: searchParams.toString()
       })
     });
     

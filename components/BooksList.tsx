@@ -38,30 +38,31 @@ const BookCard = ({ book }: { book: Book }) => {
     
   // Choose between book cover or standard placeholder
   const coverUrl = imgError || !bookCover
-    ? 'https://via.placeholder.com/100x150?text=No+Cover' // Standard placeholder
+    ? 'https://via.placeholder.com/120x180?text=No+Cover' // Standard placeholder
     : bookCover;
   
   return (
-    <div className="book-card border border-gray-200 rounded-lg p-4 flex flex-col hover:shadow-md transition-shadow">
-      <div className="book-image mb-3 self-center">
+    <div className="book-card border border-gray-200 rounded-md p-3 flex flex-col hover:shadow-md transition-shadow h-full">
+      <div className="book-image mb-2 self-center">
         <Image 
           src={coverUrl} 
           alt={book.title}
-          width={100}
-          height={150}
-          style={{ objectFit: 'cover' }}
-          className="rounded shadow-sm"
+          width={120}
+          height={180}
+          style={{ objectFit: 'contain' }}
+          className="rounded shadow-sm max-w-full"
           onError={() => setImgError(true)}
+          priority={true}
         />
       </div>
       <div className="book-info flex-1 flex flex-col">
-        <h3 className="font-semibold text-lg">{book.title}</h3>
-        <p className="text-gray-600 text-sm mb-2">by {book.author}</p>
-        <div className="book-meta mt-auto grid grid-cols-1 gap-1 text-sm">
-          <span className="inline-block px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
+        <h3 className="font-semibold text-base line-clamp-2 mb-1">{book.title}</h3>
+        <p className="text-gray-600 text-xs mb-2 line-clamp-1">by {book.author}</p>
+        <div className="book-meta mt-auto flex flex-wrap gap-2 text-xs">
+          <span className="inline-block px-2 py-0.5 bg-blue-50 text-blue-800 rounded-full">
             {book.category || (book.categories && book.categories.length > 0 ? book.categories[0] : 'Uncategorized')}
           </span>
-          <span className="inline-block px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
+          <span className="inline-block px-2 py-0.5 bg-green-50 text-green-800 rounded-full">
             {book.status || 'Unspecified'}
           </span>
           <span className="text-yellow-500">
@@ -191,7 +192,7 @@ export default function BooksList({ filters, className = '' }: BooksListProps) {
   return (
     <div className={`books-list ${className}`}>
       <div className="mb-4 text-sm text-gray-500">{totalHits} books found</div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
         {books.map(book => (
           <BookCard key={book.objectID} book={book} />
         ))}

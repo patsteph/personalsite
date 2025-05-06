@@ -49,17 +49,44 @@ export default function BooksFilter({ onFilterChange, className = '' }: FilterPr
   // Helper functions to update filters and immediately trigger search
   const updateStatusFilter = (status: string) => {
     setStatusFilter(status);
-    setTimeout(() => applyFilters(), 10); // Small timeout to ensure state update is processed
+    // Need to update filters immediately without relying on state updates
+    const filters = [];
+    if (status) filters.push(`status:${status}`);
+    if (categoryFilter) filters.push(`category:${categoryFilter}`);
+    if (ratingFilter) filters.push(`rating:${ratingFilter}`);
+    
+    onFilterChange({
+      search,
+      filters: filters.join(' AND ')
+    });
   };
   
   const updateCategoryFilter = (category: string) => {
     setCategoryFilter(category);
-    setTimeout(() => applyFilters(), 10);
+    // Need to update filters immediately without relying on state updates
+    const filters = [];
+    if (statusFilter) filters.push(`status:${statusFilter}`);
+    if (category) filters.push(`category:${category}`);
+    if (ratingFilter) filters.push(`rating:${ratingFilter}`);
+    
+    onFilterChange({
+      search,
+      filters: filters.join(' AND ')
+    });
   };
   
   const updateRatingFilter = (rating: string) => {
     setRatingFilter(rating);
-    setTimeout(() => applyFilters(), 10);
+    // Need to update filters immediately without relying on state updates
+    const filters = [];
+    if (statusFilter) filters.push(`status:${statusFilter}`);
+    if (categoryFilter) filters.push(`category:${categoryFilter}`);
+    if (rating) filters.push(`rating:${rating}`);
+    
+    onFilterChange({
+      search,
+      filters: filters.join(' AND ')
+    });
   };
   
   return (
