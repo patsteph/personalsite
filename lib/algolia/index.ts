@@ -34,14 +34,39 @@ export async function searchIndex(indexName: string, query: string = '', params:
       page: params.page || 0
     };
     
-    // Handle filters
+    // Handle filters - using a completely different approach based on facets
     if (params.filters && typeof params.filters === 'string' && params.filters.trim() !== '') {
       console.log(`Received filter string: "${params.filters}"`);
       
-      // We'll use Algolia's native filter syntax directly without conversion
-      // This is likely to work better with your index structure
-      searchParams.filters = params.filters;
-      console.log(`Using direct filter string: ${params.filters}`);
+      // Tell Algolia to use these attributes for faceted filtering (in case they're not already configured as facets)
+      searchParams.attributesForFaceting = ['status', 'categories', 'rating'];
+      
+      // Different handling for "to-read" status - using multiple approaches
+      if (params.filters.includes('status:to-read')) {
+        // Try approach 1: Use Algolia's disjunctive faceting (OR between values)
+        searchParams.facetFilters = [];
+        searchParams.filters = 'status:to-read OR status:toRead';
+        console.log(`Using filters with OR: ${searchParams.filters}`);
+        
+        // Also request facet values to be returned for status
+        searchParams.facets = ['status'];
+      } 
+      else if (params.filters.startsWith('status:')) {
+        // For other status values (read, reading)
+        const statusValue = params.filters.replace('status:', '');
+        searchParams.facetFilters = [`status:${statusValue}`];
+        console.log(`Using simple facetFilter: ${JSON.stringify(searchParams.facetFilters)}`);
+      } 
+      else if (params.filters.includes('categories:')) {
+        const categoryValue = params.filters.replace('categories:', '').replace(/"/g, '');
+        searchParams.facetFilters = [`categories:${categoryValue}`];
+        console.log(`Using category facetFilter: ${JSON.stringify(searchParams.facetFilters)}`);
+      }
+      else {
+        // For other filter types, use generic approach
+        searchParams.filters = params.filters;
+        console.log(`Using generic filters: ${params.filters}`);
+      }
       
       // Add a debug log to show what exactly is being sent to Algolia
       console.log('Full search parameters sent to Algolia:', JSON.stringify(searchParams, null, 2));
@@ -100,6 +125,16 @@ export async function searchIndex(indexName: string, query: string = '', params:
       console.warn(`- For Currently Reading: ["status:reading"]`); 
       console.warn(`- For To Read: [["status:to-read", "status:toRead"]]`);
       console.warn(`- Categories example: ["categories:Fiction"]`);
+      
+      // Let's inspect the full Algolia response for debugging
+      console.warn('Full Algolia response:', JSON.stringify(result));
+      
+      // Show the filter syntax from the API docs
+      console.warn('TRY THIS ALTERNATIVE: Set facetsFilters to search for books where status is "to-read" OR "toRead":');
+      console.warn('searchParams.facetFilters = [["status:to-read", "status:toRead"]];');
+      
+      // Check for potential attribute issues
+      console.warn('Make sure your Algolia index has configured "status" as a facet attribute');
     }
     
     console.log('------------------------------');
