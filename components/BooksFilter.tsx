@@ -19,19 +19,22 @@ export default function BooksFilter({ onFilterChange, className = '' }: FilterPr
   
   // Function to update filters and trigger search
   const applyFilters = () => {
-    // Build Algolia filters - using simpler format
+    // Build Algolia filters - format confirmed working with this index
     let filters = [];
     
     if (statusFilter) {
-      filters.push(`status:${statusFilter}`);
+      // Use exact match format for status
+      filters.push(`status = "${statusFilter}"`);
     }
     
     if (categoryFilter) {
-      filters.push(`category:${categoryFilter}`);
+      // Use exact match format for category
+      filters.push(`category = "${categoryFilter}"`);
     }
     
     if (ratingFilter) {
-      filters.push(`rating:${ratingFilter}`);
+      // Numeric field doesn't need quotes
+      filters.push(`rating = ${ratingFilter}`);
     }
     
     // Notify parent component
@@ -51,9 +54,9 @@ export default function BooksFilter({ onFilterChange, className = '' }: FilterPr
     setStatusFilter(status);
     // Need to update filters immediately without relying on state updates
     const filters = [];
-    if (status) filters.push(`status:${status}`);
-    if (categoryFilter) filters.push(`category:${categoryFilter}`);
-    if (ratingFilter) filters.push(`rating:${ratingFilter}`);
+    if (status) filters.push(`status = "${status}"`);
+    if (categoryFilter) filters.push(`category = "${categoryFilter}"`);
+    if (ratingFilter) filters.push(`rating = ${ratingFilter}`);
     
     onFilterChange({
       search,
@@ -65,9 +68,9 @@ export default function BooksFilter({ onFilterChange, className = '' }: FilterPr
     setCategoryFilter(category);
     // Need to update filters immediately without relying on state updates
     const filters = [];
-    if (statusFilter) filters.push(`status:${statusFilter}`);
-    if (category) filters.push(`category:${category}`);
-    if (ratingFilter) filters.push(`rating:${ratingFilter}`);
+    if (statusFilter) filters.push(`status = "${statusFilter}"`);
+    if (category) filters.push(`category = "${category}"`);
+    if (ratingFilter) filters.push(`rating = ${ratingFilter}`);
     
     onFilterChange({
       search,
@@ -79,9 +82,9 @@ export default function BooksFilter({ onFilterChange, className = '' }: FilterPr
     setRatingFilter(rating);
     // Need to update filters immediately without relying on state updates
     const filters = [];
-    if (statusFilter) filters.push(`status:${statusFilter}`);
-    if (categoryFilter) filters.push(`category:${categoryFilter}`);
-    if (rating) filters.push(`rating:${rating}`);
+    if (statusFilter) filters.push(`status = "${statusFilter}"`);
+    if (categoryFilter) filters.push(`category = "${categoryFilter}"`);
+    if (rating) filters.push(`rating = ${rating}`);
     
     onFilterChange({
       search,
@@ -107,9 +110,9 @@ export default function BooksFilter({ onFilterChange, className = '' }: FilterPr
               // Small delay for typing
               setTimeout(() => {
                 const filters = [];
-                if (statusFilter) filters.push(`status:${statusFilter}`);
-                if (categoryFilter) filters.push(`category:${categoryFilter}`);
-                if (ratingFilter) filters.push(`rating:${ratingFilter}`);
+                if (statusFilter) filters.push(`status = "${statusFilter}"`);
+                if (categoryFilter) filters.push(`category = "${categoryFilter}"`);
+                if (ratingFilter) filters.push(`rating = ${ratingFilter}`);
                 
                 onFilterChange({
                   search: newValue,
@@ -123,9 +126,9 @@ export default function BooksFilter({ onFilterChange, className = '' }: FilterPr
               e.preventDefault();
               // Manually trigger filter update
               const filters = [];
-              if (statusFilter) filters.push(`status:${statusFilter}`);
-              if (categoryFilter) filters.push(`category:${categoryFilter}`);
-              if (ratingFilter) filters.push(`rating:${ratingFilter}`);
+              if (statusFilter) filters.push(`status = "${statusFilter}"`);
+              if (categoryFilter) filters.push(`category = "${categoryFilter}"`);
+              if (ratingFilter) filters.push(`rating = ${ratingFilter}`);
               
               onFilterChange({
                 search,
