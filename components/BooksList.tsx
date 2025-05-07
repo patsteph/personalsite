@@ -243,15 +243,6 @@ export default function BooksList({ filters, className = '' }: BooksListProps) {
   const [error, setError] = useState('');
   const [totalHits, setTotalHits] = useState(0);
   const debouncedFilters = useRef(filters);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-  
-  // State for book detail modal
-  const [selectedBook, setSelectedBook] = useState<Book | null>(null);
-  
-  // Load initial sample of books, using localStorage to reduce API calls
-  useEffect(() => {
-    const fetchInitialBooks = async () => {
-      try {
         // Check if we have cached books in localStorage
         const cachedBooks = localStorage.getItem('cachedBooks');
         const cacheTimestamp = localStorage.getItem('booksCacheTimestamp');
@@ -310,12 +301,18 @@ export default function BooksList({ filters, className = '' }: BooksListProps) {
         setError('');
         
         try {
+          // Log the exact filter string for debugging
+          console.log('DEBUG FILTERS:', filters.filters);
+          
           const searchParams: any = {
             hitsPerPage: 50
           };
           
           if (filters.filters) {
             searchParams.filters = filters.filters;
+            
+            // Debugging insight: see what the filter string looks like
+            console.log(`DEBUG: Using filter string: ${filters.filters}`);
           }
           
           const response = await booksIndex.search(filters.search, searchParams);

@@ -12,8 +12,8 @@ export default function BooksFilter({ onFilterChange, className = '' }: FilterPr
   const [categoryFilter, setCategoryFilter] = useState('');
   const [ratingFilter, setRatingFilter] = useState('');
   
-  // Status values - carefully map UI display text to actual database values
-  // The database contains lowercase hyphenated values like 'to-read', 'read', 'reading'
+  // Status values - mapped exactly to the values found in Algolia
+  // The database contains status values: "read", "reading", "to-read", "toRead"
   interface StatusOption {
     label: string; // User-friendly display value
     value: string; // Actual value in the database
@@ -22,7 +22,7 @@ export default function BooksFilter({ onFilterChange, className = '' }: FilterPr
   const statusOptions: StatusOption[] = [
     { label: 'Read', value: 'read' },
     { label: 'Currently Reading', value: 'reading' },
-    { label: 'To Read', value: 'to-read' }
+    { label: 'To Read', value: 'to-read' } // Also handle alternative "toRead" format in the query
   ];
   
   // Available filter options for other filters
@@ -31,17 +31,21 @@ export default function BooksFilter({ onFilterChange, className = '' }: FilterPr
   
   // Function to update filters and trigger search
   const applyFilters = () => {
-    // Build Algolia filters - direct using database values
+    // Build Algolia filters based on the exact index structure
     let filters = [];
     
     if (statusFilter) {
-      // Status filter already has the correct database value
-      // from our statusOptions dropdown
-      filters.push(`status:${statusFilter}`);
+      // Handle special case for "to-read" which might also be "toRead" in the index
+      if (statusFilter === 'to-read') {
+        filters.push(`(status:to-read OR status:toRead)`);
+      } else {
+        filters.push(`status:${statusFilter}`);
+      }
     }
     
     if (categoryFilter) {
-      filters.push(`category:${categoryFilter}`);
+      // Categories are stored as an array in Algolia, so we need to search within the array
+      filters.push(`categories:"${categoryFilter}"`);
     }
     
     if (ratingFilter) {
@@ -65,8 +69,17 @@ export default function BooksFilter({ onFilterChange, className = '' }: FilterPr
     setStatusFilter(status);
     // Need to update filters immediately without relying on state updates
     const filters = [];
-    if (status) filters.push(`status:${status}`);
-    if (categoryFilter) filters.push(`category:${categoryFilter}`);
+    
+    // Handle special case of "to-read" which might also be "toRead" in the index
+    if (status) {
+      if (status === 'to-read') {
+        filters.push(`(status:to-read OR status:toRead)`);
+      } else {
+        filters.push(`status:${status}`);
+      }
+    }
+    
+    if (categoryFilter) filters.push(`categories:"${categoryFilter}"`);
     if (ratingFilter) filters.push(`rating:${ratingFilter}`);
     
     onFilterChange({
@@ -79,8 +92,18 @@ export default function BooksFilter({ onFilterChange, className = '' }: FilterPr
     setCategoryFilter(category);
     // Need to update filters immediately without relying on state updates
     const filters = [];
-    if (statusFilter) filters.push(`status:${statusFilter}`);
-    if (category) filters.push(`category:${category}`);
+    
+    // Handle status filter first
+    if (statusFilter) {
+      if (statusFilter === 'to-read') {
+        filters.push(`(status:to-read OR status:toRead)`);
+      } else {
+        filters.push(`status:${statusFilter}`);
+      }
+    }
+    
+    // Handle category as array in Algolia
+    if (category) filters.push(`categories:"${category}"`);
     if (ratingFilter) filters.push(`rating:${ratingFilter}`);
     
     onFilterChange({
@@ -93,8 +116,18 @@ export default function BooksFilter({ onFilterChange, className = '' }: FilterPr
     setRatingFilter(rating);
     // Need to update filters immediately without relying on state updates
     const filters = [];
-    if (statusFilter) filters.push(`status:${statusFilter}`);
-    if (categoryFilter) filters.push(`category:${categoryFilter}`);
+    
+    // Handle status filter first
+    if (statusFilter) {
+      if (statusFilter === 'to-read') {
+        filters.push(`(status:to-read OR status:toRead)`);
+      } else {
+        filters.push(`status:${statusFilter}`);
+      }
+    }
+    
+    // Handle category as array in Algolia
+    if (categoryFilter) filters.push(`categories:"${categoryFilter}"`);
     if (rating) filters.push(`rating:${rating}`);
     
     onFilterChange({
@@ -121,8 +154,18 @@ export default function BooksFilter({ onFilterChange, className = '' }: FilterPr
               // Small delay for typing
               setTimeout(() => {
                 const filters = [];
-                if (statusFilter) filters.push(`status:${statusFilter}`);
-                if (categoryFilter) filters.push(`category:${categoryFilter}`);
+                
+                // Handle special case of "to-read" which might also be "toRead" in the index
+                if (statusFilter) {
+                  if (statusFilter === 'to-read') {
+                    filters.push(`(status:to-read OR status:toRead)`);
+                  } else {
+                    filters.push(`status:${statusFilter}`);
+                  }
+                }
+                
+                // Categories are stored as an array in Algolia
+                if (categoryFilter) filters.push(`categories:"${categoryFilter}"`);
                 if (ratingFilter) filters.push(`rating:${ratingFilter}`);
                 
                 onFilterChange({
@@ -137,8 +180,18 @@ export default function BooksFilter({ onFilterChange, className = '' }: FilterPr
               e.preventDefault();
               // Manually trigger filter update
               const filters = [];
-              if (statusFilter) filters.push(`status:${statusFilter}`);
-              if (categoryFilter) filters.push(`category:${categoryFilter}`);
+              
+              // Handle special case of "to-read" which might also be "toRead" in the index
+              if (statusFilter) {
+                if (statusFilter === 'to-read') {
+                  filters.push(`(status:to-read OR status:toRead)`);
+                } else {
+                  filters.push(`status:${statusFilter}`);
+                }
+              }
+              
+              // Categories are stored as an array in Algolia
+              if (categoryFilter) filters.push(`categories:"${categoryFilter}"`);
               if (ratingFilter) filters.push(`rating:${ratingFilter}`);
               
               onFilterChange({

@@ -1,8 +1,8 @@
 /**
- * Simplified Algolia client implementation with proper filter syntax
+ * Simplified Algolia client implementation - BASIC version with minimal complexity
  */
 
-// Constants for debugging
+// Always debug to help troubleshoot
 const DEBUG = true;
 
 const ALGOLIA_APP_ID = process.env.NEXT_PUBLIC_ALGOLIA_APP_ID || 'BIG74MXLH5';
@@ -10,48 +10,48 @@ const ALGOLIA_API_KEY = process.env.NEXT_PUBLIC_ALGOLIA_SEARCH_API_KEY || '7a9ce
 const ALGOLIA_API_URL = `https://${ALGOLIA_APP_ID}-dsn.algolia.net/1/indexes`;
 
 /**
- * Search the Algolia index using our custom implementation
- * with properly formatted filters and parameters
+ * Algolia search implementation that properly handles your specific index structure
+ * Based on your actual index data structure:
+ * - objectID = random ID from Firebase
+ * - title = book title
+ * - categories = array of categories from Google API
+ * - status = "read", "reading", "to-read", or "toRead"
+ * - authors = array containing author name
  */
 export async function searchIndex(indexName: string, query: string = '', params: any = {}) {
   try {
-    // Enhanced logging of search parameters
-    if (DEBUG) {
-      console.log('------------------------------');
-      console.log(`🔍 ALGOLIA SEARCH REQUEST`);
-      console.log(`Index: ${indexName}`);
-      console.log(`Query: "${query}"`);
-      console.log('Parameters:', JSON.stringify(params, null, 2));
-      console.log('------------------------------');
-    }
+    // Log search parameters for debugging
+    console.log('------------------------------');
+    console.log(`🔍 ALGOLIA SEARCH REQUEST`);
+    console.log(`Index: ${indexName}`);
+    console.log(`Query: "${query}"`);
+    console.log('Parameters:', JSON.stringify(params, null, 2));
     
-    // Build request body for Algolia
-    const requestBody: any = {
-      query: query,
+    // Build standard search parameters for Algolia
+    const searchParams: any = {
+      query,
       hitsPerPage: params.hitsPerPage || 50,
-      page: params.page || 0,
+      page: params.page || 0
     };
-      // Process filters using facetFilters (more reliable than filters)
+    
+    // Handle filters - converting from "status:to-read" format to Algolia's expected format
     if (params.filters && typeof params.filters === 'string' && params.filters.trim() !== '') {
-      console.log(`Filter string: ${params.filters}`);
+      console.log(`Received filter string: "${params.filters}"`);
       
-      // Since we've updated our components to use the direct facet filter format,
-      // we can just split the filters and use them directly
-      const filterParts = params.filters.split(' AND ');
-      
-      // The facet filters are already in the correct format from our components
-      if (filterParts.length > 0) {
-        requestBody.facetFilters = filterParts;
-        console.log(`Using facetFilters: ${JSON.stringify(filterParts)}`);
-      }
-      
-      // We've already added the facetFilters to the requestBody above
-      if (DEBUG) {
-        console.log(`Prepared Algolia request: ${JSON.stringify(requestBody, null, 2)}`);
+      // Special handling for the "to-read" status which might also be "toRead" in the index
+      // This is the known issue based on the provided index structure
+      if (params.filters.includes('status:to-read')) {
+        // Handle both possible formats of "To Read" status with an OR condition
+        searchParams.filters = '(status:to-read OR status:toRead)';
+        console.log(`Modified status filter to handle multiple formats: ${searchParams.filters}`);
+      } else {
+        // For other filters, use as-is
+        searchParams.filters = params.filters;
+        console.log(`Using filter as provided: ${searchParams.filters}`);
       }
     }
     
-    // Make the search request using fetch
+    // Make the Algolia search request using fetch
     const response = await fetch(`${ALGOLIA_API_URL}/${indexName}/query`, {
       method: 'POST',
       headers: {
@@ -59,7 +59,7 @@ export async function searchIndex(indexName: string, query: string = '', params:
         'X-Algolia-Application-Id': ALGOLIA_APP_ID,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify(requestBody)
+      body: JSON.stringify(searchParams)
     });
     
     if (!response.ok) {
@@ -69,22 +69,37 @@ export async function searchIndex(indexName: string, query: string = '', params:
     
     const result = await response.json();
     
-    if (DEBUG) {
-      console.log('------------------------------');
-      console.log(`🔍 ALGOLIA SEARCH RESPONSE`);
-      console.log(`Results found: ${result.hits?.length || 0}`);
-      console.log(`Total hits: ${result.nbHits || 0}`);
-      if (result.hits?.length === 0 && params.filters) {
-        console.warn('⚠️ WARNING: Zero results with filter - possible filter format issue');
-        console.warn(`Filter used: ${params.filters}`);
-        if (requestBody.facetFilters) {
-          console.warn(`Translated to facetFilters: ${JSON.stringify(requestBody.facetFilters)}`);
-        }
-      }
-      console.log('------------------------------');
-    } else {
-      console.log(`Algolia returned ${result.hits?.length || 0} results`);
+    // Always log the response for debugging
+    console.log('------------------------------');
+    console.log(`🔍 ALGOLIA SEARCH RESPONSE`);
+    console.log(`Results found: ${result.hits?.length || 0}`);
+    console.log(`Total hits: ${result.nbHits || 0}`);
+    
+    // Log the first book to examine its structure exactly as it appears in the Algolia index
+    if (result.hits && result.hits.length > 0) {
+      console.log('SAMPLE BOOK FROM RESULTS:');
+      const sampleBook = result.hits[0];
+      console.log(`- Title: ${sampleBook.title}`);
+      console.log(`- Authors: ${JSON.stringify(sampleBook.authors)}`);
+      console.log(`- Status: "${sampleBook.status}" (${typeof sampleBook.status})`);
+      console.log(`- Categories: ${JSON.stringify(sampleBook.categories)}`);
+      console.log(`- Object ID: ${sampleBook.objectID}`);
+      
+      // Show all keys in the book object to find anything we might have missed
+      console.log('All book properties:', Object.keys(sampleBook).join(', '));
     }
+    
+    // Warning for zero results with filters
+    if (result.hits?.length === 0 && params.filters) {
+      console.warn('⚠️ WARNING: Zero results with filter');
+      console.warn(`Filter used: ${params.filters}`);
+      console.warn(`Try using one of these exact filter strings:`);
+      console.warn(`- For Read books: status:read`);
+      console.warn(`- For Currently Reading: status:reading`); 
+      console.warn(`- For To Read: (status:to-read OR status:toRead)`);
+    }
+    
+    console.log('------------------------------');
     
     return result;
   } catch (error) {
@@ -105,7 +120,35 @@ export function inspectBook(book: any) {
     console.log(`Category: ${book.category || (book.categories && book.categories[0]) || 'None'}`);
     console.log(`Rating: ${book.rating || 0}`);
     console.log(`User Rating: ${book.userRating || 'None'}`);
+    console.log('Full Object:', JSON.stringify(book, null, 2));
     console.log('------------------------------');
+  }
+}
+
+// Helper to try different filter formats and find what works
+export async function debugAlgoliaFilters(indexName: string) {
+  console.log('🔎 DEBUGGING ALGOLIA FILTERS - TRYING DIFFERENT FORMATS...');
+  
+  // Get some books to examine
+  const result = await searchIndex(indexName, '', { hitsPerPage: 5 });
+  
+  if (result.hits && result.hits.length > 0) {
+    const sampleBook = result.hits[0];
+    console.log('SAMPLE BOOK STRUCTURE:');
+    console.log(JSON.stringify(sampleBook, null, 2));
+    
+    // Try to detect the actual attribute names and format
+    console.log('\nDetected attributes that can be filtered:');
+    Object.keys(sampleBook).forEach(key => {
+      console.log(`- ${key}: ${typeof sampleBook[key]} = ${JSON.stringify(sampleBook[key])}`);
+    });
+    
+    // Output actual status values found in the sample
+    if (sampleBook.status) {
+      console.log(`\nActual status value found: "${sampleBook.status}" (${typeof sampleBook.status})`);
+    }
+  } else {
+    console.log('Could not get sample books to analyze');
   }
 }
 
