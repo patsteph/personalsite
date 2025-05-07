@@ -36,32 +36,37 @@ export async function searchIndex(indexName: string, query: string = '', params:
       page: params.page || 0
     };
     
-    // Simple approach: incorporate filter conditions into the query when possible
+    // Add filters if provided - properly handle different filter types
     if (params.filters && typeof params.filters === 'string' && params.filters.trim() !== '') {
       console.log(`Received filter string: "${params.filters}"`);
       
-      // For filtering by status, we can enhance the search query
-      if (params.filters.startsWith('status:')) {
-        const statusValue = params.filters.replace('status:', '');
-        
-        // If we're already searching for something, add the status as an AND condition
-        if (query) {
-          searchParams.query = `${query} status:${statusValue}`;
-        } else {
-          // Otherwise, just search for the status directly
-          searchParams.query = `status:${statusValue}`;
-        }
-        
-        console.log(`Enhanced search query with status: ${searchParams.query}`);
-      } 
-      // For other filter types, use the standard filters parameter
-      else {
+      // Algolia requires specific configuration for facet filtering
+      // Convert filter syntax to appropriate parameters based on type
+      if (params.filters.includes('categories:') || params.filters.includes('rating:')) {
+        // For categories and ratings, we'll use attributesToRetrieve instead of filters
+        // This will ensure Algolia returns all results matching those values
         searchParams.filters = params.filters;
-        console.log(`Using standard filters: ${params.filters}`);
+        
+        // Make sure these fields are specified as retrievable
+        searchParams.attributesToRetrieve = ['*'];
+      } else {
+        // For other filters, use standard filter parameter
+        searchParams.filters = params.filters;
       }
       
-      console.log('Search parameters:', JSON.stringify(searchParams, null, 2));
+      console.log(`Using standard filters: ${params.filters}`);
     }
+    
+    // If the query is exactly one of our status values, enable partial matching
+    // This helps with basic status searches like "read", "reading", etc.
+    if (['read', 'reading', 'to-read'].includes(query.toLowerCase())) {
+      // Enable partial matching for status values
+      searchParams.advancedSyntax = true; 
+      searchParams.typoTolerance = true;
+      console.log(`Enhanced search parameters for status search: ${query}`);
+    }
+    
+    console.log('Search parameters:', JSON.stringify(searchParams, null, 2));
     
     // Make the Algolia search request using fetch
     const response = await fetch(`${ALGOLIA_API_URL}/${indexName}/query`, {
