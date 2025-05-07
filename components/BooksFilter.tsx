@@ -16,13 +16,14 @@ export default function BooksFilter({ onFilterChange, className = '' }: FilterPr
   // The database contains status values: "read", "reading", "to-read", "toRead"
   interface StatusOption {
     label: string; // User-friendly display value
-    value: string; // Actual value in the database
+    value: string; // Exact value in the Algolia index
+    filterValue: string; // Raw filter syntax for Algolia
   }
   
   const statusOptions: StatusOption[] = [
-    { label: 'Read', value: 'read' },
-    { label: 'Currently Reading', value: 'reading' },
-    { label: 'To Read', value: 'to-read' } // Also handle alternative "toRead" format in the query
+    { label: 'Read', value: 'read', filterValue: 'status:read' },
+    { label: 'Currently Reading', value: 'reading', filterValue: 'status:reading' },
+    { label: 'To Read', value: 'to-read', filterValue: 'status:to-read OR status:toRead' }
   ];
   
   // Available filter options for other filters
@@ -73,9 +74,13 @@ export default function BooksFilter({ onFilterChange, className = '' }: FilterPr
     // Need to update filters immediately without relying on state updates
     const filters = [];
     
-    // Simplified handling for status filter
+    // Use the filterValue from statusOptions which has the exact filter syntax
     if (status) {
-      filters.push(`status:${status}`);
+      // Find the selected status option to get its filterValue
+      const selectedOption = statusOptions.find(option => option.value === status);
+      if (selectedOption) {
+        filters.push(selectedOption.filterValue);
+      }
     }
     
     if (categoryFilter) filters.push(`categories:${categoryFilter}`);
@@ -152,9 +157,12 @@ export default function BooksFilter({ onFilterChange, className = '' }: FilterPr
               setTimeout(() => {
                 const filters = [];
                 
-                // Add all current filters
+                // Use the exact filter syntax from statusOptions
                 if (statusFilter) {
-                  filters.push(`status:${statusFilter}`);
+                  const selectedOption = statusOptions.find(option => option.value === statusFilter);
+                  if (selectedOption) {
+                    filters.push(selectedOption.filterValue);
+                  }
                 }
                 
                 if (categoryFilter) filters.push(`categories:${categoryFilter}`);
@@ -175,9 +183,12 @@ export default function BooksFilter({ onFilterChange, className = '' }: FilterPr
               // Manually trigger filter update
               const filters = [];
               
-              // Simple filter building
+              // Use the exact filter syntax from statusOptions
               if (statusFilter) {
-                filters.push(`status:${statusFilter}`);
+                const selectedOption = statusOptions.find(option => option.value === statusFilter);
+                if (selectedOption) {
+                  filters.push(selectedOption.filterValue);
+                }
               }
               
               if (categoryFilter) filters.push(`categories:${categoryFilter}`);

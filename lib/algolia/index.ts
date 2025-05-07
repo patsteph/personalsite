@@ -34,44 +34,17 @@ export async function searchIndex(indexName: string, query: string = '', params:
       page: params.page || 0
     };
     
-    // Handle filters - convert to facetFilters which works better for exact attribute matches
+    // Handle filters
     if (params.filters && typeof params.filters === 'string' && params.filters.trim() !== '') {
       console.log(`Received filter string: "${params.filters}"`);
       
-      // Convert the "status:value" format to Algolia's facetFilters format
-      const filterParts = params.filters.split(' AND ');
-      const facetFilters = [];
+      // We'll use Algolia's native filter syntax directly without conversion
+      // This is likely to work better with your index structure
+      searchParams.filters = params.filters;
+      console.log(`Using direct filter string: ${params.filters}`);
       
-      for (const part of filterParts) {
-        if (part.startsWith('status:')) {
-          // Special handling for status filters
-          if (part === 'status:to-read') {
-            // Handle both possible 'to-read' formats
-            facetFilters.push(['status:to-read', 'status:toRead']);
-            console.log('Adding facet filter for to-read statuses');
-          } else {
-            // Normal status filter (read, reading)
-            const value = part.replace('status:', '');
-            facetFilters.push(`status:${value}`);
-            console.log(`Adding facet filter: status:${value}`);
-          }
-        } else if (part.startsWith('categories:')) {
-          // Handle categories (they're stored as arrays)
-          const value = part.replace('categories:', '').replace(/"/g, '');
-          facetFilters.push(`categories:${value}`);
-          console.log(`Adding facet filter: categories:${value}`);
-        } else if (part.includes(':')) {
-          // Generic handling for other filters
-          facetFilters.push(part);
-          console.log(`Adding facet filter: ${part}`);
-        }
-      }
-      
-      // Apply facetFilters instead of filters
-      if (facetFilters.length > 0) {
-        searchParams.facetFilters = facetFilters;
-        console.log('Using facetFilters:', JSON.stringify(searchParams.facetFilters));
-      }
+      // Add a debug log to show what exactly is being sent to Algolia
+      console.log('Full search parameters sent to Algolia:', JSON.stringify(searchParams, null, 2));
     }
     
     // Make the Algolia search request using fetch
