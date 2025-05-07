@@ -17,13 +17,13 @@ export default function BooksFilter({ onFilterChange, className = '' }: FilterPr
   interface StatusOption {
     label: string; // User-friendly display value
     value: string; // Exact value in the Algolia index
-    filterValue: string; // Raw filter syntax for Algolia
+    searchQuery: string; // Search query to use rather than filter
   }
   
   const statusOptions: StatusOption[] = [
-    { label: 'Read', value: 'read', filterValue: 'status:read' },
-    { label: 'Currently Reading', value: 'reading', filterValue: 'status:reading' },
-    { label: 'To Read', value: 'to-read', filterValue: 'status:to-read OR status:toRead' }
+    { label: 'Read', value: 'read', searchQuery: 'status:read' },
+    { label: 'Currently Reading', value: 'reading', searchQuery: 'status:reading' },
+    { label: 'To Read', value: 'to-read', searchQuery: 'status:to-read status:toRead' }
   ];
   
   // Available filter options for other filters
@@ -71,27 +71,24 @@ export default function BooksFilter({ onFilterChange, className = '' }: FilterPr
   // Helper functions to update filters and immediately trigger search
   const updateStatusFilter = (status: string) => {
     setStatusFilter(status);
-    // Need to update filters immediately without relying on state updates
-    const filters = [];
     
-    // Use the filterValue from statusOptions which has the exact filter syntax
-    if (status) {
-      // Find the selected status option to get its filterValue
-      const selectedOption = statusOptions.find(option => option.value === status);
-      if (selectedOption) {
-        filters.push(selectedOption.filterValue);
-      }
+    // Get the selected option
+    const selectedOption = status ? statusOptions.find(option => option.value === status) : null;
+    
+    // If it's a status filter, use search query directly instead of filters
+    if (selectedOption) {
+      onFilterChange({
+        search: selectedOption.searchQuery, // Use search query for status
+        filters: '' // No need for additional filters
+      });
+      console.log(`DEBUG: Using search query: ${selectedOption.searchQuery}`);
+    } else {
+      // Reset filters if no status selected
+      onFilterChange({
+        search,
+        filters: ''
+      });
     }
-    
-    if (categoryFilter) filters.push(`categories:${categoryFilter}`);
-    if (ratingFilter) filters.push(`rating:${ratingFilter}`);
-    
-    console.log('DEBUG: updateStatusFilter with', filters);
-    
-    onFilterChange({
-      search,
-      filters: filters.length > 0 ? filters.join(' AND ') : ''
-    });
   };
   
   const updateCategoryFilter = (category: string) => {
@@ -155,20 +152,27 @@ export default function BooksFilter({ onFilterChange, className = '' }: FilterPr
             if (newValue.length >= 3 || newValue === '') {
               // Small delay for typing
               setTimeout(() => {
-                const filters = [];
-                
-                // Use the exact filter syntax from statusOptions
+                // If we have a status filter, combine it with the search
                 if (statusFilter) {
                   const selectedOption = statusOptions.find(option => option.value === statusFilter);
                   if (selectedOption) {
-                    filters.push(selectedOption.filterValue);
+                    // Combine user's search text with status query
+                    const combinedSearch = newValue ? `${newValue} ${selectedOption.searchQuery}` : selectedOption.searchQuery;
+                    
+                    console.log(`DEBUG: Combined search: "${combinedSearch}"`);
+                    
+                    onFilterChange({
+                      search: combinedSearch,
+                      filters: ''
+                    });
+                    return; // Exit early since we're using search query approach
                   }
                 }
                 
+                // Default case - just use the search text and any non-status filters
+                const filters = [];
                 if (categoryFilter) filters.push(`categories:${categoryFilter}`);
                 if (ratingFilter) filters.push(`rating:${ratingFilter}`);
-                
-                console.log('DEBUG: Search onChange with', filters);
                 
                 onFilterChange({
                   search: newValue,
@@ -180,21 +184,28 @@ export default function BooksFilter({ onFilterChange, className = '' }: FilterPr
           onKeyPress={(e) => {
             if (e.key === 'Enter') {
               e.preventDefault();
-              // Manually trigger filter update
-              const filters = [];
               
-              // Use the exact filter syntax from statusOptions
+              // If we have a status filter, use search query approach
               if (statusFilter) {
                 const selectedOption = statusOptions.find(option => option.value === statusFilter);
                 if (selectedOption) {
-                  filters.push(selectedOption.filterValue);
+                  // Combine user's search text with status query
+                  const combinedSearch = search ? `${search} ${selectedOption.searchQuery}` : selectedOption.searchQuery;
+                  
+                  console.log(`DEBUG: Combined search on Enter: "${combinedSearch}"`);
+                  
+                  onFilterChange({
+                    search: combinedSearch,
+                    filters: ''
+                  });
+                  return; // Exit early
                 }
               }
               
+              // Default case - just use the search text and any non-status filters
+              const filters = [];
               if (categoryFilter) filters.push(`categories:${categoryFilter}`);
               if (ratingFilter) filters.push(`rating:${ratingFilter}`);
-              
-              console.log('DEBUG: Search onKeyPress with', filters);
               
               onFilterChange({
                 search,
