@@ -19,21 +19,21 @@ export default function BooksFilter({ onFilterChange, className = '' }: FilterPr
   
   // Function to update filters and trigger search
   const applyFilters = () => {
-    // Build Algolia filters - format confirmed working with this index
+    // Build Algolia filters - simple format for facet filtering
     let filters = [];
     
     if (statusFilter) {
-      // Use exact match format for status
+      // Keep this format consistent for our facet filter parser
       filters.push(`status = "${statusFilter}"`);
     }
     
     if (categoryFilter) {
-      // Use exact match format for category
+      // Keep this format consistent for our facet filter parser
       filters.push(`category = "${categoryFilter}"`);
     }
     
     if (ratingFilter) {
-      // Numeric field doesn't need quotes
+      // Keep this format consistent for our facet filter parser
       filters.push(`rating = ${ratingFilter}`);
     }
     

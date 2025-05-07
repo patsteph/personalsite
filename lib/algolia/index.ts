@@ -1,15 +1,17 @@
 /**
- * Debuggable Algolia search implementation
+ * Simplified Algolia client implementation with proper filter syntax
  */
-const ALGOLIA_APP_ID = process.env.NEXT_PUBLIC_ALGOLIA_APP_ID || 'BIG74MXLH5';
-const ALGOLIA_API_KEY = process.env.NEXT_PUBLIC_ALGOLIA_SEARCH_API_KEY || '7a9ce8a20d3d485a2f7d0979acd0a6a1';
-const ALGOLIA_API_URL = `https://${ALGOLIA_APP_ID}-dsn.algolia.net/1/indexes`;
 
 // Constants for debugging
 const DEBUG = true;
 
+const ALGOLIA_APP_ID = process.env.NEXT_PUBLIC_ALGOLIA_APP_ID || 'BIG74MXLH5';
+const ALGOLIA_API_KEY = process.env.NEXT_PUBLIC_ALGOLIA_SEARCH_API_KEY || '7a9ce8a20d3d485a2f7d0979acd0a6a1';
+const ALGOLIA_API_URL = `https://${ALGOLIA_APP_ID}-dsn.algolia.net/1/indexes`;
+
 /**
- * Search the Algolia index with the given query and parameters
+ * Search the Algolia index using our custom implementation
+ * with properly formatted filters and parameters
  */
 export async function searchIndex(indexName: string, query: string = '', params: any = {}) {
   try {
@@ -24,25 +26,55 @@ export async function searchIndex(indexName: string, query: string = '', params:
     }
     
     // Build request body for Algolia
-    const requestBody: any = {};
+    const requestBody: any = {
+      query: query,
+      hitsPerPage: params.hitsPerPage || 50,
+      page: params.page || 0,
+    };
     
-    // Standard parameters
-    requestBody.query = query;
-    if (params.hitsPerPage) requestBody.hitsPerPage = params.hitsPerPage;
-    if (params.page) requestBody.page = params.page;
-    
-    // Process filters
+    // Process filters using facetFilters (more reliable than filters)
     if (params.filters && typeof params.filters === 'string' && params.filters.trim() !== '') {
-      // Add the filter directly - we'll fix the format in the components
-      requestBody.filters = params.filters;
+      console.log(`Filter string: ${params.filters}`);
       
-      if (DEBUG) {
-        console.log(`Filter applied: ${params.filters}`);
+      // Parse filters
+      const filterParts = params.filters.split(' AND ');
+      const facetFilters: string[] = [];
+      
+      // Convert our filter format to Algolia facetFilters format
+      filterParts.forEach((part: string) => {
+        // Status filter
+        if (part.includes('status =')) {
+          const match = part.match(/status = "([^"]+)"/i);
+          if (match && match[1]) {
+            facetFilters.push(`status:${match[1]}`);
+          }
+        }
+        // Category filter
+        else if (part.includes('category =')) {
+          const match = part.match(/category = "([^"]+)"/i);
+          if (match && match[1]) {
+            facetFilters.push(`category:${match[1]}`);
+          }
+        }
+        // Rating filter (numeric)
+        else if (part.includes('rating =')) {
+          const match = part.match(/rating = (\d+)/i);
+          if (match && match[1]) {
+            facetFilters.push(`rating:${match[1]}`);
+          }
+        }
+      });
+      
+      // Add facetFilters if we have any
+      if (facetFilters.length > 0) {
+        requestBody.facetFilters = facetFilters;
+        if (DEBUG) {
+          console.log(`Using facetFilters: ${JSON.stringify(facetFilters)}`);
+        }
       }
     }
-
     
-    // Make the API request
+    // Make the search request using fetch
     const response = await fetch(`${ALGOLIA_API_URL}/${indexName}/query`, {
       method: 'POST',
       headers: {
@@ -68,6 +100,9 @@ export async function searchIndex(indexName: string, query: string = '', params:
       if (result.hits?.length === 0 && params.filters) {
         console.warn('⚠️ WARNING: Zero results with filter - possible filter format issue');
         console.warn(`Filter used: ${params.filters}`);
+        if (requestBody.facetFilters) {
+          console.warn(`Translated to facetFilters: ${JSON.stringify(requestBody.facetFilters)}`);
+        }
       }
       console.log('------------------------------');
     } else {
