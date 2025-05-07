@@ -242,7 +242,13 @@ export default function BooksList({ filters, className = '' }: BooksListProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [totalHits, setTotalHits] = useState(0);
+  const [selectedBook, setSelectedBook] = useState<Book | null>(null);
   const debouncedFilters = useRef(filters);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    const fetchInitialBooks = async () => {
+      try {
         // Check if we have cached books in localStorage
         const cachedBooks = localStorage.getItem('cachedBooks');
         const cacheTimestamp = localStorage.getItem('booksCacheTimestamp');
@@ -287,7 +293,7 @@ export default function BooksList({ filters, className = '' }: BooksListProps) {
     
     fetchInitialBooks();
   }, []);
-  
+
   useEffect(() => {
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
