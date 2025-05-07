@@ -34,20 +34,43 @@ export async function searchIndex(indexName: string, query: string = '', params:
       page: params.page || 0
     };
     
-    // Handle filters - converting from "status:to-read" format to Algolia's expected format
+    // Handle filters - convert to facetFilters which works better for exact attribute matches
     if (params.filters && typeof params.filters === 'string' && params.filters.trim() !== '') {
       console.log(`Received filter string: "${params.filters}"`);
       
-      // Special handling for the "to-read" status which might also be "toRead" in the index
-      // This is the known issue based on the provided index structure
-      if (params.filters.includes('status:to-read')) {
-        // Handle both possible formats of "To Read" status with an OR condition
-        searchParams.filters = '(status:to-read OR status:toRead)';
-        console.log(`Modified status filter to handle multiple formats: ${searchParams.filters}`);
-      } else {
-        // For other filters, use as-is
-        searchParams.filters = params.filters;
-        console.log(`Using filter as provided: ${searchParams.filters}`);
+      // Convert the "status:value" format to Algolia's facetFilters format
+      const filterParts = params.filters.split(' AND ');
+      const facetFilters = [];
+      
+      for (const part of filterParts) {
+        if (part.startsWith('status:')) {
+          // Special handling for status filters
+          if (part === 'status:to-read') {
+            // Handle both possible 'to-read' formats
+            facetFilters.push(['status:to-read', 'status:toRead']);
+            console.log('Adding facet filter for to-read statuses');
+          } else {
+            // Normal status filter (read, reading)
+            const value = part.replace('status:', '');
+            facetFilters.push(`status:${value}`);
+            console.log(`Adding facet filter: status:${value}`);
+          }
+        } else if (part.startsWith('categories:')) {
+          // Handle categories (they're stored as arrays)
+          const value = part.replace('categories:', '').replace(/"/g, '');
+          facetFilters.push(`categories:${value}`);
+          console.log(`Adding facet filter: categories:${value}`);
+        } else if (part.includes(':')) {
+          // Generic handling for other filters
+          facetFilters.push(part);
+          console.log(`Adding facet filter: ${part}`);
+        }
+      }
+      
+      // Apply facetFilters instead of filters
+      if (facetFilters.length > 0) {
+        searchParams.facetFilters = facetFilters;
+        console.log('Using facetFilters:', JSON.stringify(searchParams.facetFilters));
       }
     }
     
@@ -90,13 +113,20 @@ export async function searchIndex(indexName: string, query: string = '', params:
     }
     
     // Warning for zero results with filters
-    if (result.hits?.length === 0 && params.filters) {
-      console.warn('⚠️ WARNING: Zero results with filter');
-      console.warn(`Filter used: ${params.filters}`);
-      console.warn(`Try using one of these exact filter strings:`);
-      console.warn(`- For Read books: status:read`);
-      console.warn(`- For Currently Reading: status:reading`); 
-      console.warn(`- For To Read: (status:to-read OR status:toRead)`);
+    if (result.hits?.length === 0) {
+      console.warn('⚠️ WARNING: Zero results with search parameters');
+      
+      if (searchParams.facetFilters) {
+        console.warn(`Filter used (facetFilters): ${JSON.stringify(searchParams.facetFilters)}`);
+      } else if (searchParams.filters) {
+        console.warn(`Filter used (filters): ${searchParams.filters}`);
+      }
+      
+      console.warn('DEBUGGING HELP: Try the following facet filters:');
+      console.warn(`- For Read books: ["status:read"]`);
+      console.warn(`- For Currently Reading: ["status:reading"]`); 
+      console.warn(`- For To Read: [["status:to-read", "status:toRead"]]`);
+      console.warn(`- Categories example: ["categories:Fiction"]`);
     }
     
     console.log('------------------------------');

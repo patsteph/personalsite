@@ -37,7 +37,7 @@ export default function BooksFilter({ onFilterChange, className = '' }: FilterPr
     if (statusFilter) {
       // Handle special case for "to-read" which might also be "toRead" in the index
       if (statusFilter === 'to-read') {
-        filters.push(`(status:to-read OR status:toRead)`);
+        filters.push(`status:${statusFilter}`);
       } else {
         filters.push(`status:${statusFilter}`);
       }
@@ -45,12 +45,15 @@ export default function BooksFilter({ onFilterChange, className = '' }: FilterPr
     
     if (categoryFilter) {
       // Categories are stored as an array in Algolia, so we need to search within the array
-      filters.push(`categories:"${categoryFilter}"`);
+      filters.push(`categories:${categoryFilter}`);
     }
     
     if (ratingFilter) {
       filters.push(`rating:${ratingFilter}`);
     }
+    
+    // Add debug logging
+    console.log('DEBUG: Building filters string with:', filters);
     
     // Notify parent component
     onFilterChange({
@@ -70,17 +73,15 @@ export default function BooksFilter({ onFilterChange, className = '' }: FilterPr
     // Need to update filters immediately without relying on state updates
     const filters = [];
     
-    // Handle special case of "to-read" which might also be "toRead" in the index
+    // Simplified handling for status filter
     if (status) {
-      if (status === 'to-read') {
-        filters.push(`(status:to-read OR status:toRead)`);
-      } else {
-        filters.push(`status:${status}`);
-      }
+      filters.push(`status:${status}`);
     }
     
-    if (categoryFilter) filters.push(`categories:"${categoryFilter}"`);
+    if (categoryFilter) filters.push(`categories:${categoryFilter}`);
     if (ratingFilter) filters.push(`rating:${ratingFilter}`);
+    
+    console.log('DEBUG: updateStatusFilter with', filters);
     
     onFilterChange({
       search,
@@ -93,18 +94,16 @@ export default function BooksFilter({ onFilterChange, className = '' }: FilterPr
     // Need to update filters immediately without relying on state updates
     const filters = [];
     
-    // Handle status filter first
+    // Handle status filter
     if (statusFilter) {
-      if (statusFilter === 'to-read') {
-        filters.push(`(status:to-read OR status:toRead)`);
-      } else {
-        filters.push(`status:${statusFilter}`);
-      }
+      filters.push(`status:${statusFilter}`);
     }
     
-    // Handle category as array in Algolia
-    if (category) filters.push(`categories:"${category}"`);
+    // Handle category filter
+    if (category) filters.push(`categories:${category}`);
     if (ratingFilter) filters.push(`rating:${ratingFilter}`);
+    
+    console.log('DEBUG: updateCategoryFilter with', filters);
     
     onFilterChange({
       search,
@@ -117,18 +116,16 @@ export default function BooksFilter({ onFilterChange, className = '' }: FilterPr
     // Need to update filters immediately without relying on state updates
     const filters = [];
     
-    // Handle status filter first
+    // Handle status filter
     if (statusFilter) {
-      if (statusFilter === 'to-read') {
-        filters.push(`(status:to-read OR status:toRead)`);
-      } else {
-        filters.push(`status:${statusFilter}`);
-      }
+      filters.push(`status:${statusFilter}`);
     }
     
-    // Handle category as array in Algolia
-    if (categoryFilter) filters.push(`categories:"${categoryFilter}"`);
+    // Handle other filters
+    if (categoryFilter) filters.push(`categories:${categoryFilter}`);
     if (rating) filters.push(`rating:${rating}`);
+    
+    console.log('DEBUG: updateRatingFilter with', filters);
     
     onFilterChange({
       search,
@@ -155,18 +152,15 @@ export default function BooksFilter({ onFilterChange, className = '' }: FilterPr
               setTimeout(() => {
                 const filters = [];
                 
-                // Handle special case of "to-read" which might also be "toRead" in the index
+                // Add all current filters
                 if (statusFilter) {
-                  if (statusFilter === 'to-read') {
-                    filters.push(`(status:to-read OR status:toRead)`);
-                  } else {
-                    filters.push(`status:${statusFilter}`);
-                  }
+                  filters.push(`status:${statusFilter}`);
                 }
                 
-                // Categories are stored as an array in Algolia
-                if (categoryFilter) filters.push(`categories:"${categoryFilter}"`);
+                if (categoryFilter) filters.push(`categories:${categoryFilter}`);
                 if (ratingFilter) filters.push(`rating:${ratingFilter}`);
+                
+                console.log('DEBUG: Search onChange with', filters);
                 
                 onFilterChange({
                   search: newValue,
@@ -181,18 +175,15 @@ export default function BooksFilter({ onFilterChange, className = '' }: FilterPr
               // Manually trigger filter update
               const filters = [];
               
-              // Handle special case of "to-read" which might also be "toRead" in the index
+              // Simple filter building
               if (statusFilter) {
-                if (statusFilter === 'to-read') {
-                  filters.push(`(status:to-read OR status:toRead)`);
-                } else {
-                  filters.push(`status:${statusFilter}`);
-                }
+                filters.push(`status:${statusFilter}`);
               }
               
-              // Categories are stored as an array in Algolia
-              if (categoryFilter) filters.push(`categories:"${categoryFilter}"`);
+              if (categoryFilter) filters.push(`categories:${categoryFilter}`);
               if (ratingFilter) filters.push(`rating:${ratingFilter}`);
+              
+              console.log('DEBUG: Search onKeyPress with', filters);
               
               onFilterChange({
                 search,
