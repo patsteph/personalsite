@@ -40,21 +40,30 @@ export async function searchIndex(indexName: string, query: string = '', params:
     if (params.filters && typeof params.filters === 'string' && params.filters.trim() !== '') {
       console.log(`Received filter string: "${params.filters}"`);
       
-      // Algolia requires specific configuration for facet filtering
-      // Convert filter syntax to appropriate parameters based on type
-      if (params.filters.includes('categories:') || params.filters.includes('rating:')) {
-        // For categories and ratings, we'll use attributesToRetrieve instead of filters
-        // This will ensure Algolia returns all results matching those values
+      // Different handling based on filter type
+      if (params.filters.includes('userRating')) {
+        // Handle numeric rating filters correctly
+        // Algolia requires proper numeric filtering syntax
         searchParams.filters = params.filters;
-        
-        // Make sure these fields are specified as retrievable
-        searchParams.attributesToRetrieve = ['*'];
-      } else {
+        console.log(`Using numeric rating filter: ${params.filters}`);
+      } 
+      else if (params.filters.includes('categories:')) {
+        // For categories, use text-based search approach
+        const categoryValue = params.filters.replace('categories:', '');
+        if (query) {
+          // If we already have a query, enhance it with the category
+          searchParams.query = `${query} ${categoryValue}`;
+        } else {
+          // Otherwise search directly for the category
+          searchParams.query = categoryValue;
+        }
+        console.log(`Enhanced query with category: ${searchParams.query}`);
+      } 
+      else {
         // For other filters, use standard filter parameter
         searchParams.filters = params.filters;
+        console.log(`Using standard filters: ${params.filters}`);
       }
-      
-      console.log(`Using standard filters: ${params.filters}`);
     }
     
     // If the query is exactly one of our status values, enable partial matching

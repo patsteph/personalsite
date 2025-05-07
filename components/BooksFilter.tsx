@@ -115,22 +115,25 @@ export default function BooksFilter({ onFilterChange, className = '' }: FilterPr
   const updateRatingFilter = (rating: string) => {
     setRatingFilter(rating);
     
-    // Since direct search approach is working, let's use it for ratings too
-    let searchValue = search;
+    // For ratings, we need to use numeric filtering instead of text search
+    // The userRating field contains numeric values (1-5)
     
-    // Add rating to the search if it exists
+    // If a rating is selected, create a filter for it
     if (rating) {
-      // We'll search for "5 stars" or similar since rating is a number
-      const ratingText = `${rating} star`;
-      searchValue = search ? `${search} ${ratingText}` : ratingText;
+      console.log(`DEBUG: Using userRating filter: userRating = ${rating}`);
+      
+      // Use Algolia's numeric filtering syntax
+      onFilterChange({
+        search, // Keep any existing search text
+        filters: `userRating = ${rating}` // Exact match on rating number
+      });
+    } else {
+      // Reset rating filter if none selected
+      onFilterChange({
+        search,
+        filters: ''
+      });
     }
-    
-    console.log(`DEBUG: Using simple rating search: ${searchValue}`);
-    
-    onFilterChange({
-      search: searchValue,
-      filters: ''
-    });
   };
   
   return (
