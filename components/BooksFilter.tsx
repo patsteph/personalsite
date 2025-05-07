@@ -12,29 +12,40 @@ export default function BooksFilter({ onFilterChange, className = '' }: FilterPr
   const [categoryFilter, setCategoryFilter] = useState('');
   const [ratingFilter, setRatingFilter] = useState('');
   
-  // Available filter options
-  const statuses = ['Read', 'Currently Reading', 'To Read'];
+  // Status values - carefully map UI display text to actual database values
+  // The database contains lowercase hyphenated values like 'to-read', 'read', 'reading'
+  interface StatusOption {
+    label: string; // User-friendly display value
+    value: string; // Actual value in the database
+  }
+  
+  const statusOptions: StatusOption[] = [
+    { label: 'Read', value: 'read' },
+    { label: 'Currently Reading', value: 'reading' },
+    { label: 'To Read', value: 'to-read' }
+  ];
+  
+  // Available filter options for other filters
   const categories = ["Fiction", "Non-Fiction", "Science Fiction", "Fantasy", "Business", "Self-Help", "Biography"];
   const ratings = [5, 4, 3, 2, 1];
   
   // Function to update filters and trigger search
   const applyFilters = () => {
-    // Build Algolia filters - simple format for facet filtering
+    // Build Algolia filters - direct using database values
     let filters = [];
     
     if (statusFilter) {
-      // Keep this format consistent for our facet filter parser
-      filters.push(`status = "${statusFilter}"`);
+      // Status filter already has the correct database value
+      // from our statusOptions dropdown
+      filters.push(`status:${statusFilter}`);
     }
     
     if (categoryFilter) {
-      // Keep this format consistent for our facet filter parser
-      filters.push(`category = "${categoryFilter}"`);
+      filters.push(`category:${categoryFilter}`);
     }
     
     if (ratingFilter) {
-      // Keep this format consistent for our facet filter parser
-      filters.push(`rating = ${ratingFilter}`);
+      filters.push(`rating:${ratingFilter}`);
     }
     
     // Notify parent component
@@ -54,9 +65,9 @@ export default function BooksFilter({ onFilterChange, className = '' }: FilterPr
     setStatusFilter(status);
     // Need to update filters immediately without relying on state updates
     const filters = [];
-    if (status) filters.push(`status = "${status}"`);
-    if (categoryFilter) filters.push(`category = "${categoryFilter}"`);
-    if (ratingFilter) filters.push(`rating = ${ratingFilter}`);
+    if (status) filters.push(`status:${status}`);
+    if (categoryFilter) filters.push(`category:${categoryFilter}`);
+    if (ratingFilter) filters.push(`rating:${ratingFilter}`);
     
     onFilterChange({
       search,
@@ -68,9 +79,9 @@ export default function BooksFilter({ onFilterChange, className = '' }: FilterPr
     setCategoryFilter(category);
     // Need to update filters immediately without relying on state updates
     const filters = [];
-    if (statusFilter) filters.push(`status = "${statusFilter}"`);
-    if (category) filters.push(`category = "${category}"`);
-    if (ratingFilter) filters.push(`rating = ${ratingFilter}`);
+    if (statusFilter) filters.push(`status:${statusFilter}`);
+    if (category) filters.push(`category:${category}`);
+    if (ratingFilter) filters.push(`rating:${ratingFilter}`);
     
     onFilterChange({
       search,
@@ -82,9 +93,9 @@ export default function BooksFilter({ onFilterChange, className = '' }: FilterPr
     setRatingFilter(rating);
     // Need to update filters immediately without relying on state updates
     const filters = [];
-    if (statusFilter) filters.push(`status = "${statusFilter}"`);
-    if (categoryFilter) filters.push(`category = "${categoryFilter}"`);
-    if (rating) filters.push(`rating = ${rating}`);
+    if (statusFilter) filters.push(`status:${statusFilter}`);
+    if (categoryFilter) filters.push(`category:${categoryFilter}`);
+    if (rating) filters.push(`rating:${rating}`);
     
     onFilterChange({
       search,
@@ -110,9 +121,9 @@ export default function BooksFilter({ onFilterChange, className = '' }: FilterPr
               // Small delay for typing
               setTimeout(() => {
                 const filters = [];
-                if (statusFilter) filters.push(`status = "${statusFilter}"`);
-                if (categoryFilter) filters.push(`category = "${categoryFilter}"`);
-                if (ratingFilter) filters.push(`rating = ${ratingFilter}`);
+                if (statusFilter) filters.push(`status:${statusFilter}`);
+                if (categoryFilter) filters.push(`category:${categoryFilter}`);
+                if (ratingFilter) filters.push(`rating:${ratingFilter}`);
                 
                 onFilterChange({
                   search: newValue,
@@ -126,9 +137,9 @@ export default function BooksFilter({ onFilterChange, className = '' }: FilterPr
               e.preventDefault();
               // Manually trigger filter update
               const filters = [];
-              if (statusFilter) filters.push(`status = "${statusFilter}"`);
-              if (categoryFilter) filters.push(`category = "${categoryFilter}"`);
-              if (ratingFilter) filters.push(`rating = ${ratingFilter}`);
+              if (statusFilter) filters.push(`status:${statusFilter}`);
+              if (categoryFilter) filters.push(`category:${categoryFilter}`);
+              if (ratingFilter) filters.push(`rating:${ratingFilter}`);
               
               onFilterChange({
                 search,
@@ -148,8 +159,8 @@ export default function BooksFilter({ onFilterChange, className = '' }: FilterPr
           onChange={(e) => updateStatusFilter(e.target.value)}
         >
           <option value="">All Statuses</option>
-          {statuses.map(status => (
-            <option key={status} value={status}>{status}</option>
+          {statusOptions.map(option => (
+            <option key={option.value} value={option.value}>{option.label}</option>
           ))}
         </select>
       </div>

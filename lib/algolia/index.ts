@@ -31,46 +31,23 @@ export async function searchIndex(indexName: string, query: string = '', params:
       hitsPerPage: params.hitsPerPage || 50,
       page: params.page || 0,
     };
-    
-    // Process filters using facetFilters (more reliable than filters)
+      // Process filters using facetFilters (more reliable than filters)
     if (params.filters && typeof params.filters === 'string' && params.filters.trim() !== '') {
       console.log(`Filter string: ${params.filters}`);
       
-      // Parse filters
+      // Since we've updated our components to use the direct facet filter format,
+      // we can just split the filters and use them directly
       const filterParts = params.filters.split(' AND ');
-      const facetFilters: string[] = [];
       
-      // Convert our filter format to Algolia facetFilters format
-      filterParts.forEach((part: string) => {
-        // Status filter
-        if (part.includes('status =')) {
-          const match = part.match(/status = "([^"]+)"/i);
-          if (match && match[1]) {
-            facetFilters.push(`status:${match[1]}`);
-          }
-        }
-        // Category filter
-        else if (part.includes('category =')) {
-          const match = part.match(/category = "([^"]+)"/i);
-          if (match && match[1]) {
-            facetFilters.push(`category:${match[1]}`);
-          }
-        }
-        // Rating filter (numeric)
-        else if (part.includes('rating =')) {
-          const match = part.match(/rating = (\d+)/i);
-          if (match && match[1]) {
-            facetFilters.push(`rating:${match[1]}`);
-          }
-        }
-      });
+      // The facet filters are already in the correct format from our components
+      if (filterParts.length > 0) {
+        requestBody.facetFilters = filterParts;
+        console.log(`Using facetFilters: ${JSON.stringify(filterParts)}`);
+      }
       
-      // Add facetFilters if we have any
-      if (facetFilters.length > 0) {
-        requestBody.facetFilters = facetFilters;
-        if (DEBUG) {
-          console.log(`Using facetFilters: ${JSON.stringify(facetFilters)}`);
-        }
+      // We've already added the facetFilters to the requestBody above
+      if (DEBUG) {
+        console.log(`Prepared Algolia request: ${JSON.stringify(requestBody, null, 2)}`);
       }
     }
     
