@@ -115,43 +115,48 @@ export default function AdminDashboard() {
               { range: '10m+', count: 79 }
             ]
           },
-          dataSource: 'mock'
+          dataSource: 'mixed'
         };
         
-        // Fetch real published blog posts count
-        try {
-          if (db) {
-            const postsQuery = query(collection(db, 'posts'), where('published', '==', true));
-            const postsSnapshot = await getDocs(postsQuery);
-            defaultStats.posts = postsSnapshot.size;
-            console.log(`Found ${postsSnapshot.size} published blog posts`);
-          }
-        } catch (err) {
-          console.error('Error fetching blog posts:', err);
-        }
+        // Fetch all collection counts with a uniform approach
+        const collections = [
+          { name: 'blog-posts', field: 'posts', filter: where('published', '==', true) },
+          { name: 'books', field: 'books' },
+          { name: 'signals', field: 'signals' }
+        ];
         
-        // Fetch real books count
-        try {
-          if (db) {
-            const booksQuery = query(collection(db, 'books'));
-            const booksSnapshot = await getDocs(booksQuery);
-            defaultStats.books = booksSnapshot.size;
-            console.log(`Found ${booksSnapshot.size} books`);
-          }
-        } catch (err) {
-          console.error('Error fetching books:', err);
-        }
+        // Log collection names we're fetching
+        console.log('Fetching counts from collections:', collections.map(c => c.name).join(', '));
         
-        // Fetch real signals count
-        try {
-          if (db) {
-            const signalsQuery = query(collection(db, 'signals'));
-            const signalsSnapshot = await getDocs(signalsQuery);
-            defaultStats.signals = signalsSnapshot.size;
-            console.log(`Found ${signalsSnapshot.size} signals`);
+        // Process each collection in sequence
+        for (const collection_info of collections) {
+          try {
+            if (db) {
+              console.log(`Querying collection: ${collection_info.name}`);
+              let collectionQuery;
+              
+              if (collection_info.filter) {
+                // If there's a filter (like for blog-posts where published=true)
+                collectionQuery = query(collection(db, collection_info.name), collection_info.filter);
+              } else {
+                // Simple collection query without filters
+                collectionQuery = query(collection(db, collection_info.name));
+              }
+              
+              const snapshot = await getDocs(collectionQuery);
+              // Type-safe way to set the stats count
+              if (collection_info.field === 'posts') {
+                defaultStats.posts = snapshot.size;
+              } else if (collection_info.field === 'books') {
+                defaultStats.books = snapshot.size;
+              } else if (collection_info.field === 'signals') {
+                defaultStats.signals = snapshot.size;
+              }
+              console.log(`Found ${snapshot.size} items in ${collection_info.name}`);
+            }
+          } catch (err) {
+            console.error(`Error fetching ${collection_info.name}:`, err);
           }
-        } catch (err) {
-          console.error('Error fetching signals:', err);
         }
         
         // Try to get analytics data from the API as a fallback
