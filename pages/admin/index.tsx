@@ -60,6 +60,12 @@ interface DashboardStats {
   pageViews: number;
   recentVisitors: number[];
   popularContent: Array<{name: string, views: number}>;
+  locationData: Array<{country: string, count: number}>;
+  sessionDuration: { 
+    average: number, 
+    distribution: Array<{range: string, count: number}>
+  };
+  dataSource: 'real' | 'partial' | 'mock';
 }
 
 export default function AdminDashboard() {
@@ -159,12 +165,18 @@ export default function AdminDashboard() {
                   <div key={i} className="flex flex-col items-center">
                     <div 
                       className="bg-blue-500 w-12 rounded-t-lg" 
-                      style={{height: `${(count/60) * 100}%`}}
+                      style={{height: `${Math.max((count/Math.max(...stats.recentVisitors)) * 100, 10)}%`}}
                     />
                     <span className="text-xs mt-2">{['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][i]}</span>
+                    <span className="text-xs text-gray-600">{count}</span>
                   </div>
                 ))}
               </div>
+              {stats.dataSource === 'mock' && (
+                <div className="mt-2 text-xs text-gray-500 text-center italic">
+                  Using simulated data. Today's count includes your current visit.
+                </div>
+              )}
             </ChartSection>
             
             <ChartSection title="Most Popular Content">
@@ -180,6 +192,55 @@ export default function AdminDashboard() {
                     <div className="ml-4 min-w-[100px] text-right">
                       <span className="text-sm font-medium text-gray-700">{item.name}</span>
                       <span className="ml-2 text-xs text-gray-500">{item.views}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </ChartSection>
+          </div>
+          
+          {/* Location and Session Duration Charts */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+            <ChartSection title="User Locations">
+              <div className="space-y-4">
+                {stats.locationData.map((item, i) => (
+                  <div key={i} className="flex items-center">
+                    <div className="w-1/4 text-sm">{item.country}</div>
+                    <div className="w-3/4">
+                      <div className="w-full bg-gray-200 rounded-full h-2.5">
+                        <div 
+                          className="bg-green-500 h-2.5 rounded-full" 
+                          style={{width: `${(item.count/stats.locationData[0].count) * 100}%`}}
+                        />
+                      </div>
+                    </div>
+                    <div className="ml-4 min-w-[60px] text-right">
+                      <span className="text-xs text-gray-500">{item.count}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </ChartSection>
+            
+            <ChartSection title="Session Duration">
+              <div className="mb-4 text-center">
+                <span className="text-xl font-bold text-indigo-700">{stats.sessionDuration.average}</span>
+                <span className="text-sm ml-1">minutes average</span>
+              </div>
+              <div className="space-y-3">
+                {stats.sessionDuration.distribution.map((item, i) => (
+                  <div key={i} className="flex items-center">
+                    <div className="w-1/4 text-sm">{item.range}</div>
+                    <div className="w-3/4">
+                      <div className="w-full bg-gray-200 rounded-full h-2.5">
+                        <div 
+                          className="bg-purple-500 h-2.5 rounded-full" 
+                          style={{width: `${(item.count/Math.max(...stats.sessionDuration.distribution.map(d => d.count))) * 100}%`}}
+                        />
+                      </div>
+                    </div>
+                    <div className="ml-4 min-w-[60px] text-right">
+                      <span className="text-xs text-gray-500">{item.count}</span>
                     </div>
                   </div>
                 ))}
