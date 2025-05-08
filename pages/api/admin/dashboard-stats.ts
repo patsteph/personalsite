@@ -56,9 +56,13 @@ async function handler(
     const signalsSnapshot = await db.collection('signals').get();
     const signalsCount = signalsSnapshot.size;
 
-    // Check if there's a real analytics collection
-    const analyticsRef = db.collection('analytics');
-    const analyticsDoc = await analyticsRef.doc('site_stats').get();
+    // Check for existing analytics collections
+    // First check the new tracking events collection
+    const trackingEventsRef = db.collection('trackingEvents');
+    
+    // Then check the old site-stats collection
+    const siteStatsRef = db.collection('site-stats');
+    const siteStatsDoc = await siteStatsRef.doc('stats').get();
     
     let dataSource: 'real' | 'partial' | 'mock' = 'mock';
     
@@ -73,16 +77,115 @@ async function handler(
       distribution: [] as Array<{range: string, count: number}>
     };
     
-    // If we have real analytics, use them
-    if (analyticsDoc.exists) {
-      const analyticsData = analyticsDoc.data() || {};
-      dataSource = 'real';
-      visitors = analyticsData.visitors || 1289;
-      pageViews = analyticsData.pageViews || 3547;
-      recentVisitors = analyticsData.recentVisitors || generateRecentVisitors();
-      popularContent = analyticsData.popularContent || generatePopularContent();
-      locationData = analyticsData.locationData || generateLocationData();
-      sessionDuration = analyticsData.sessionDuration || generateSessionDuration();
+    // Process tracking events to calculate recent visitors (last 7 days)
+    const last7Days = [];
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      date.setHours(0, 0, 0, 0);
+      last7Days.push(date.getTime());
+    }
+    
+    // Try to get page view data from tracking events
+    try {
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      
+      const recentEventsQuery = await trackingEventsRef
+        .where('type', '==', 'pageView')
+        .where('timestamp', '>=', sevenDaysAgo)
+        .get();
+      
+      // If we have tracking data, use it
+      if (!recentEventsQuery.empty) {
+        dataSource = 'real';
+        
+        // Count total visitors and page views
+        const events = recentEventsQuery.docs.map(doc => doc.data());
+        const uniqueVisitors = new Set<string>();
+        const pageViewsByPage: Record<string, number> = {};
+        
+        // Group events by day for the last 7 days
+        const eventsByDay = last7Days.map(day => {
+          const dayEvents = events.filter(event => {
+            const eventDate = new Date(event.timestamp._seconds * 1000);
+            eventDate.setHours(0, 0, 0, 0);
+            return eventDate.getTime() === day;
+          });
+          
+          // Track unique visitors for this day
+          const uniqueVisitorsForDay = new Set();
+          dayEvents.forEach(event => {
+            if (event.visitorId) uniqueVisitorsForDay.add(event.visitorId);
+          });
+          
+          return uniqueVisitorsForDay.size;
+        });
+        
+        // Extract visitors and page views
+        events.forEach(event => {
+          if (event.visitorId) uniqueVisitors.add(event.visitorId);
+          if (event.details?.path) {
+            const path = event.details.path;
+            const pageName = path === '/' ? 'Homepage' : path.substring(1).charAt(0).toUpperCase() + path.substring(2);
+            pageViewsByPage[pageName] = (pageViewsByPage[pageName] || 0) + 1;
+          }
+        });
+        
+        // Prepare the data
+        visitors = uniqueVisitors.size;
+        pageViews = events.length;
+        recentVisitors = eventsByDay;
+        
+        // Create popular content stats
+        const pageEntries = Object.entries(pageViewsByPage);
+        popularContent = pageEntries
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 5)
+          .map(([name, views]) => ({ name, views: views as number }));
+      }
+    } catch (err) {
+      console.error('Error processing tracking events:', err);
+    }
+    
+    // If we have site stats from the old collection, use them
+    if (siteStatsDoc.exists) {
+      dataSource = dataSource === 'real' ? 'real' : 'partial';
+      const siteStatsData = siteStatsDoc.data() || {};
+      
+      // Use site stats if we don't have tracking data yet
+      if (dataSource !== 'real') {
+        visitors = siteStatsData.totalVisits || 1289;
+        
+        // Safely extract page visits from site stats
+        const pageVisits = siteStatsData.pageVisits as Record<string, number> || {};
+        pageViews = Object.values(pageVisits).reduce((a, b) => a + b, 0) || 3547;
+      }
+      
+      // Try to extrapolate location data from feedback
+      if (siteStatsData.feedback) {
+        const countryData: Record<string, number> = {};
+        const feedback = siteStatsData.feedback as Record<string, { country?: string }>;
+        
+        Object.values(feedback).forEach((entry) => {
+          if (entry && entry.country) {
+            countryData[entry.country] = (countryData[entry.country] || 0) + 1;
+          }
+        });
+        
+        if (Object.keys(countryData).length > 0) {
+          locationData = Object.entries(countryData)
+            .sort((a, b) => b[1] - a[1])
+            .map(([country, count]) => ({ country, count }));
+        } else {
+          locationData = generateLocationData();
+        }
+      } else {
+        locationData = generateLocationData();
+      }
+      
+      // Calculate session duration based on available data or use mock
+      sessionDuration = siteStatsData.sessionDuration || generateSessionDuration();
     } else {
       // Generate realistic mock data that includes the current session
       dataSource = 'mock';
@@ -169,23 +272,35 @@ async function handler(
  */
 export default async function(req: NextApiRequest, res: NextApiResponse) {
   try {
+    // Check for development environment
+    const nodeEnv = process.env.NODE_ENV as string;
+    if (nodeEnv === 'development') {
+      // In development, we'll allow access without authentication
+      console.log('Development mode: bypassing authentication for dashboard stats');
+      return handler(req, res);
+    }
+    
     // Validate the authentication token
     const uid = await validateFirebaseIdToken(req);
     
-    if (!uid) {
+    // Check for development token (from fetch-json.ts)
+    const authHeader = req.headers.authorization;
+    const isDevToken = authHeader === 'Bearer dev-token' && nodeEnv === 'development';
+    
+    if (!uid && !isDevToken) {
       return res.status(401).json({
         success: false,
         error: 'Unauthorized access'
       });
     }
     
-    // Proceed to handler if authenticated
+    // If authenticated, proceed to handler
     return handler(req, res);
   } catch (error) {
-    console.error('Dashboard stats API authentication error:', error);
-    return res.status(401).json({
+    console.error('Authentication error:', error);
+    return res.status(500).json({
       success: false,
-      error: 'Unauthorized access'
+      error: 'Server error during authentication'
     });
   }
 };
