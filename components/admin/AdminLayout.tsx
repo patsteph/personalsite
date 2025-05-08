@@ -37,11 +37,10 @@ export default function AdminLayout({ children, loading = false, loadingMessage,
   
   const navItems: NavItem[] = [
     { name: 'Dashboard', href: '/admin', icon: HomeIcon, color: 'text-blue-500' },
-    { name: 'Blog Posts', href: '/admin/blog', icon: DocumentTextIcon, color: 'text-green-500' },
+    { name: 'Blog', href: '/admin/blog', icon: DocumentTextIcon, color: 'text-green-500' },
     { name: 'CV', href: '/admin/cv', icon: DocumentDuplicateIcon, color: 'text-purple-500' },
     { name: 'Books', href: '/admin/books', icon: BookOpenIcon, color: 'text-amber-500' },
     { name: 'Signals', href: '/admin/signals', icon: SignalIcon, color: 'text-red-500' },
-    { name: 'Content Items', href: '/admin/content-items', icon: PuzzlePieceIcon, color: 'text-indigo-500' },
     { name: 'Easter Eggs', href: '/admin/easter-eggs', icon: UserGroupIcon, color: 'text-pink-500' },
     { name: 'Settings', href: '/admin/settings', icon: CogIcon, color: 'text-gray-500' },
   ];

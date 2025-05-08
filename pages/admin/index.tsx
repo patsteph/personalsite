@@ -84,7 +84,8 @@ export default function AdminDashboard() {
       } catch (err) {
         toast.error('Error loading dashboard statistics');
         console.error('Error fetching dashboard stats:', err);
-        toast.error('Failed to load dashboard statistics');
+        setLoading(false);
+      } finally {
         setLoading(false);
       }
     };

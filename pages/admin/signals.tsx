@@ -259,9 +259,9 @@ const SignalsAdminPage: React.FC<SignalsAdminPageProps> = ({ initialSignals, ser
       
       <AdminLayout pageTitle="Manage Signals" loading={isLoading}>
         <div className="w-full">
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-bold text-steel-blue">Manage Signals</h1>
-            <div className="flex space-x-4">
+          <div className="flex flex-col items-center mb-6">
+            <h1 className="text-2xl font-bold text-steel-blue mb-4">Manage Signals</h1>
+            <div className="flex justify-center">
               {!isFormOpen && (
                 <button
                   onClick={handleNewSignal}
@@ -270,12 +270,6 @@ const SignalsAdminPage: React.FC<SignalsAdminPageProps> = ({ initialSignals, ser
                   Add New Signal
                 </button>
               )}
-              <button
-                onClick={() => router.push('/admin')}
-                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
-              >
-                Back to Admin
-              </button>
             </div>
           </div>
 

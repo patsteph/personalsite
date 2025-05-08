@@ -16,7 +16,8 @@ export default function AdminBooksPage() {
   const [pageLoading, setPageLoading] = useState(true);
   const [books, setBooks] = useState<Book[]>([]);
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
-  const [showAddForm, setShowAddForm] = useState(false);
+  // Show the add form by default
+  const [showAddForm, setShowAddForm] = useState(true);
   const [showDuplicates, setShowDuplicates] = useState(true);
   
   // After auth state is determined, set page loading to false
@@ -206,16 +207,6 @@ export default function AdminBooksPage() {
                 <h2 className="text-xl font-bold text-steel-blue">
                   Books ({books.length})
                 </h2>
-                
-                <button
-                  onClick={() => {
-                    setSelectedBook(null);
-                    setShowAddForm(true);
-                  }}
-                  className="text-steel-blue hover:text-accent text-sm"
-                >
-                  + Add New Book
-                </button>
               </div>
               
               {/* Duplicate information */}
