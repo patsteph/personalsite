@@ -69,14 +69,34 @@ export async function fetchJson<T extends ApiResponse>(url: string, options?: Re
  */
 async function getAuthToken(): Promise<string | null> {
   try {
-    // Check if we have Firebase auth
-    if (!firebaseAuth || !firebaseAuth.currentUser) {
-      return null;
+    // First try the cookie-based authentication
+    const fbTokenFromCookie = clientCookies.get(FB_TOKEN_COOKIE_NAME);
+    if (fbTokenFromCookie) {
+      console.log('Using Firebase ID token from cookie');
+      return fbTokenFromCookie;
     }
     
-    // Get a fresh token
-    const token = await firebaseAuth.currentUser.getIdToken(true);
-    return token;
+    // Then try to get a fresh token from Firebase auth
+    if (firebaseAuth?.currentUser) {
+      console.log('Retrieving fresh Firebase ID token');
+      try {
+        const token = await firebaseAuth.currentUser.getIdToken(true);
+        // Store the token in a cookie for future requests
+        clientCookies.set(FB_TOKEN_COOKIE_NAME, token, { path: '/' });
+        return token;
+      } catch (tokenError) {
+        console.error('Error getting fresh token:', tokenError);
+      }
+    }
+    
+    // For development, use a fallback mechanism
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Using development fallback authentication');
+      return 'dev-token';
+    }
+    
+    console.warn('No authentication sources available');
+    return null;
   } catch (error) {
     console.error('Error getting auth token:', error);
     return null;

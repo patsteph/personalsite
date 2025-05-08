@@ -23,8 +23,13 @@ const BlogAIAssistant: React.FC<BlogAIAssistantProps> = ({ content, onApplyChang
   
   const tasks = getAvailableTasks();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Updated to handle both form submit and button click
+  const handleSubmit = async (e?: React.FormEvent | React.MouseEvent) => {
+    // Prevent default behavior if there's an event object
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     
     if (!content.trim()) {
       toast.error('Please enter some content to process');
@@ -95,7 +100,7 @@ const BlogAIAssistant: React.FC<BlogAIAssistantProps> = ({ content, onApplyChang
     <div className="bg-white shadow-md rounded-lg p-4 mb-6">
       <h3 className="text-lg font-medium text-gray-900 mb-4">AI Writing Assistant</h3>
       
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} className="ai-assistant-form">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -203,7 +208,8 @@ const BlogAIAssistant: React.FC<BlogAIAssistantProps> = ({ content, onApplyChang
 
         <div className="flex justify-end">
           <button
-            type="submit"
+            type="button" /* Changed from submit to button to avoid form submission */
+            onClick={handleSubmit}
             className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             disabled={isProcessing}
           >

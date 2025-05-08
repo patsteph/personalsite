@@ -211,22 +211,14 @@ export default function AdminBlogPage() {
           ) : (
             // Blog posts list
             <>
-              <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold text-steel-blue">Manage Blog Posts</h1>
-                <div className="flex gap-4">
-                  <button
-                    onClick={handleBackToDashboard}
-                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
-                  >
-                    Return to Dashboard
-                  </button>
-                  <button
-                    onClick={handleNewPost}
-                    className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
-                  >
-                    Create New Post
-                  </button>
-                </div>
+              <div className="flex flex-col items-center mb-6">
+                <h1 className="text-2xl font-bold text-steel-blue mb-4">Manage Blog Posts</h1>
+                <button
+                  onClick={handleNewPost}
+                  className="px-6 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 font-medium"
+                >
+                  Create New Post
+                </button>
               </div>
               
               {/* Alerts */}

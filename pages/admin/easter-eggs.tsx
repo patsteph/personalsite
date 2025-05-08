@@ -23,12 +23,19 @@ function EasterEggsAdminPage() {
   const resetAllEasterEggs = () => {
     if (window.confirm('Are you sure you want to reset all discovered Easter eggs? This will make them undiscovered for all users.')) {
       try {
-        // Reset Easter eggs using the easterEggManager
-        // This is a client-side operation to reset the local storage state
-        window.localStorage.removeItem('discoveredEasterEggs');
-        
-        // Reload the page to reflect changes
-        window.location.reload();
+        // Only run this code on the client-side
+        if (typeof window !== 'undefined') {
+          // Reset Easter eggs in local storage
+          window.localStorage.removeItem('discoveredEasterEggs');
+          
+          // Show success message
+          alert('Easter eggs have been reset successfully!');
+          
+          // Reload the current page to reflect changes, but wait a moment
+          setTimeout(() => {
+            window.location.href = '/admin'; // Direct to admin dashboard instead of reloading
+          }, 500);
+        }
       } catch (error) {
         console.error('Error resetting Easter eggs:', error);
         alert('There was an error resetting the Easter eggs.');

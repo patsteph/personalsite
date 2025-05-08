@@ -142,20 +142,59 @@ export default function AdminBooksPage() {
       </Head>
       
       <AdminLayout pageTitle="Book Management" loading={pageLoading || !user}>
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl md:text-4xl font-bold text-accent">
+      <div className="flex flex-col items-center mb-8">
+        <h1 className="text-3xl md:text-4xl font-bold text-accent mb-6">
           Book Management
         </h1>
         
-        <Link
-          href="/admin"
-          className="inline-flex items-center text-steel-blue hover:text-accent transition-colors"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-          Back to Dashboard
-        </Link>
+        {/* Stats cards */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 w-full mb-6">
+          <div className="bg-white rounded-lg shadow p-4 text-center">
+            <p className="text-gray-600 text-sm">Total Books</p>
+            <p className="text-2xl font-bold text-indigo-600">{books.length}</p>
+          </div>
+          
+          <div className="bg-white rounded-lg shadow p-4 text-center">
+            <p className="text-gray-600 text-sm">Read</p>
+            <p className="text-2xl font-bold text-green-600">
+              {books.filter(book => book.status === 'read').length}
+            </p>
+          </div>
+          
+          <div className="bg-white rounded-lg shadow p-4 text-center">
+            <p className="text-gray-600 text-sm">Reading</p>
+            <p className="text-2xl font-bold text-amber-600">
+              {books.filter(book => book.status === 'reading').length}
+            </p>
+          </div>
+          
+          <div className="bg-white rounded-lg shadow p-4 text-center">
+            <p className="text-gray-600 text-sm">To Read</p>
+            <p className="text-2xl font-bold text-blue-600">
+              {books.filter(book => book.status === 'to-read').length}
+            </p>
+          </div>
+          
+          <div className="bg-white rounded-lg shadow p-4 text-center">
+            <p className="text-gray-600 text-sm">Duplicates</p>
+            <p className="text-2xl font-bold text-red-600">
+              {Object.values(duplicateGroups).flat().length}
+            </p>
+          </div>
+          
+          <div className="bg-white rounded-lg shadow p-4 text-center">
+            <p className="text-gray-600 text-sm">Last 45 Days</p>
+            <p className="text-2xl font-bold text-purple-600">
+              {books.filter(book => {
+                if (!book.dateAdded) return false;
+                const now = new Date();
+                const daysAgo45 = new Date();
+                daysAgo45.setDate(now.getDate() - 45);
+                return new Date(book.dateAdded) > daysAgo45;
+              }).length}
+            </p>
+          </div>
+        </div>
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">

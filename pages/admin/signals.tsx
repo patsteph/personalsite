@@ -33,6 +33,12 @@ const SignalsAdminPage: React.FC<SignalsAdminPageProps> = ({ initialSignals, ser
   const [activeTab, setActiveTab] = useState<'all' | 'newsletter' | 'article'>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Load signals on component mount
+  useEffect(() => {
+    fetchSignals();
+  }, []); 
+
+  // Clear success/error messages after a delay
   useEffect(() => {
     if (successMessage || error) {
       const timer = setTimeout(() => {

@@ -72,32 +72,17 @@ export default function AdminDashboard() {
     const fetchStats = async () => {
       try {
         setLoading(true);
-        // Fetch stats from API (we'll use mock data for now)
-        // In a real implementation, this would be:
-        // const data = await fetchJson<{success: boolean, data: DashboardStats}>('/api/admin/dashboard-stats');
-        // setStats(data.data);
+        // Fetch real stats from our API endpoint
+        const response = await fetchJson<{success: boolean, data?: DashboardStats, error?: string}>('/api/admin/dashboard-stats');
         
-        // Mock data
-        setTimeout(() => {
-          setStats({
-            posts: 15,
-            books: 107,
-            signals: 42,
-            visitors: 1289,
-            pageViews: 3547,
-            recentVisitors: [45, 29, 35, 23, 30, 51, 42],
-            popularContent: [
-              { name: 'Homepage', views: 850 },
-              { name: 'Blog', views: 643 },
-              { name: 'Books', views: 492 },
-              { name: 'CV', views: 412 },
-              { name: 'Signals', views: 328 }
-            ]
-          });
-          setLoading(false);
-        }, 800);
-        
+        if (response.success && response.data) {
+          setStats(response.data);
+        } else {
+          toast.error('Failed to load dashboard statistics');
+          console.error('API returned error:', response.error);
+        }
       } catch (err) {
+        toast.error('Error loading dashboard statistics');
         console.error('Error fetching dashboard stats:', err);
         toast.error('Failed to load dashboard statistics');
         setLoading(false);

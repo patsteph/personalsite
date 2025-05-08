@@ -43,7 +43,6 @@ export default function AdminLayout({ children, loading = false, loadingMessage,
     { name: 'Signals', href: '/admin/signals', icon: SignalIcon, color: 'text-red-500' },
     { name: 'Content Items', href: '/admin/content-items', icon: PuzzlePieceIcon, color: 'text-indigo-500' },
     { name: 'Easter Eggs', href: '/admin/easter-eggs', icon: UserGroupIcon, color: 'text-pink-500' },
-    { name: 'Analytics', href: '/admin/analytics', icon: ChartBarIcon, color: 'text-emerald-500' },
     { name: 'Settings', href: '/admin/settings', icon: CogIcon, color: 'text-gray-500' },
   ];
 

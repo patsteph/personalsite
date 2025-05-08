@@ -52,56 +52,54 @@ export async function verifyAdminSession(req: NextApiRequest): Promise<boolean> 
  */
 export async function validateAuthToken(req: NextApiRequest): Promise<string | null> {
   try {
-    // Proper implementation checking for session cookie
-    const cookies = req.cookies;
-    const sessionCookie = cookies['auth_success']; // Using the auth_success cookie name
+    // Check all potential sources of authentication
     
-    if (!sessionCookie) {
-      console.log('No session cookie found in request');
+    // 1. First check Authorization header (Bearer token)
+    let token: string | null = null;
+    const authHeader = req.headers.authorization;
+    if (typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
+      token = authHeader.split('Bearer ')[1];
+      console.log('Found Bearer token in Authorization header');
+    }
+    
+    // 2. If no token in header, check cookies
+    if (!token) {
+      // Check for Firebase ID token cookie
+      const fbToken = req.cookies['fb_token'] || null;
+      if (fbToken) {
+        token = fbToken;
+        console.log('Found token in fb_token cookie');
+      }
+      
+      // Check for auth_success cookie as fallback
+      if (!token) {
+        const authToken = req.cookies['auth_success'] || null;
+        if (authToken) {
+          token = authToken;
+          console.log('Found token in auth_success cookie');
+        }
+      }
+    }
+    
+    // If no token found anywhere, authentication fails
+    if (!token) {
+      console.log('No authentication token found in request');
       return null;
     }
     
-    // For development environment, we'll accept any non-empty session cookie
-    // In production, you would verify this with Firebase Admin SDK
+    // For development environment, we'll accept any token
     if (process.env.NODE_ENV === 'development') {
-      console.log('Development mode: accepting session cookie without verification');
+      console.log('Development mode: accepting authentication without verification');
       return 'dev-admin-uid';
     }
     
-    // Use Firebase Admin to verify the session cookie in production
-    // This code would need to be implemented with actual Firebase Admin validation
-    // Check for authorization header and extract token
-    let token: string | null = null;
-    const maybeHeader = req.headers.authorization;
-    if (typeof maybeHeader === 'string') {
-      const header = maybeHeader as string;
-      if (header.startsWith('Bearer ')) {
-        token = header.split('Bearer ')[1];
-      }
-    }
-    if (!token) {
-      return null;
-    }
-    
-    // Store token in admin collection if it doesn't exist yet
+    // In production, verify the token
     try {
-      // First, try to get UID from token claims
-      // TODO: Replace with server-side API call for token verification
-      const decodedToken = { uid: 'stub-uid' };
-      return decodedToken.uid;
+      // TODO: Implement actual Firebase Admin token verification
+      // For now, just return a dummy UID
+      return 'verified-admin-uid';
     } catch (error) {
       console.error('Error verifying token:', error);
-      
-      // If we can't verify the token, check if it exists in our admin records
-      try {
-        // TODO: Replace with server-side API call for admin tokens
-        // Placeholder: No admin tokens found
-        return null;
-      } catch (fsError) {
-        console.error('Error checking token in admin records:', fsError);
-        console.error('Error checking token in Firestore:', fsError);
-      }
-      
       return null;
     }
   } catch (error) {
