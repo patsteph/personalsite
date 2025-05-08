@@ -2,8 +2,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import dynamic from 'next/dynamic';
-import Layout from '@/components/layout/Layout';
-import ProtectedRoute from '@/components/ProtectedRoute';
+import AdminLayout from '@/components/admin/AdminLayout';
 import { BlogPost } from '@/types/blog';
 import api from '@/lib/api';
 
@@ -182,13 +181,13 @@ export default function AdminBlogPage() {
   };
   
   return (
-    <ProtectedRoute>
-      <Layout section="admin">
-        <Head>
-          <title>Blog Management | Admin</title>
-        </Head>
-        
-        <div className="container mx-auto px-4 py-8">
+    <>
+      <Head>
+        <title>Blog Management | Admin</title>
+      </Head>
+      
+      <AdminLayout pageTitle="Blog Management" loading={isLoading}>
+        <div className="w-full">
           {isEditorOpen ? (
             // Blog post editor
             <div className="bg-white rounded-lg shadow-md p-6">
@@ -390,7 +389,7 @@ export default function AdminBlogPage() {
             </>
           )}
         </div>
-      </Layout>
-    </ProtectedRoute>
+      </AdminLayout>
+    </>
   );
 }

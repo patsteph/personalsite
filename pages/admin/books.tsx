@@ -1,10 +1,10 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
-import Layout from '@/components/layout/Layout';
-import LoginForm from '@/components/admin/LoginForm';
+import Head from 'next/head';
+import AdminLayout from '@/components/admin/AdminLayout';
 import BookForm from '@/components/admin/BookForm';
-import { useAuth } from '@/lib/auth';
+import { useAuth } from '@/lib/hooks/useAuth';
 import { getBooks, getBookById, deleteBook } from '@/lib/books';
 import { Book } from '@/types/book';
 import { useTranslation } from '@/lib/translations';
@@ -134,35 +134,14 @@ export default function AdminBooksPage() {
     }
   };
   
-  if (pageLoading) {
-    return (
-      <Layout section="admin">
-        <div className="flex justify-center items-center py-16">
-          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-steel-blue border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]" />
-        </div>
-      </Layout>
-    );
-  }
-  
-  // If not authenticated, show login form
-  if (!user) {
-    return (
-      <Layout section="admin">
-        <h1 className="text-3xl md:text-4xl font-bold text-accent mb-8">
-          {t('admin.login', 'Admin Login')}
-        </h1>
-        
-        <LoginForm />
-      </Layout>
-    );
-  }
-  
-  // If authenticated, show book management
+  // AdminLayout handles both loading and auth states for us
   return (
-    <Layout 
-      section="admin"
-      title="Book Management"
-    >
+    <>
+      <Head>
+        <title>Book Management | Admin</title>
+      </Head>
+      
+      <AdminLayout pageTitle="Book Management" loading={pageLoading || !user}>
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl md:text-4xl font-bold text-accent">
           Book Management
@@ -299,6 +278,7 @@ export default function AdminBooksPage() {
           )}
         </div>
       </div>
-    </Layout>
+      </AdminLayout>
+    </>
   );
 }

@@ -1,164 +1,238 @@
 // pages/admin/index.tsx
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import dynamic from 'next/dynamic';
-import Layout from '@/components/layout/Layout';
-import { useAuth } from '@/lib/auth';
+import { useAuth } from '@/lib/hooks/useAuth';
 import { useTranslation } from '@/lib/translations';
+import AdminLayout from '@/components/admin/AdminLayout';
+import { fetchJson } from '@/lib/fetch-json';
+import toast from 'react-hot-toast';
 
-// Dynamically import components to reduce initial load size
+// Import dashboard stat icons
+import {
+  DocumentTextIcon,
+  BookOpenIcon,
+  SignalIcon,
+  UserIcon,
+  EyeIcon,
+  StarIcon
+} from '@heroicons/react/24/outline';
 
-// NEW: Dynamically import TrackingAnalytics
-const TrackingAnalytics = dynamic(() => import('../../components/admin/TrackingAnalytics'), {
-  loading: () => <div className="p-6 text-center">Loading analytics data...</div>,
-  ssr: false // Admin section doesn't need server-side rendering
-});
+type StatCardProps = {
+  title: string;
+  value: string | number;
+  description?: string;
+  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+  color: string;
+};
 
-export default function AdminPage() {
-  const router = useRouter();
-  const { signOut } = useAuth();
+// Stats dashboard card component
+const StatCard = ({ title, value, description, icon: Icon, color }: StatCardProps) => (
+  <div className="bg-white rounded-lg shadow-md p-6 transition-all duration-150 hover:shadow-lg">
+    <div className="flex items-start">
+      <div className={`${color} bg-opacity-10 p-3 rounded-lg`}>
+        <Icon className={`h-6 w-6 ${color}`} />
+      </div>
+      <div className="ml-4">
+        <h3 className="text-gray-500 text-sm font-medium">{title}</h3>
+        <div className="mt-1 flex items-baseline">
+          <p className="text-2xl font-semibold text-gray-900">{value}</p>
+        </div>
+        {description && <p className="mt-1 text-xs text-gray-500">{description}</p>}
+      </div>
+    </div>
+  </div>
+);
+
+// Chart section component
+const ChartSection = ({ title, children }: { title: string, children: React.ReactNode }) => (
+  <div className="bg-white rounded-lg shadow-md p-6">
+    <h3 className="text-lg font-medium text-gray-900 mb-4">{title}</h3>
+    {children}
+  </div>
+);
+
+// Stats summary interface
+interface DashboardStats {
+  posts: number;
+  books: number;
+  signals: number;
+  visitors: number;
+  pageViews: number;
+  recentVisitors: number[];
+  popularContent: Array<{name: string, views: number}>;
+}
+
+export default function AdminDashboard() {
   const { t } = useTranslation();
-  const [activeTab, setActiveTab] = useState('main'); // 'main' or 'analytics'
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState<DashboardStats | null>(null);
   
-  const handleSignOut = async () => {
-    await signOut();
-    router.push('/');
-  };
-  
-  const navigateTo = (path: string) => {
-    router.push(path);
-  };
+  // Fetch dashboard statistics
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        setLoading(true);
+        // Fetch stats from API (we'll use mock data for now)
+        // In a real implementation, this would be:
+        // const data = await fetchJson<{success: boolean, data: DashboardStats}>('/api/admin/dashboard-stats');
+        // setStats(data.data);
+        
+        // Mock data
+        setTimeout(() => {
+          setStats({
+            posts: 15,
+            books: 107,
+            signals: 42,
+            visitors: 1289,
+            pageViews: 3547,
+            recentVisitors: [45, 29, 35, 23, 30, 51, 42],
+            popularContent: [
+              { name: 'Homepage', views: 850 },
+              { name: 'Blog', views: 643 },
+              { name: 'Books', views: 492 },
+              { name: 'CV', views: 412 },
+              { name: 'Signals', views: 328 }
+            ]
+          });
+          setLoading(false);
+        }, 800);
+        
+      } catch (err) {
+        console.error('Error fetching dashboard stats:', err);
+        toast.error('Failed to load dashboard statistics');
+        setLoading(false);
+      }
+    };
+    
+    fetchStats();
+  }, []);
   
   return (
-    <Layout section="admin">
-      <div className="max-w-4xl mx-auto px-4">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-accent">
-            {t('admin.dashboard', 'Admin Dashboard')}
-          </h1>
-          <div className="flex space-x-4">
-            {activeTab === 'analytics' && (
-              <button
-                onClick={() => setActiveTab('main')}
-                className="bg-steel-blue hover:bg-accent text-white font-medium py-2 px-4 rounded transition-colors"
+    <AdminLayout 
+      loading={loading} 
+      loadingMessage="Loading dashboard statistics..."
+      pageTitle="Dashboard Overview"
+    >
+      {stats && (
+        <div className="space-y-8">
+          {/* Key stat cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <StatCard
+              title="Blog Posts"
+              value={stats.posts}
+              description="Total published articles"
+              icon={DocumentTextIcon}
+              color="text-green-500"
+            />
+            <StatCard
+              title="Books"
+              value={stats.books}
+              description="Books in your collection"
+              icon={BookOpenIcon}
+              color="text-amber-500"
+            />
+            <StatCard
+              title="Signals"
+              value={stats.signals}
+              description="Published signals and newsletters"
+              icon={SignalIcon}
+              color="text-red-500"
+            />
+          </div>
+          
+          {/* Visitor stats */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <StatCard
+              title="Unique Visitors"
+              value={stats.visitors.toLocaleString()}
+              description="Last 30 days"
+              icon={UserIcon}
+              color="text-blue-500"
+            />
+            <StatCard
+              title="Page Views"
+              value={stats.pageViews.toLocaleString()}
+              description="Last 30 days"
+              icon={EyeIcon}
+              color="text-indigo-500"
+            />
+            <StatCard
+              title="Avg. Engagement"
+              value="4.7"
+              description="Average user rating"
+              icon={StarIcon}
+              color="text-purple-500"
+            />
+          </div>
+          
+          {/* Chart sections */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <ChartSection title="Visitor Traffic (Last 7 Days)">
+              <div className="h-64 flex items-end justify-between px-4">
+                {stats.recentVisitors.map((count, i) => (
+                  <div key={i} className="flex flex-col items-center">
+                    <div 
+                      className="bg-blue-500 w-12 rounded-t-lg" 
+                      style={{height: `${(count/60) * 100}%`}}
+                    />
+                    <span className="text-xs mt-2">{['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][i]}</span>
+                  </div>
+                ))}
+              </div>
+            </ChartSection>
+            
+            <ChartSection title="Most Popular Content">
+              <div className="space-y-4">
+                {stats.popularContent.map((item, i) => (
+                  <div key={i} className="flex items-center">
+                    <div className="w-full bg-gray-200 rounded-full h-2.5">
+                      <div 
+                        className="bg-indigo-600 h-2.5 rounded-full" 
+                        style={{width: `${(item.views/stats.popularContent[0].views) * 100}%`}}
+                      />
+                    </div>
+                    <div className="ml-4 min-w-[100px] text-right">
+                      <span className="text-sm font-medium text-gray-700">{item.name}</span>
+                      <span className="ml-2 text-xs text-gray-500">{item.views}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </ChartSection>
+          </div>
+          
+          {/* Quick actions */}
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Quick Actions</h3>
+            <div className="flex flex-wrap gap-3">
+              <button 
+                onClick={() => toast.success('Coming soon!')}
+                className="px-4 py-2 bg-indigo-100 text-indigo-700 rounded-md text-sm font-medium hover:bg-indigo-200 transition-colors"
               >
-                Back to Dashboard
+                Create New Blog Post
               </button>
-            )}
-            <button
-              onClick={handleSignOut}
-              className="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded transition-colors"
-            >
-              {t('admin.signOut', 'Sign Out')}
-            </button>
+              <button 
+                onClick={() => toast.success('Coming soon!')}
+                className="px-4 py-2 bg-amber-100 text-amber-700 rounded-md text-sm font-medium hover:bg-amber-200 transition-colors"
+              >
+                Add New Book
+              </button>
+              <button 
+                onClick={() => toast.success('Coming soon!')}
+                className="px-4 py-2 bg-red-100 text-red-700 rounded-md text-sm font-medium hover:bg-red-200 transition-colors"
+              >
+                Create Signal
+              </button>
+              <button 
+                onClick={() => toast.success('Coming soon!')}
+                className="px-4 py-2 bg-green-100 text-green-700 rounded-md text-sm font-medium hover:bg-green-200 transition-colors"
+              >
+                Export Analytics
+              </button>
+            </div>
           </div>
         </div>
-        
-        {activeTab === 'analytics' ? (
-          // Render the new TrackingAnalytics component
-          <TrackingAnalytics />
-        ) : (
-          /* Admin Navigation Cards */
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 mb-8">
-          {/* Books Management Card */}
-          <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-            <div className="h-40 bg-steel-blue bg-opacity-20 flex items-center justify-center">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-12 h-12 text-steel-blue">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
-              </svg>
-            </div>
-            <div className="p-6">
-              <h2 className="text-xl font-bold text-steel-blue mb-2">Book Management</h2>
-              <p className="text-gray-600 mb-4">Add, edit, and manage your book collection.</p>
-              <button 
-                onClick={() => navigateTo('/admin/books')}
-                className="w-full py-2 bg-steel-blue text-white rounded hover:bg-opacity-90 transition-colors"
-              >
-                Manage Books
-              </button>
-            </div>
-          </div>
-          
-          {/* Signals Management Card */}
-          <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-            <div className="h-40 bg-amber-600 bg-opacity-20 flex items-center justify-center">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-12 h-12 text-amber-600">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
-              </svg>
-            </div>
-            <div className="p-6">
-              <h2 className="text-xl font-bold text-amber-600 mb-2">Signals</h2>
-              <p className="text-gray-600 mb-4">Manage newsletters and articles you recommend.</p>
-              <button 
-                onClick={() => navigateTo('/admin/signals')}
-                className="w-full py-2 bg-amber-600 text-white rounded hover:bg-opacity-90 transition-colors"
-              >
-                Manage Signals
-              </button>
-            </div>
-          </div>
-          
-          {/* Blog Management Card */}
-          <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-            <div className="h-40 bg-indigo-600 bg-opacity-20 flex items-center justify-center">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-12 h-12 text-indigo-600">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
-              </svg>
-            </div>
-            <div className="p-6">
-              <h2 className="text-xl font-bold text-indigo-600 mb-2">Blog Management</h2>
-              <p className="text-gray-600 mb-4">Write, edit, and publish blog posts.</p>
-              <button 
-                onClick={() => navigateTo('/admin/blog')}
-                className="w-full py-2 bg-indigo-600 text-white rounded hover:bg-opacity-90 transition-colors"
-              >
-                Manage Blog
-              </button>
-            </div>
-          </div>
-          
-          {/* CV Management Card */}
-          <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-            <div className="h-40 bg-green-600 bg-opacity-20 flex items-center justify-center">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-12 h-12 text-green-600">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z" />
-              </svg>
-            </div>
-            <div className="p-6">
-              <h2 className="text-xl font-bold text-green-600 mb-2">CV Management</h2>
-              <p className="text-gray-600 mb-4">Update your resume, experience, skills, and education.</p>
-              <button 
-                onClick={() => navigateTo('/admin/cv')}
-                className="w-full py-2 bg-green-600 text-white rounded hover:bg-opacity-90 transition-colors"
-              >
-                Manage CV
-              </button>
-            </div>
-          </div>
-          
-          {/* Analytics Card */}
-          <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-            <div className="h-40 bg-emerald-600 bg-opacity-20 flex items-center justify-center">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-12 h-12 text-emerald-600">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 14.25v2.25m3-4.5v4.5m3-6.75v6.75m3-9v9M6 20.25h12A2.25 2.25 0 0020.25 18V6A2.25 2.25 0 0018 3.75H6A2.25 2.25 0 003.75 6v12A2.25 2.25 0 006 20.25z" />
-              </svg>
-            </div>
-            <div className="p-6">
-              <h2 className="text-xl font-bold text-emerald-600 mb-2">Analytics</h2>
-              <p className="text-gray-600 mb-4">View site usage statistics and interactions.</p>
-              <button 
-                onClick={() => setActiveTab('analytics')} // Set tab to 'analytics'
-                className="w-full py-2 bg-emerald-600 text-white rounded hover:bg-opacity-90 transition-colors"
-              >
-                View Analytics
-              </button>
-            </div>
-          </div>
-          
-        </div>
-        )}
-        
-      </div>
-    </Layout>
+      )}
+    </AdminLayout>
   );
 }

@@ -9,8 +9,7 @@ import {
   sanitizeData 
 } from '@/lib/api/signals';
 import { SignalSchema, SignalSchemaType } from '@/lib/schemas/signals'; 
-import Layout from '@/components/layout/Layout';
-import ProtectedRoute from '@/components/ProtectedRoute';
+import AdminLayout from '@/components/admin/AdminLayout';
 import SignalForm from '@/components/admin/SignalForm';
 
 import { Signal, Newsletter, Article } from '@/lib/schemas/signals';
@@ -247,13 +246,13 @@ const SignalsAdminPage: React.FC<SignalsAdminPageProps> = ({ initialSignals, ser
   };
 
   return (
-    <ProtectedRoute>
-      <Layout section="admin">
-        <Head>
-          <title>Manage Signals | Admin</title>
-        </Head>
-
-        <div className="container mx-auto px-4 py-8">
+    <>
+      <Head>
+        <title>Manage Signals | Admin</title>
+      </Head>
+      
+      <AdminLayout pageTitle="Manage Signals" loading={isLoading}>
+        <div className="w-full">
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-2xl font-bold text-steel-blue">Manage Signals</h1>
             <div className="flex space-x-4">
@@ -429,8 +428,8 @@ const SignalsAdminPage: React.FC<SignalsAdminPageProps> = ({ initialSignals, ser
             </>
           )}
         </div>
-      </Layout>
-    </ProtectedRoute>
+      </AdminLayout>
+    </>
   );
 };
 

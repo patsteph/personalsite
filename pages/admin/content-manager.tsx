@@ -3,9 +3,9 @@
  * Using completely new naming pattern to avoid middleware issues
  */
 import { useState, useEffect } from 'react';
-import Layout from '@/components/layout/Layout';
-import { useAuth } from '@/lib/auth';
-import ProtectedRoute from '@/components/ProtectedRoute';
+import Head from 'next/head';
+import AdminLayout from '@/components/admin/AdminLayout';
+import { useAuth } from '@/lib/hooks/useAuth';
 import { Signal } from '@/types/signals';
 
 export default function ContentManagerPage() {
@@ -188,9 +188,13 @@ export default function ContentManagerPage() {
   };
 
   return (
-    <ProtectedRoute>
-      <Layout title="Content Manager" section="admin">
-        <div className="container mx-auto px-4 py-8">
+    <>
+      <Head>
+        <title>Content Manager | Admin</title>
+      </Head>
+      
+      <AdminLayout pageTitle="Content Manager" loading={isLoading}>
+        <div className="w-full">
           <h1 className="text-3xl font-bold mb-6">Content Manager</h1>
           
           {error && (
@@ -401,7 +405,7 @@ export default function ContentManagerPage() {
             </div>
           </div>
         </div>
-      </Layout>
-    </ProtectedRoute>
+      </AdminLayout>
+    </>
   );
 }

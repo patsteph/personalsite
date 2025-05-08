@@ -3,9 +3,9 @@
  * Using EXACTLY the same pattern as books admin
  */
 import { useState, useEffect } from 'react';
-import Layout from '@/components/layout/Layout';
-import { useAuth } from '@/lib/auth';
-import ProtectedRoute from '@/components/ProtectedRoute';
+import Head from 'next/head';
+import AdminLayout from '@/components/admin/AdminLayout';
+import { useAuth } from '@/lib/hooks/useAuth';
 import { Signal, Newsletter, Article } from '@/types/signals';
 
 export default function ContentItemsPage() {
@@ -144,9 +144,13 @@ export default function ContentItemsPage() {
   };
 
   return (
-    <ProtectedRoute>
-      <Layout title="Content Items" section="admin">
-        <div className="container mx-auto px-4 py-8">
+    <>
+      <Head>
+        <title>Content Items | Admin</title>
+      </Head>
+      
+      <AdminLayout pageTitle="Content Items" loading={isLoading}>
+        <div className="w-full">
           <h1 className="text-3xl font-bold mb-6">Content Items Admin</h1>
           
           {error && (
@@ -348,7 +352,7 @@ export default function ContentItemsPage() {
             </div>
           </div>
         </div>
-      </Layout>
-    </ProtectedRoute>
+      </AdminLayout>
+    </>
   );
 }

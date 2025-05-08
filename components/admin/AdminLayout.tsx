@@ -3,28 +3,59 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import AdminLoading from './AdminLoading';
 
+// Import SVG icons from heroicons
+import {
+  HomeIcon,
+  DocumentTextIcon,
+  DocumentDuplicateIcon, 
+  BookOpenIcon,
+  ChartBarIcon,
+  CogIcon,
+  BellIcon,
+  UserGroupIcon,
+  PuzzlePieceIcon,
+  SignalIcon
+} from '@heroicons/react/24/outline';
+
 type AdminLayoutProps = {
   children: ReactNode;
   loading?: boolean;
   loadingMessage?: string;
+  pageTitle?: string;
 };
 
-export default function AdminLayout({ children, loading = false, loadingMessage }: AdminLayoutProps) {
+// Navigation item with icon, name, href, and color
+type NavItem = {
+  name: string;
+  href: string;
+  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+  color: string; // Tailwind color class
+};
+
+export default function AdminLayout({ children, loading = false, loadingMessage, pageTitle }: AdminLayoutProps) {
   const router = useRouter();
   
-  const navItems = [
-    { name: 'Dashboard', href: '/admin' },
-    { name: 'Blog Posts', href: '/admin/blog' },
-    { name: 'CV', href: '/admin/cv' },
-    { name: 'Books', href: '/admin/books' },
-    { name: 'Analytics', href: '/admin/analytics' },
-    { name: 'Settings', href: '/admin/settings' },
+  const navItems: NavItem[] = [
+    { name: 'Dashboard', href: '/admin', icon: HomeIcon, color: 'text-blue-500' },
+    { name: 'Blog Posts', href: '/admin/blog', icon: DocumentTextIcon, color: 'text-green-500' },
+    { name: 'CV', href: '/admin/cv', icon: DocumentDuplicateIcon, color: 'text-purple-500' },
+    { name: 'Books', href: '/admin/books', icon: BookOpenIcon, color: 'text-amber-500' },
+    { name: 'Signals', href: '/admin/signals', icon: SignalIcon, color: 'text-red-500' },
+    { name: 'Content Items', href: '/admin/content-items', icon: PuzzlePieceIcon, color: 'text-indigo-500' },
+    { name: 'Easter Eggs', href: '/admin/easter-eggs', icon: UserGroupIcon, color: 'text-pink-500' },
+    { name: 'Analytics', href: '/admin/analytics', icon: ChartBarIcon, color: 'text-emerald-500' },
+    { name: 'Settings', href: '/admin/settings', icon: CogIcon, color: 'text-gray-500' },
   ];
 
   const isActive = (path: string) => {
     return router.pathname === path || 
       (path !== '/admin' && router.pathname.startsWith(path));
   };
+
+  // Get title for current page
+  const currentPageTitle = pageTitle || 
+    navItems.find(item => isActive(item.href))?.name || 
+    'Admin Dashboard';
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -35,26 +66,41 @@ export default function AdminLayout({ children, loading = false, loadingMessage 
         </div>
         <nav className="mt-5 px-2">
           <div className="space-y-1">
-            {navItems.map((item) => (
-              <Link
-                key={item.name}
-                href={item.href}
-                className={`${
-                  isActive(item.href)
-                    ? 'bg-gray-100 text-gray-900'
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                } group flex items-center px-2 py-2 text-base font-medium rounded-md`}
-              >
-                {item.name}
-              </Link>
-            ))}
+            {navItems.map((item) => {
+              const active = isActive(item.href);
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className={`${
+                    active
+                      ? 'bg-gray-100 font-bold'
+                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                  } group flex items-center px-4 py-3 text-sm rounded-md transition-all duration-150 ease-in-out`}
+                >
+                  <item.icon 
+                    className={`mr-3 h-5 w-5 flex-shrink-0 ${active ? item.color : 'text-gray-400 group-hover:text-gray-500'}`} 
+                    aria-hidden="true" 
+                  />
+                  <span className={active ? item.color : ''}>{item.name}</span>
+                </Link>
+              );
+            })}
           </div>
         </nav>
       </div>
 
       {/* Main content */}
       <div className="pl-64">
-        <div className="p-6">
+        {/* Header with page title */}
+        <div className="bg-white shadow-sm">
+          <div className="px-8 py-6">
+            <h1 className="text-2xl font-semibold text-gray-900">{currentPageTitle}</h1>
+          </div>
+        </div>
+        
+        {/* Page content */}
+        <div className="p-8">
           {loading ? (
             <AdminLoading message={loadingMessage} />
           ) : (
