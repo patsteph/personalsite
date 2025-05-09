@@ -109,8 +109,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
    * Route protection effect
    * Redirects users based on authentication state and current route
    */
+  // Use a ref to track whether a redirect is in progress
+  const redirectInProgress = React.useRef(false);
+
   useEffect(() => {
     if (loading) return;
+
+    // Prevent multiple redirects
+    if (redirectInProgress.current) return;
 
     const currentPath = router.pathname;
     const isProtectedRoute = protectedAdminRoutes.some(route => 
@@ -120,7 +126,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // Redirect unauthenticated users from protected routes to login
     if (isProtectedRoute && !isAuthenticated) {
       if (DEBUG_AUTH) console.log('Redirecting to login: protected route access attempted');
-      router.push('/admin/login');
+      redirectInProgress.current = true;
+      router.push('/admin/login')
+        .finally(() => {
+          // Reset after navigation completes or fails
+          setTimeout(() => {
+            redirectInProgress.current = false;
+          }, 1000);
+        });
       return;
     }
     
@@ -128,10 +141,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     if (publicAdminRoutes.includes(currentPath) && isAuthenticated) {
       if (DEBUG_AUTH) console.log('Redirecting to admin: already authenticated');
       
-      // Use window.location for full page navigation to trigger middleware
-      setTimeout(() => {
-        window.location.href = '/admin';
-      }, REDIRECT_DELAY_MS);
+      // Use router.push instead of window.location to avoid history API abuse
+      redirectInProgress.current = true;
+      router.push('/admin')
+        .finally(() => {
+          // Reset after navigation completes or fails
+          setTimeout(() => {
+            redirectInProgress.current = false;
+          }, 1000);
+        });
     }
   }, [loading, isAuthenticated, router.pathname, protectedAdminRoutes, publicAdminRoutes]);
 
