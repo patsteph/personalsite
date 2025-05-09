@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { useTranslation } from '@/lib/translations';
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { collection, getDocs, query, where, doc, getDoc, limit, orderBy, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase-client';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { fetchJson } from '@/lib/fetch-json';
@@ -159,20 +159,120 @@ export default function AdminDashboard() {
           }
         }
         
-        // Try to get analytics data from the API as a fallback
+        // Try to get real analytics data from Firestore
+        try {
+          if (db) {
+            console.log('Attempting to fetch real analytics data from Firestore...');
+            
+            // Try to get site-stats data
+            try {
+              const siteStatsRef = doc(db, 'site-stats', 'stats');
+              const siteStatsDoc = await getDoc(siteStatsRef);
+              
+              if (siteStatsDoc.exists()) {
+                console.log('Found site-stats data:', siteStatsDoc.data());
+                const siteStatsData = siteStatsDoc.data();
+                
+                // Update visitor counts if available
+                if (siteStatsData.totalVisits) {
+                  defaultStats.visitors = siteStatsData.totalVisits;
+                }
+                
+                // Update page views if available
+                if (siteStatsData.pageVisits) {
+                  const pageVisitCounts = Object.values(siteStatsData.pageVisits) as number[];
+                  defaultStats.pageViews = pageVisitCounts.reduce((sum, count) => sum + count, 0);
+                }
+                
+                defaultStats.dataSource = 'real';
+              }
+            } catch (err) {
+              console.error('Error fetching site-stats:', err);
+            }
+            
+            // Try to get recent tracking events for visitor counts
+            try {
+              const sevenDaysAgo = new Date();
+              sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+              
+              // First check if we can access the trackingEvents collection
+              const testQuery = query(collection(db, 'trackingEvents'), limit(1));
+              const testSnapshot = await getDocs(testQuery);
+              console.log(`TrackingEvents access test: ${testSnapshot.empty ? 'No data or access denied' : 'Access granted'}`);
+              
+              if (!testSnapshot.empty) {
+                // We have access, let's get the real data
+                const recentEventsQuery = query(
+                  collection(db, 'trackingEvents'),
+                  where('type', '==', 'pageView'),
+                  where('timestamp', '>=', sevenDaysAgo),
+                  orderBy('timestamp', 'asc')
+                );
+                
+                const eventsSnapshot = await getDocs(recentEventsQuery);
+                console.log(`Found ${eventsSnapshot.size} recent tracking events`);
+                
+                if (eventsSnapshot.size > 0) {
+                  // Process events to get daily visitor counts
+                  const eventsByDay: Record<string, Set<string>> = {};
+                  const uniqueVisitors = new Set<string>();
+                  
+                  eventsSnapshot.forEach(doc => {
+                    const data = doc.data();
+                    const date = new Date(data.timestamp.seconds * 1000);
+                    const dayKey = date.toISOString().split('T')[0];
+                    
+                    // Count unique visitors per day
+                    if (!eventsByDay[dayKey]) {
+                      eventsByDay[dayKey] = new Set();
+                    }
+                    
+                    if (data.visitorId) {
+                      eventsByDay[dayKey].add(data.visitorId);
+                      uniqueVisitors.add(data.visitorId);
+                    }
+                  });
+                  
+                  // Convert to array for last 7 days
+                  const last7Days = [];
+                  for (let i = 6; i >= 0; i--) {
+                    const date = new Date();
+                    date.setDate(date.getDate() - i);
+                    const dayKey = date.toISOString().split('T')[0];
+                    
+                    const visitorCount = eventsByDay[dayKey] ? eventsByDay[dayKey].size : 0;
+                    last7Days.push(visitorCount);
+                  }
+                  
+                  // Update stats with real data
+                  defaultStats.recentVisitors = last7Days;
+                  defaultStats.visitors = uniqueVisitors.size;
+                  defaultStats.dataSource = 'real';
+                  
+                  console.log('Using real visitor data from trackingEvents');
+                }
+              }
+            } catch (err) {
+              console.error('Error fetching tracking events:', err);
+            }
+          }
+        } catch (err) {
+          console.error('Error fetching analytics data:', err);
+        }
+        
+        // Try the API endpoint as a fallback
         try {
           const response = await fetchJson<{success: boolean, data?: DashboardStats, error?: string}>('/api/admin/dashboard-stats');
           
           if (response.success && response.data) {
             // Merge the API response with our direct Firestore data
-            // Keep the direct count data we fetched but use API analytics data
             const { posts, books, signals, ...analyticsData } = response.data;
             setStats({
               ...analyticsData,
               posts: defaultStats.posts, // Keep our direct count
               books: defaultStats.books,
               signals: defaultStats.signals,
-              dataSource: 'mixed'
+              dataSource: defaultStats.dataSource === 'real' ? 'real' : 'mixed'
             });
             return; // Exit if we got data from the API
           }
