@@ -135,9 +135,10 @@ export default function ContactInfo(props: ContactInfoProps) {
               rel="noopener noreferrer"
               className="flex items-center text-steel-blue hover:text-accent transition-colors"
             >
-              {/* Use a "B" for BlueSky instead of the 3 lines icon */}
-              <div className="w-5 h-5 mr-3 font-bold flex items-center justify-center text-steel-blue">
-                B
+              <div className="w-5 h-5 mr-3 flex items-center justify-center">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 10.8C9 10.8 6.2 12.1 4.2 14.3C4.1 14.4 4 14.6 4 14.8C4 15 4.1 15.1 4.2 15.2L4.5 15.6C4.6 15.8 4.8 15.9 5 15.9C5.2 15.9 5.3 15.8 5.4 15.7C7 14.2 9 13.2 11.2 12.9C10.7 13.4 10.3 14 10.1 14.7C9.9 15.3 9.9 15.9 10 16.5C10.1 17.1 10.4 17.7 10.8 18.1C11.2 18.5 11.7 18.8 12.3 18.9C12.9 19 13.5 19 14.1 18.8C14.7 18.6 15.3 18.2 15.7 17.8C16 17.4 16.3 16.9 16.4 16.3C16.5 15.7 16.5 15.1 16.3 14.5C16.1 13.9 15.8 13.3 15.3 12.9C14.9 12.5 14.3 12.2 13.7 12C13.1 11.9 12.5 11.9 11.9 12C11.9 11.9 12 11.9 12 11.9C14.2 11.9 16.2 10.9 17.8 9.4C17.9 9.3 18 9.1 18 8.9C18 8.7 17.9 8.6 17.8 8.5L17.5 8.1C17.4 7.9 17.2 7.8 17 7.8C16.8 7.8 16.7 7.9 16.6 8C15.1 9.6 13.1 10.8 10.9 11.3C11.3 10.9 11.6 10.5 11.8 10C12 9.5 12 9 11.9 8.5C11.8 8 11.6 7.6 11.3 7.2C11 6.8 10.6 6.5 10.1 6.4C9.6 6.3 9.1 6.3 8.6 6.4C8.1 6.5 7.7 6.8 7.3 7.2C7 7.6 6.7 8 6.6 8.5C6.5 9 6.5 9.5 6.7 10C6.9 10.5 7.2 10.9 7.6 11.3C5.4 10.8 3.4 9.6 1.9 8C1.8 7.9 1.7 7.7 1.7 7.5C1.7 7.3 1.8 7.2 1.9 7.1L2.2 6.7C2.3 6.5 2.5 6.4 2.7 6.4C2.9 6.4 3 6.5 3.1 6.6C5.1 8.8 7.9 10.1 10.9 10.1C11.2 10.1 11.6 10.1 11.9 10.1C11.9 10.1 11.9 10.1 12 10.1V10.8Z" fill="currentColor" />
+                </svg>
               </div>
               <span>{socials.bluesky.replace('https://bsky.app/profile/', '')}</span>
             </a>
