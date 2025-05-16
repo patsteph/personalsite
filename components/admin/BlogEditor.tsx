@@ -3,6 +3,7 @@ import { BlogPost } from '@/types/blog';
 import dynamic from 'next/dynamic';
 import { uploadImageWithThumbnail } from '@/lib/api/storage';
 import BlogAIAssistant from './BlogAIAssistant';
+import { getAuth } from 'firebase/auth';
 // Dynamically import the rich text editor to avoid SSR issues
 const SimpleMDEditor = dynamic(() => import('./SimpleMDEditor'), {
   ssr: false,
@@ -39,6 +40,7 @@ export default function BlogEditor({ initialPost, onSave }: BlogEditorProps) {
   const [tagsInput, setTagsInput] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   
   // Set tags input when initial post is loaded
   useEffect(() => {
@@ -93,6 +95,61 @@ export default function BlogEditor({ initialPost, onSave }: BlogEditorProps) {
         delete newErrors.content;
         return newErrors;
       });
+    }
+  };
+
+  // Generate AI summary
+  const generateSummary = async () => {
+    if (!post.content.trim()) {
+      alert('Please add some content before generating a summary');
+      return;
+    }
+
+    if (!('id' in post) || !post.id) {
+      alert('Please save the post before generating a summary');
+      return;
+    }
+
+    setIsGeneratingSummary(true);
+    
+    try {
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (!user) {
+        throw new Error('Not authenticated');
+      }
+      
+      const token = await user.getIdToken();
+
+      const response = await fetch('/api/generate-summary', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          postId: post.id,
+          content: post.content
+        })
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to generate summary');
+      }
+
+      // Update the post with the generated summary
+      setPost(prev => ({
+        ...prev,
+        aiSummary: data.summary
+      }));
+
+    } catch (error: any) {
+      console.error('Error generating summary:', error);
+      alert(`Failed to generate summary: ${error.message}`);
+    } finally {
+      setIsGeneratingSummary(false);
     }
   };
   
@@ -297,53 +354,28 @@ export default function BlogEditor({ initialPost, onSave }: BlogEditorProps) {
             name="author"
             value={post.author || ''}
             onChange={handleChange}
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            placeholder="A brief summary of your post"
           />
-        </div>
-        
-        {/* Summary */}
-        <div className="col-span-2">
-          <label htmlFor="summary" className="block text-sm font-medium text-gray-700 mb-1">
-            Summary <span className="text-red-500">*</span>
-          </label>
-          <textarea
-            id="summary"
-            name="summary"
-            value={post.summary}
-            onChange={handleChange}
-            rows={3}
-            className={`w-full px-4 py-2 border ${
-              errors.summary ? 'border-red-500' : 'border-gray-300'
-            } rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500`}
-          />
-          {errors.summary ? (
-            <p className="mt-1 text-sm text-red-500">{errors.summary}</p>
-          ) : (
-            <p className="mt-1 text-xs text-gray-500">
-              A brief description of the blog post (shown in previews)
-            </p>
+          {post.aiSummary && (
+            <div className="mt-2 p-3 bg-gray-50 border border-gray-200 rounded-md">
+              <div className="flex justify-between items-start mb-1">
+                <span className="text-xs font-medium text-gray-500">AI-Generated Summary:</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPost(prev => ({
+                      ...prev,
+                      summary: post.aiSummary || ''
+                    }));
+                  }}
+                  className="text-xs text-blue-600 hover:text-blue-800"
+                >
+                  Use this summary
+                </button>
+              </div>
+              <p className="text-sm text-gray-700 mt-1">{post.aiSummary}</p>
+            </div>
           )}
-        </div>
-        
-        {/* Cover Image */}
-        <div className="col-span-2">
-          <label htmlFor="coverImage" className="block text-sm font-medium text-gray-700 mb-1">
-            Cover Image URL
-          </label>
-          <input
-            type="text"
-            id="coverImage"
-            name="coverImage"
-            value={post.coverImage || ''}
-            onChange={handleChange}
-            placeholder="https://example.com/image.jpg"
-            className={`w-full px-4 py-2 border ${
-              errors.coverImage ? 'border-red-500' : 'border-gray-300'
-            } rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500`}
-          />
-          <p className="mt-1 text-xs text-gray-500">
-            Enter a direct URL to an image, or upload one:
-          </p>
           
           <div className="mt-2 flex items-center">
             <input

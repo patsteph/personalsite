@@ -14,6 +14,7 @@ export type BlogPost = {
   title: string;
   date?: string;
   summary: string;
+  aiSummary?: string; // AI-generated summary
   content: string;
   author?: string;
   coverImage?: string;
