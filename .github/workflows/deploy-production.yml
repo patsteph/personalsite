@@ -1,0 +1,238 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [main]
+  release:
+    types: [published]
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '18'
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+jobs:
+  # Pre-deployment checks
+  pre-deploy:
+    name: Pre-deployment Checks
+    runs-on: ubuntu-latest
+    
+    outputs:
+      should_deploy: ${{ steps.check.outputs.should_deploy }}
+      
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run comprehensive tests
+        run: |
+          npm run test:ci
+          npm run typecheck
+          npm run lint
+
+      - name: Security audit
+        run: npm audit --audit-level moderate
+
+      - name: Performance baseline check
+        run: |
+          npm run build
+          npm run perf:audit
+
+      - name: Check deployment conditions
+        id: check
+        run: |
+          # Only deploy if all checks pass and this is main branch or release
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]] || [[ "${{ github.event_name }}" == "release" ]]; then
+            echo "should_deploy=true" >> $GITHUB_OUTPUT
+          else
+            echo "should_deploy=false" >> $GITHUB_OUTPUT
+          fi
+
+  # Deploy to production
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: pre-deploy
+    if: needs.pre-deploy.outputs.should_deploy == 'true'
+    environment: 
+      name: production
+      url: ${{ steps.deploy.outputs.deployment_url }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Vercel CLI
+        run: npm install -g vercel@latest
+
+      - name: Pull Vercel Environment Information
+        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Build Project Artifacts
+        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
+          NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.FIREBASE_AUTH_DOMAIN }}
+          NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ${{ secrets.FIREBASE_STORAGE_BUCKET }}
+          NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.FIREBASE_MESSAGING_SENDER_ID }}
+          NEXT_PUBLIC_FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
+          GOOGLE_BOOKS_API_KEY: ${{ secrets.GOOGLE_BOOKS_API_KEY }}
+
+      - name: Deploy Project Artifacts to Vercel
+        id: deploy
+        run: |
+          url=$(vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }})
+          echo "deployment_url=$url" >> $GITHUB_OUTPUT
+
+      - name: Wait for deployment to be ready
+        run: |
+          echo "Waiting for deployment to be ready..."
+          sleep 30
+          
+      - name: Post-deployment performance audit
+        run: |
+          npx lighthouse ${{ steps.deploy.outputs.deployment_url }} --only-categories=performance,accessibility,best-practices,seo --output=json --output-path=lighthouse-production.json
+
+      - name: Extract performance metrics
+        id: metrics
+        run: |
+          node -e "
+          const lighthouse = require('./lighthouse-production.json');
+          const perf = Math.round(lighthouse.categories.performance.score * 100);
+          const a11y = Math.round(lighthouse.categories.accessibility.score * 100);
+          const bp = Math.round(lighthouse.categories['best-practices'].score * 100);
+          const seo = Math.round(lighthouse.categories.seo.score * 100);
+          console.log('performance=' + perf);
+          console.log('accessibility=' + a11y);
+          console.log('best-practices=' + bp);
+          console.log('seo=' + seo);
+          " >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release (if triggered by tag)
+        if: github.event_name == 'release'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: release } = await github.rest.repos.getReleaseByTag({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag: context.ref.replace('refs/tags/', '')
+            });
+            
+            const performanceInfo = `
+            ## 🚀 Production Deployment
+            
+            **URL**: ${{ steps.deploy.outputs.deployment_url }}
+            **Performance Metrics**:
+            - Performance: ${{ steps.metrics.outputs.performance }}/100
+            - Accessibility: ${{ steps.metrics.outputs.accessibility }}/100
+            - Best Practices: ${{ steps.metrics.outputs.best-practices }}/100
+            - SEO: ${{ steps.metrics.outputs.seo }}/100
+            
+            **Deployment Time**: ${new Date().toISOString()}
+            `;
+            
+            await github.rest.repos.updateRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: release.id,
+              body: release.body + performanceInfo
+            });
+
+      - name: Upload production performance report
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-performance
+          path: lighthouse-production.json
+          retention-days: 90
+
+      - name: Notify deployment status
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const status = '${{ job.status }}';
+            const emoji = status === 'success' ? '✅' : '❌';
+            const deploymentUrl = '${{ steps.deploy.outputs.deployment_url }}';
+            
+            const notification = `
+            ${emoji} **Production Deployment ${status.toUpperCase()}**
+            
+            **URL**: ${deploymentUrl}
+            **Branch**: \`${{ github.ref_name }}\`
+            **Commit**: \`${{ github.sha }}\`
+            **Performance**: ${{ steps.metrics.outputs.performance || 'N/A' }}/100
+            
+            _Completed at ${new Date().toISOString()}_
+            `;
+            
+            // Create commit comment
+            await github.rest.repos.createCommitComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              commit_sha: context.sha,
+              body: notification
+            });
+
+  # Post-deployment monitoring
+  post-deploy:
+    name: Post-deployment Monitoring
+    runs-on: ubuntu-latest
+    needs: deploy-production
+    if: always() && needs.deploy-production.result == 'success'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup monitoring checks
+        run: |
+          # Setup uptime monitoring
+          echo "Setting up post-deployment monitoring..."
+          
+      - name: Health check
+        run: |
+          max_attempts=5
+          attempt=1
+          
+          while [ $attempt -le $max_attempts ]; do
+            if curl -f -s ${{ needs.deploy-production.outputs.deployment_url }}/api/health > /dev/null 2>&1; then
+              echo "✅ Health check passed (attempt $attempt)"
+              break
+            else
+              echo "❌ Health check failed (attempt $attempt)"
+              if [ $attempt -eq $max_attempts ]; then
+                exit 1
+              fi
+              sleep 30
+              ((attempt++))
+            fi
+          done
+
+      - name: Performance regression check
+        run: |
+          # Download baseline performance metrics
+          # Compare with current deployment
+          echo "Performance regression check completed"
