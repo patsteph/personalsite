@@ -246,7 +246,7 @@ async function handlePublicGet(
   res: NextApiResponse<BlogResponse>,
 ) {
   const postsCollection = db.collection(BLOG_COLLECTION);
-  const { id, slug, published, limit, tag } = req.query;
+  const { id, published, limit, tag } = req.query;
 
   try {
     // Handle fetching a single post by ID
@@ -271,30 +271,6 @@ async function handlePublicGet(
             error: "Blog post not found or not published",
           });
         }
-      } else {
-        return res
-          .status(404)
-          .json({ success: false, error: "Blog post not found" });
-      }
-    }
-
-    // Handle fetching a single post by slug
-    if (slug && typeof slug === "string") {
-      const querySnapshot = await postsCollection
-        .where("slug", "==", slug)
-        .where("published", "==", true) // Only fetch published by slug publicly
-        .limit(1)
-        .get();
-
-      if (!querySnapshot.empty) {
-        const docSnap = querySnapshot.docs[0];
-        return res.status(200).json({
-          success: true,
-          data: {
-            id: docSnap.id,
-            ...convertFirestoreToApiResponse(docSnap.data()),
-          },
-        });
       } else {
         return res
           .status(404)

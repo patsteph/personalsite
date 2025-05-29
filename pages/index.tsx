@@ -202,7 +202,7 @@ export default function HomePage({ recentPosts }: HomePageProps) {
               >
                 <h3 className="text-xl font-semibold text-steel-blue mb-2">
                   <Link
-                    href={`/blog/${post.slug}`}
+                    href="/blog"
                     className="hover:text-accent transition-colors"
                   >
                     {post.title}
@@ -217,7 +217,7 @@ export default function HomePage({ recentPosts }: HomePageProps) {
                 <p className="text-gray-700">{post.summary}</p>
 
                 <Link
-                  href={`/blog/${post.slug}`}
+                  href="/blog"
                   className="mt-3 inline-block text-steel-blue hover:text-accent font-medium transition-colors"
                 >
                   {t("blog.readMore", "Read More")} →

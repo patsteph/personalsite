@@ -110,25 +110,6 @@ export async function getAllPosts(): Promise<BlogPost[]> {
 }
 
 /**
- * Get blog post by slug from API
- */
-export async function getPostBySlug(slug: string): Promise<BlogPost | null> {
-  try {
-    const response = await fetch(`${API_BASE}/api/blog?slug=${slug}`);
-    if (response.ok) {
-      const data = await response.json();
-      if (data.success && data.data) {
-        return convertApiToBlogPost(data.data);
-      }
-    }
-    throw new Error("API did not return success");
-  } catch (error) {
-    console.error("Error fetching blog post by slug from API:", error);
-    return null;
-  }
-}
-
-/**
  * Add new blog post via API
  */
 export async function addBlogPost(
