@@ -20,6 +20,13 @@ const API_BASE =
  */
 // Convert API response to BlogPost type
 function convertApiToBlogPost(data: any): BlogPost {
+  // Calculate reading time if not provided (rough estimate: 200 words per minute)
+  let readingTime = data.readingTime;
+  if (!readingTime && data.content) {
+    const wordCount = data.content.trim().split(/\s+/).length;
+    readingTime = Math.max(1, Math.ceil(wordCount / 200));
+  }
+
   return {
     id: data.id,
     title: data.title || "",
@@ -33,6 +40,7 @@ function convertApiToBlogPost(data: any): BlogPost {
     publishedAt: data.publishedAt || null,
     createdAt: data.createdAt || new Date().toISOString(),
     updatedAt: data.updatedAt || new Date().toISOString(),
+    readingTime: readingTime || 1, // Default to 1 minute if calculation fails
   };
 }
 
