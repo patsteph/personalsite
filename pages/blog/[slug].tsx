@@ -1,16 +1,16 @@
-import React from 'react';
-import { GetServerSideProps } from 'next';
-import { MDXRemote, MDXRemoteSerializeResult } from 'next-mdx-remote';
-import { serialize } from 'next-mdx-remote/serialize';
-import Layout from '@/components/layout/Layout';
-import { getPostBySlug } from '../../lib/blog';
-import { BlogPost, ReactionType } from '../../types/blog';
-import Head from 'next/head';
-import rehypeHighlight from 'rehype-highlight';
-import rehypeSlug from 'rehype-slug';
-import rehypeAutolinkHeadings from 'rehype-autolink-headings';
-import remarkGfm from 'remark-gfm';
-import BlogReactions from '@/components/blog/BlogReactions';
+import React from "react";
+import { GetServerSideProps } from "next";
+import { MDXRemote, MDXRemoteSerializeResult } from "next-mdx-remote";
+import { serialize } from "next-mdx-remote/serialize";
+import Layout from "@/components/layout/Layout";
+import { getPostBySlug } from "../../lib/api/blog";
+import { BlogPost, ReactionType } from "../../types/blog";
+import Head from "next/head";
+import rehypeHighlight from "rehype-highlight";
+import rehypeSlug from "rehype-slug";
+import rehypeAutolinkHeadings from "rehype-autolink-headings";
+import remarkGfm from "remark-gfm";
+import BlogReactions from "@/components/blog/BlogReactions";
 
 // Define the props type for the blog post page
 interface BlogPostPageProps {
@@ -20,7 +20,11 @@ interface BlogPostPageProps {
 }
 
 // The main BlogPostPage component
-const BlogPostPage: React.FC<BlogPostPageProps> = ({ post, serializedContent, error }) => {
+const BlogPostPage: React.FC<BlogPostPageProps> = ({
+  post,
+  serializedContent,
+  error,
+}) => {
   if (error) {
     return (
       <Layout section="blog">
@@ -58,20 +62,24 @@ const BlogPostPage: React.FC<BlogPostPageProps> = ({ post, serializedContent, er
         <article className="prose lg:prose-xl max-w-none">
           <h1 className="text-3xl font-bold mb-4">{post.title}</h1>
           <div className="text-gray-600 mb-6">
-            {post.date ? new Date(post.date).toLocaleDateString() : 'No date available'}
+            {post.date
+              ? new Date(post.date).toLocaleDateString()
+              : "No date available"}
           </div>
           <MDXRemote {...serializedContent} />
-          
+
           {/* Add reactions component */}
-          <BlogReactions 
-            postId={post.id || ''} 
+          <BlogReactions
+            postId={post.id || ""}
             slug={post.slug}
-            initialReactions={post.reactions || {
-              thumbsUp: 0,
-              celebrate: 0,
-              brain: 0,
-              meh: 0
-            }}
+            initialReactions={
+              post.reactions || {
+                thumbsUp: 0,
+                celebrate: 0,
+                brain: 0,
+                meh: 0,
+              }
+            }
             onReact={handleReaction}
           />
         </article>
@@ -80,25 +88,27 @@ const BlogPostPage: React.FC<BlogPostPageProps> = ({ post, serializedContent, er
   );
 };
 
-export const getServerSideProps: GetServerSideProps<BlogPostPageProps> = async (context) => {
+export const getServerSideProps: GetServerSideProps<BlogPostPageProps> = async (
+  context,
+) => {
   const { slug } = context.params || {};
   let post: BlogPost | null = null;
   let serializedContent: MDXRemoteSerializeResult | null = null;
-  let errorMessage = '';
+  let errorMessage = "";
 
-  if (!slug || typeof slug !== 'string') {
+  if (!slug || typeof slug !== "string") {
     return {
       props: {
         post: null,
         serializedContent: null,
-        error: 'Invalid post identifier',
+        error: "Invalid post identifier",
       },
     };
   }
 
   try {
     post = await getPostBySlug(slug);
-    
+
     if (post && post.content) {
       // Serialize the MDX content
       serializedContent = await serialize(post.content, {
@@ -106,12 +116,12 @@ export const getServerSideProps: GetServerSideProps<BlogPostPageProps> = async (
           rehypePlugins: [
             rehypeHighlight,
             rehypeSlug,
-            [rehypeAutolinkHeadings, { behavior: 'wrap' }],
+            [rehypeAutolinkHeadings, { behavior: "wrap" }],
           ],
           remarkPlugins: [remarkGfm],
         },
       });
-      
+
       return {
         props: {
           post,
@@ -121,9 +131,9 @@ export const getServerSideProps: GetServerSideProps<BlogPostPageProps> = async (
     }
   } catch (error) {
     console.error(`Error fetching blog post with slug "${slug}":`, error);
-    errorMessage = 'Failed to process blog content';
+    errorMessage = "Failed to process blog content";
   }
-  
+
   // If we couldn't get the post, return error props
   return {
     props: {
