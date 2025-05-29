@@ -107,7 +107,60 @@ export const getServerSideProps: GetServerSideProps<BlogPostPageProps> = async (
   }
 
   try {
-    post = await getPostBySlug(slug);
+    // Use direct Firebase Admin access instead of API layer
+    const { getAdminFirestore } = await import("../../lib/firebase-admin");
+    const { Timestamp } = await import("firebase-admin/firestore");
+
+    const db = getAdminFirestore();
+    const postsCollection = db.collection("blog-posts");
+
+    // Query by slug
+    const querySnapshot = await postsCollection
+      .where("slug", "==", slug)
+      .where("published", "==", true)
+      .limit(1)
+      .get();
+
+    if (!querySnapshot.empty) {
+      const doc = querySnapshot.docs[0];
+      const data = doc.data();
+
+      // Calculate reading time if not provided
+      let readingTime = data.readingTime;
+      if (!readingTime && data.content) {
+        const wordCount = data.content.trim().split(/\s+/).length;
+        readingTime = Math.max(1, Math.ceil(wordCount / 200));
+      }
+
+      post = {
+        id: doc.id,
+        slug: data.slug || "",
+        title: data.title || "",
+        summary: data.summary || "",
+        content: data.content || "",
+        author: data.author || "",
+        coverImage: data.coverImage || "",
+        tags: data.tags || [],
+        published: data.published || false,
+        date:
+          data.date instanceof Timestamp
+            ? data.date.toDate().toISOString()
+            : data.date || null,
+        publishedAt:
+          data.publishedAt instanceof Timestamp
+            ? data.publishedAt.toDate().toISOString()
+            : data.publishedAt || null,
+        createdAt:
+          data.createdAt instanceof Timestamp
+            ? data.createdAt.toDate().toISOString()
+            : new Date().toISOString(),
+        updatedAt:
+          data.updatedAt instanceof Timestamp
+            ? data.updatedAt.toDate().toISOString()
+            : new Date().toISOString(),
+        readingTime: readingTime || 1,
+      };
+    }
 
     if (post && post.content) {
       // Serialize the MDX content

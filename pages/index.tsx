@@ -1,4 +1,4 @@
-import { GetStaticProps } from "next";
+import { GetServerSideProps } from "next";
 import Layout from "@/components/layout/Layout";
 import { BlogPost } from "@/types/blog";
 import Link from "next/link";
@@ -240,10 +240,12 @@ export default function HomePage({ recentPosts }: HomePageProps) {
   );
 }
 
-// Fetch data at build time directly from Firestore
-export const getStaticProps: GetStaticProps<HomePageProps> = async () => {
+// Use server-side rendering with direct Firebase Admin access (same as blog page server logic)
+export const getServerSideProps: GetServerSideProps<
+  HomePageProps
+> = async () => {
   try {
-    // Get Firestore instance
+    // Use direct Firebase Admin access like the blog post page should be doing
     const db = getAdminFirestore();
 
     // Create the query using Admin SDK pattern
@@ -298,21 +300,16 @@ export const getStaticProps: GetStaticProps<HomePageProps> = async () => {
     });
 
     console.log(
-      `Fetched ${recentPosts.length} recent posts directly from Firestore for build.`,
+      `Fetched ${recentPosts.length} recent posts using server-side Firebase Admin.`,
     );
 
     return {
       props: {
         recentPosts,
       },
-      // Regenerate the page at most once every 5 minutes
-      revalidate: 300,
     };
   } catch (error) {
-    console.error(
-      "Error in getStaticProps fetching recent posts from Firestore:",
-      error,
-    );
+    console.error("Error in getServerSideProps fetching recent posts:", error);
     return {
       props: {
         recentPosts: [],
