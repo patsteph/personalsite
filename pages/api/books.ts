@@ -84,13 +84,10 @@ export default async function handler(
       "Books API: Handler entered but Firebase Admin SDK failed to initialize. Returning 500.",
     );
     // Avoid processing if initialization failed
-    return res
-      .status(500)
-      .json({
-        success: false,
-        error:
-          "Internal Server Error: Firebase Admin SDK initialization failed.",
-      });
+    return res.status(500).json({
+      success: false,
+      error: "Internal Server Error: Firebase Admin SDK initialization failed.",
+    });
   }
 
   console.log(
@@ -141,10 +138,10 @@ export default async function handler(
       }
     }
 
-    // If no valid Bearer token, check session cookie (for admin pages)
+    // If no valid Bearer token, check Firebase token cookie (for admin pages)
     if (!token) {
-      const sessionCookie = req.cookies["auth_token"];
-      if (!sessionCookie) {
+      const fbTokenCookie = req.cookies["fb_token"];
+      if (!fbTokenCookie) {
         console.log("Books API: No authentication provided.");
         return res
           .status(401)
@@ -152,17 +149,17 @@ export default async function handler(
       }
 
       try {
-        await auth.verifySessionCookie(sessionCookie);
-        console.log("Books API: Session cookie verified successfully.");
-      } catch (sessionError: any) {
+        await auth.verifyIdToken(fbTokenCookie);
+        console.log("Books API: Firebase token cookie verified successfully.");
+      } catch (tokenError: any) {
         console.error(
-          "Books API: Session cookie verification failed:",
-          sessionError.code,
-          sessionError.message,
+          "Books API: Firebase token cookie verification failed:",
+          tokenError.code,
+          tokenError.message,
         );
         return res
           .status(401)
-          .json({ success: false, error: "Unauthorized - Invalid session" });
+          .json({ success: false, error: "Unauthorized - Invalid token" });
       }
     }
   } catch (error: any) {
@@ -213,12 +210,10 @@ export default async function handler(
         }
       } catch (error: any) {
         console.error("Books API error handling GET:", error);
-        return res
-          .status(500)
-          .json({
-            success: false,
-            error: `Internal server error: ${error.message}`,
-          });
+        return res.status(500).json({
+          success: false,
+          error: `Internal server error: ${error.message}`,
+        });
       }
     }
 
@@ -234,12 +229,10 @@ export default async function handler(
           !Array.isArray(sanitizedBody.authors) ||
           sanitizedBody.authors.length === 0
         ) {
-          return res
-            .status(400)
-            .json({
-              success: false,
-              error: "Missing required fields (title, non-empty authors array)",
-            });
+          return res.status(400).json({
+            success: false,
+            error: "Missing required fields (title, non-empty authors array)",
+          });
         }
 
         // --- Duplicate Check ---
@@ -295,12 +288,10 @@ export default async function handler(
             stack: duplicateCheckError.stack,
           });
           // Re-throw or handle as a 500 internal error
-          return res
-            .status(500)
-            .json({
-              success: false,
-              error: "Internal server error during duplicate check.",
-            });
+          return res.status(500).json({
+            success: false,
+            error: "Internal server error during duplicate check.",
+          });
         }
         // --- End Duplicate Check ---
 
@@ -332,12 +323,10 @@ export default async function handler(
             "Books API: Failed to retrieve newly created book document:",
             docRef.id,
           );
-          return res
-            .status(500)
-            .json({
-              success: false,
-              error: "Failed to retrieve book after creation",
-            });
+          return res.status(500).json({
+            success: false,
+            error: "Failed to retrieve book after creation",
+          });
         }
 
         return res.status(201).json({
@@ -369,12 +358,10 @@ export default async function handler(
         const { id } = req.query;
 
         if (!id || typeof id !== "string") {
-          return res
-            .status(400)
-            .json({
-              success: false,
-              error: "Book ID is required in query parameters",
-            });
+          return res.status(400).json({
+            success: false,
+            error: "Book ID is required in query parameters",
+          });
         }
 
         const docRef = db.collection(BOOKS_COLLECTION).doc(id);
@@ -429,12 +416,10 @@ export default async function handler(
         });
       } catch (error: any) {
         console.error(`Books API error updating book ${req.query.id}:`, error);
-        return res
-          .status(500)
-          .json({
-            success: false,
-            error: `Internal server error: ${error.message}`,
-          });
+        return res.status(500).json({
+          success: false,
+          error: `Internal server error: ${error.message}`,
+        });
       }
     }
 
@@ -445,12 +430,10 @@ export default async function handler(
         const { id } = req.query;
 
         if (!id || typeof id !== "string") {
-          return res
-            .status(400)
-            .json({
-              success: false,
-              error: "Book ID is required in query parameters",
-            });
+          return res.status(400).json({
+            success: false,
+            error: "Book ID is required in query parameters",
+          });
         }
 
         const docRef = db.collection(BOOKS_COLLECTION).doc(id);
@@ -459,12 +442,10 @@ export default async function handler(
         if (!docSnap.exists) {
           console.log(`Books API: DELETE skipped, document not found: ${id}`);
           // Idempotent: Return success even if already deleted
-          return res
-            .status(200)
-            .json({
-              success: true,
-              data: { id, message: "Already deleted or never existed" },
-            });
+          return res.status(200).json({
+            success: true,
+            data: { id, message: "Already deleted or never existed" },
+          });
         }
 
         console.log(`Books API: Deleting document ${id}.`);
@@ -477,12 +458,10 @@ export default async function handler(
         });
       } catch (error: any) {
         console.error(`Books API error deleting book ${req.query.id}:`, error);
-        return res
-          .status(500)
-          .json({
-            success: false,
-            error: `Internal server error: ${error.message}`,
-          });
+        return res.status(500).json({
+          success: false,
+          error: `Internal server error: ${error.message}`,
+        });
       }
     }
 
@@ -503,12 +482,10 @@ export default async function handler(
     }
     // Ensure a 500 response is sent
     if (!res.headersSent) {
-      return res
-        .status(500)
-        .json({
-          success: false,
-          error: "Internal Server Error occurred in handler.",
-        });
+      return res.status(500).json({
+        success: false,
+        error: "Internal Server Error occurred in handler.",
+      });
     } else {
       // If headers already sent, we can't send another response, but log it.
       console.error(

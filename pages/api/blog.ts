@@ -75,10 +75,10 @@ export default async function handler(
       }
     }
 
-    // If no valid Bearer token, check session cookie (for admin pages)
+    // If no valid Bearer token, check Firebase token cookie (for admin pages)
     if (!token) {
-      const sessionCookie = req.cookies["auth_token"];
-      if (!sessionCookie) {
+      const fbTokenCookie = req.cookies["fb_token"];
+      if (!fbTokenCookie) {
         console.log("Blog API: No authentication provided.");
         return res
           .status(401)
@@ -86,17 +86,17 @@ export default async function handler(
       }
 
       try {
-        await auth.verifySessionCookie(sessionCookie);
-        console.log("Blog API: Session cookie verified successfully.");
-      } catch (sessionError: any) {
+        await auth.verifyIdToken(fbTokenCookie);
+        console.log("Blog API: Firebase token cookie verified successfully.");
+      } catch (tokenError: any) {
         console.error(
-          "Blog API: Session cookie verification failed:",
-          sessionError.code,
-          sessionError.message,
+          "Blog API: Firebase token cookie verification failed:",
+          tokenError.code,
+          tokenError.message,
         );
         return res
           .status(401)
-          .json({ success: false, error: "Unauthorized - Invalid session" });
+          .json({ success: false, error: "Unauthorized - Invalid token" });
       }
     }
   } catch (error: any) {
@@ -266,12 +266,10 @@ async function handlePublicGet(
           });
         } else {
           // If admin didn't request it, treat unpublished as not found for public
-          return res
-            .status(404)
-            .json({
-              success: false,
-              error: "Blog post not found or not published",
-            });
+          return res.status(404).json({
+            success: false,
+            error: "Blog post not found or not published",
+          });
         }
       } else {
         return res
@@ -343,19 +341,15 @@ async function handlePublicGet(
 
     // If none of the above conditions match, return bad request or not found
     // Returning 400 might be more appropriate if no valid query params were given
-    return res
-      .status(400)
-      .json({
-        success: false,
-        error: "Invalid request parameters for public blog posts",
-      });
+    return res.status(400).json({
+      success: false,
+      error: "Invalid request parameters for public blog posts",
+    });
   } catch (error: any) {
     console.error("Error in handlePublicGet for blog API:", error);
-    return res
-      .status(500)
-      .json({
-        success: false,
-        error: "Internal server error fetching blog posts",
-      });
+    return res.status(500).json({
+      success: false,
+      error: "Internal server error fetching blog posts",
+    });
   }
 }
