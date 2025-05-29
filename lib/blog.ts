@@ -19,14 +19,3 @@ export const getRecentPosts = async (
 ): Promise<BlogPost[]> => {
   return blogApi.getPublishedPosts(count);
 };
-
-// Get all post slugs for static generation
-export const getAllPostSlugs = async (): Promise<string[]> => {
-  try {
-    const posts = await getAllPosts();
-    return posts.map((post) => post.slug);
-  } catch (error) {
-    console.error("Error getting all post slugs:", error);
-    return [];
-  }
-};
