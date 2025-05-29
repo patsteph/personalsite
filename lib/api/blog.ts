@@ -1,18 +1,19 @@
 /**
  * Blog API module
- * 
+ *
  * This module handles all blog-related interactions with Firebase
  */
 // Blog API module (server-side only)
-import { BlogPost } from '@/types/blog';
+import { BlogPost } from "@/types/blog";
 // Import Firebase auth instance and token function
-import { auth } from '../firebase-client';
-import { getIdToken } from 'firebase/auth';
+import { auth } from "../firebase-client";
+import { getIdToken } from "firebase/auth";
 
 // Determine API base URL based on environment
-const API_BASE = typeof window === 'undefined' 
-  ? process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000' // Server-side needs full URL
-  : ''; // Client-side uses relative path starting with /api
+const API_BASE =
+  typeof window === "undefined"
+    ? process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000" // Server-side needs full URL
+    : ""; // Client-side uses relative path starting with /api
 
 /**
  * Convert Firestore document to BlogPost type
@@ -21,12 +22,12 @@ const API_BASE = typeof window === 'undefined'
 function convertApiToBlogPost(data: any): BlogPost {
   return {
     id: data.id,
-    title: data.title || '',
-    slug: data.slug || '',
-    summary: data.summary || '',
-    content: data.content || '',
-    author: data.author || '',
-    coverImage: data.coverImage || '',
+    title: data.title || "",
+    slug: data.slug || "",
+    summary: data.summary || "",
+    content: data.content || "",
+    author: data.author || "",
+    coverImage: data.coverImage || "",
     tags: data.tags || [],
     published: data.published || false,
     publishedAt: data.publishedAt || null,
@@ -38,18 +39,22 @@ function convertApiToBlogPost(data: any): BlogPost {
 /**
  * Get all published blog posts from API
  */
-export async function getPublishedPosts(maxPosts?: number): Promise<BlogPost[]> {
+export async function getPublishedPosts(
+  maxPosts?: number,
+): Promise<BlogPost[]> {
   try {
-    const response = await fetch(`${API_BASE}/api/blog?published=true${maxPosts ? `&limit=${maxPosts}` : ''}`);
+    const response = await fetch(
+      `${API_BASE}/api/blog?published=true${maxPosts ? `&limit=${maxPosts}` : ""}`,
+    );
     if (response.ok) {
       const data = await response.json();
       if (data.success && Array.isArray(data.data)) {
         return data.data.map(convertApiToBlogPost);
       }
     }
-    throw new Error('API did not return success');
+    throw new Error("API did not return success");
   } catch (error) {
-    console.error('Error fetching published blog posts from API:', error);
+    console.error("Error fetching published blog posts from API:", error);
     return [];
   }
 }
@@ -65,21 +70,23 @@ export async function getAllPosts(): Promise<BlogPost[]> {
       try {
         token = await auth.currentUser.getIdToken(true);
       } catch (error) {
-        console.warn('Failed to get ID token for getAllPosts:', error);
+        console.warn("Failed to get ID token for getAllPosts:", error);
       }
     }
 
     // If no token, likely shouldn't be calling this admin=true endpoint
     if (!token) {
-      console.warn('getAllPosts requires authentication, but no user token found.');
+      console.warn(
+        "getAllPosts requires authentication, but no user token found.",
+      );
       return []; // Or throw an error?
     }
 
     const response = await fetch(`${API_BASE}/api/blog?admin=true`, {
-      method: 'GET',
+      method: "GET",
       headers: {
-        'Authorization': `Bearer ${token}`
-      }
+        Authorization: `Bearer ${token}`,
+      },
     });
     if (response.ok) {
       const data = await response.json();
@@ -87,9 +94,9 @@ export async function getAllPosts(): Promise<BlogPost[]> {
         return data.data.map(convertApiToBlogPost);
       }
     }
-    throw new Error('API did not return success');
+    throw new Error("API did not return success");
   } catch (error) {
-    console.error('Error fetching all blog posts from API:', error);
+    console.error("Error fetching all blog posts from API:", error);
     return [];
   }
 }
@@ -106,9 +113,9 @@ export async function getPostBySlug(slug: string): Promise<BlogPost | null> {
         return convertApiToBlogPost(data.data);
       }
     }
-    throw new Error('API did not return success');
+    throw new Error("API did not return success");
   } catch (error) {
-    console.error('Error fetching blog post by slug from API:', error);
+    console.error("Error fetching blog post by slug from API:", error);
     return null;
   }
 }
@@ -116,39 +123,69 @@ export async function getPostBySlug(slug: string): Promise<BlogPost | null> {
 /**
  * Add new blog post via API
  */
-export async function addBlogPost(post: Omit<BlogPost, 'id' | 'createdAt' | 'updatedAt'>): Promise<BlogPost | null> {
+export async function addBlogPost(
+  post: Omit<BlogPost, "id" | "createdAt" | "updatedAt">,
+): Promise<BlogPost | null> {
+  console.log("addBlogPost: Starting with post data:", post);
+
   try {
     // Get auth token - required for adding posts using Firebase SDK
     let token: string | null = null;
     if (auth?.currentUser) {
+      console.log("addBlogPost: Auth user found, getting ID token");
       try {
         token = await auth.currentUser.getIdToken(true);
+        console.log("addBlogPost: ID token obtained successfully");
       } catch (error) {
-        console.error('Failed to get ID token for addBlogPost:', error);
+        console.error("addBlogPost: Failed to get ID token:", error);
       }
+    } else {
+      console.log("addBlogPost: No auth user found");
     }
 
     if (!token) {
-      throw new Error('Authentication required to add blog posts');
+      console.error("addBlogPost: No authentication token available");
+      throw new Error("Authentication required to add blog posts");
     }
 
+    console.log("addBlogPost: Making POST request to /api/blog");
     const response = await fetch(`${API_BASE}/api/blog`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}` // Token is guaranteed here
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`, // Token is guaranteed here
       },
-      body: JSON.stringify(post)
+      body: JSON.stringify(post),
     });
+
+    console.log("addBlogPost: Response status:", response.status);
+    console.log("addBlogPost: Response ok:", response.ok);
+
+    const data = await response.json();
+    console.log("addBlogPost: Response data:", data);
+
     if (response.ok) {
-      const data = await response.json();
       if (data.success && data.data) {
+        console.log("addBlogPost: Success, returning converted blog post");
         return convertApiToBlogPost(data.data);
+      } else {
+        console.error(
+          "addBlogPost: API returned ok but data structure invalid:",
+          data,
+        );
       }
+    } else {
+      console.error(
+        "addBlogPost: Response not ok, status:",
+        response.status,
+        "data:",
+        data,
+      );
     }
-    throw new Error('API did not return success');
+
+    throw new Error(`API error: ${data.error || "Unknown error"}`);
   } catch (error) {
-    console.error('Error adding blog post via API:', error);
+    console.error("addBlogPost: Error adding blog post via API:", error);
     return null;
   }
 }
@@ -156,7 +193,10 @@ export async function addBlogPost(post: Omit<BlogPost, 'id' | 'createdAt' | 'upd
 /**
  * Update existing blog post via API
  */
-export async function updateBlogPost(id: string, post: Partial<BlogPost>): Promise<boolean> {
+export async function updateBlogPost(
+  id: string,
+  post: Partial<BlogPost>,
+): Promise<boolean> {
   try {
     // Get auth token - required for updating posts using Firebase SDK
     let token: string | null = null;
@@ -164,29 +204,29 @@ export async function updateBlogPost(id: string, post: Partial<BlogPost>): Promi
       try {
         token = await auth.currentUser.getIdToken(true);
       } catch (error) {
-        console.error('Failed to get ID token for updateBlogPost:', error);
+        console.error("Failed to get ID token for updateBlogPost:", error);
       }
     }
 
     if (!token) {
-      throw new Error('Authentication required to update blog posts');
+      throw new Error("Authentication required to update blog posts");
     }
 
     const response = await fetch(`${API_BASE}/api/blog?id=${id}`, {
-      method: 'PUT',
+      method: "PUT",
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}` // Token is guaranteed here
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`, // Token is guaranteed here
       },
-      body: JSON.stringify(post)
+      body: JSON.stringify(post),
     });
     if (response.ok) {
       const data = await response.json();
       return !!data.success;
     }
-    throw new Error('API did not return success');
+    throw new Error("API did not return success");
   } catch (error) {
-    console.error('Error updating blog post via API:', error);
+    console.error("Error updating blog post via API:", error);
     return false;
   }
 }
@@ -202,28 +242,28 @@ export async function deleteBlogPost(id: string): Promise<boolean> {
       try {
         token = await auth.currentUser.getIdToken(true);
       } catch (error) {
-        console.error('Failed to get ID token for deleteBlogPost:', error);
+        console.error("Failed to get ID token for deleteBlogPost:", error);
       }
     }
 
     if (!token) {
-      throw new Error('Authentication required to delete blog posts');
+      throw new Error("Authentication required to delete blog posts");
     }
 
     const response = await fetch(`${API_BASE}/api/blog?id=${id}`, {
-      method: 'DELETE',
+      method: "DELETE",
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}` // Token is guaranteed here
-      }
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`, // Token is guaranteed here
+      },
     });
     if (response.ok) {
       const data = await response.json();
       return !!data.success;
     }
-    throw new Error('API did not return success');
+    throw new Error("API did not return success");
   } catch (error) {
-    console.error('Error deleting blog post via API:', error);
+    console.error("Error deleting blog post via API:", error);
     return false;
   }
 }
@@ -240,9 +280,9 @@ export async function getPostsByTag(tag: string): Promise<BlogPost[]> {
         return data.data.map(convertApiToBlogPost);
       }
     }
-    throw new Error('API did not return success');
+    throw new Error("API did not return success");
   } catch (error) {
-    console.error('Error fetching posts by tag from API:', error);
+    console.error("Error fetching posts by tag from API:", error);
     return [];
   }
 }
