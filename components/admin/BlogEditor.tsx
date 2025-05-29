@@ -383,6 +383,30 @@ export default function BlogEditor({ initialPost, onSave }: BlogEditorProps) {
           )}
         </div>
 
+        {/* Summary */}
+        <div className="col-span-2">
+          <label
+            htmlFor="summary"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
+            Summary <span className="text-red-500">*</span>
+          </label>
+          <textarea
+            id="summary"
+            name="summary"
+            value={post.summary || ""}
+            onChange={handleChange}
+            placeholder="A brief summary of your post"
+            rows={3}
+            className={`w-full px-4 py-2 border ${
+              errors.summary ? "border-red-500" : "border-gray-300"
+            } rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500`}
+          />
+          {errors.summary && (
+            <p className="mt-1 text-sm text-red-500">{errors.summary}</p>
+          )}
+        </div>
+
         {/* Author */}
         <div>
           <label
@@ -397,7 +421,7 @@ export default function BlogEditor({ initialPost, onSave }: BlogEditorProps) {
             name="author"
             value={post.author || ""}
             onChange={handleChange}
-            placeholder="A brief summary of your post"
+            placeholder="Author name"
           />
           {post.aiSummary && (
             <div className="mt-2 p-3 bg-gray-50 border border-gray-200 rounded-md">
