@@ -1,37 +1,24 @@
-import type { NextApiRequest, NextApiResponse } from 'next';
-import { getAdminFirestore } from '@/lib/firebase-admin';
-import { initializeAdminApp } from '@/lib/firebase-admin';
-import { getAuth } from 'firebase-admin/auth';
-import { aiService } from '@/lib/ai/ai-service';
+import type { NextApiResponse } from "next";
+import { withCORSAuth, AuthenticatedRequest } from "@/lib/api/middleware";
+import { getAdminFirestore } from "@/lib/firebase-admin";
+import { initializeAdminApp } from "@/lib/firebase-admin";
+import { aiService } from "@/lib/ai/ai-service";
 
 // Initialize Firebase Admin
 initializeAdminApp();
 const db = getAdminFirestore();
-const auth = getAuth();
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
+async function handler(req: AuthenticatedRequest, res: NextApiResponse) {
   // Only allow POST requests
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
   }
 
   try {
-    // Verify authentication
-    const idToken = req.headers.authorization?.split('Bearer ')[1];
-    if (!idToken) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-
-    // Verify the ID token
-    await auth.verifyIdToken(idToken);
-
     const { postId, content } = req.body;
 
     if (!postId || !content) {
-      return res.status(400).json({ error: 'postId and content are required' });
+      return res.status(400).json({ error: "postId and content are required" });
     }
 
     // Generate the summary using the AI service
@@ -47,18 +34,21 @@ ${content}`;
     });
 
     if (!aiResponse.success) {
-      throw new Error(aiResponse.error || 'Failed to generate summary');
+      throw new Error(aiResponse.error || "Failed to generate summary");
     }
 
     // Extract the generated text from the response
-    const summary = (aiResponse as any).text?.trim() || (aiResponse as any).content?.trim() || '';
-    
+    const summary =
+      (aiResponse as any).text?.trim() ||
+      (aiResponse as any).content?.trim() ||
+      "";
+
     if (!summary) {
-      throw new Error('Generated summary is empty');
+      throw new Error("Generated summary is empty");
     }
 
     // Update the blog post with the generated summary
-    const postRef = db.collection('blog-posts').doc(postId);
+    const postRef = db.collection("blog-posts").doc(postId);
     await postRef.update({
       aiSummary: summary,
       updatedAt: new Date().toISOString(),
@@ -66,10 +56,12 @@ ${content}`;
 
     return res.status(200).json({ success: true, summary });
   } catch (error: any) {
-    console.error('Error generating summary:', error);
-    return res.status(500).json({ 
-      error: error.message || 'Failed to generate summary',
-      details: error.details 
+    console.error("Error generating summary:", error);
+    return res.status(500).json({
+      error: error.message || "Failed to generate summary",
+      details: error.details,
     });
   }
 }
+
+export default withCORSAuth(handler);

@@ -1,4 +1,9 @@
-import type { NextApiRequest, NextApiResponse } from "next";
+import type { NextApiResponse } from "next";
+import {
+  withCORS,
+  withCORSAuth,
+  AuthenticatedRequest,
+} from "@/lib/api/middleware";
 import {
   initializeAdminApp,
   getAdminFirestore,
@@ -36,73 +41,32 @@ function convertFirestoreToApiResponse(
   return data;
 }
 
-export default async function handler(
-  req: NextApiRequest,
+// Public blog handler (no auth required)
+async function handlePublicBlogGet(
+  req: AuthenticatedRequest,
   res: NextApiResponse<BlogResponse>,
 ) {
-  // Log request for debugging
   console.log(
-    "Blog API received",
+    "Blog API received public",
     req.method,
     "request",
     req.query ? `with query: ${JSON.stringify(req.query)}` : "",
   );
+  return handlePublicGet(req, res);
+}
 
-  // For GET requests on published posts, no auth required
-  if (req.method === "GET" && !req.query.admin) {
-    return handlePublicGet(req, res);
-  }
-
-  // For all other requests, verify authentication
-  try {
-    // Check for Bearer token first (for API calls)
-    const authHeader = req.headers.authorization;
-    let token: string | null = null;
-
-    if (authHeader && authHeader.startsWith("Bearer ")) {
-      token = authHeader.split("Bearer ")[1];
-      try {
-        await auth.verifyIdToken(token);
-        console.log("Blog API: Bearer token verified successfully.");
-      } catch (bearerError: any) {
-        console.error(
-          "Blog API: Bearer token verification failed:",
-          bearerError.code,
-          bearerError.message,
-        );
-        // Fall through to session cookie check
-        token = null;
-      }
-    }
-
-    // If no valid Bearer token, check Firebase token cookie (for admin pages)
-    if (!token) {
-      const fbTokenCookie = req.cookies["fb_token"];
-      if (!fbTokenCookie) {
-        console.log("Blog API: No authentication provided.");
-        return res
-          .status(401)
-          .json({ success: false, error: "No authentication provided" });
-      }
-
-      try {
-        await auth.verifyIdToken(fbTokenCookie);
-        console.log("Blog API: Firebase token cookie verified successfully.");
-      } catch (tokenError: any) {
-        console.error(
-          "Blog API: Firebase token cookie verification failed:",
-          tokenError.code,
-          tokenError.message,
-        );
-        return res
-          .status(401)
-          .json({ success: false, error: "Unauthorized - Invalid token" });
-      }
-    }
-  } catch (error: any) {
-    console.error("Blog API auth error:", error);
-    return res.status(401).json({ success: false, error: "Unauthorized" });
-  }
+// Admin blog handler (auth required)
+async function handleAdminBlog(
+  req: AuthenticatedRequest,
+  res: NextApiResponse<BlogResponse>,
+) {
+  console.log(
+    "Blog API received admin",
+    req.method,
+    "request from user:",
+    req.user?.uid,
+    req.query ? `with query: ${JSON.stringify(req.query)}` : "",
+  );
 
   // Handle authenticated requests
   const postsCollection = db.collection(BLOG_COLLECTION);
@@ -242,7 +206,7 @@ export default async function handler(
 
 // Handler for public GET requests (no auth required)
 async function handlePublicGet(
-  req: NextApiRequest,
+  req: AuthenticatedRequest,
   res: NextApiResponse<BlogResponse>,
 ) {
   const postsCollection = db.collection(BLOG_COLLECTION);
@@ -329,3 +293,19 @@ async function handlePublicGet(
     });
   }
 }
+
+// Route handler that chooses between public and admin
+async function blogRouter(
+  req: AuthenticatedRequest,
+  res: NextApiResponse<BlogResponse>,
+) {
+  // For GET requests on published posts, no auth required
+  if (req.method === "GET" && !req.query.admin) {
+    return handlePublicBlogGet(req, res);
+  }
+
+  // For all other requests, use admin handler (auth already verified by middleware)
+  return handleAdminBlog(req, res);
+}
+
+export default withCORS(blogRouter);

@@ -1,45 +1,16 @@
-import type { NextApiRequest, NextApiResponse } from "next";
-import {
-  initializeAdminApp,
-  getAdminFirestore,
-  getAdminAuth,
-} from "@/lib/firebase-admin"; // Using alias
+import type { NextApiResponse } from "next";
+import { withCORSAuth, AuthenticatedRequest } from "@/lib/api/middleware";
+import { initializeAdminApp, getAdminFirestore } from "@/lib/firebase-admin";
 import {
   Timestamp,
   QueryDocumentSnapshot,
   DocumentData,
   Filter,
 } from "firebase-admin/firestore";
-import { Auth } from "firebase-admin/auth"; // Add this import
 
 // Initialize Firebase Admin
-let db: FirebaseFirestore.Firestore;
-let auth: Auth;
-
-try {
-  console.log(
-    "Books API: Attempting Firebase Admin SDK initialization at module level...",
-  );
-  initializeAdminApp(); // This will now log internally
-  db = getAdminFirestore();
-  auth = getAdminAuth();
-  console.log(
-    "Books API: Firebase Admin SDK initialized successfully at module level.",
-  );
-} catch (initError: any) {
-  console.error(
-    "Books API: CRITICAL ERROR DURING FIREBASE ADMIN SDK INITIALIZATION:",
-    initError,
-  );
-  console.error("Initialization Error Name:", initError.name);
-  console.error("Initialization Error Message:", initError.message);
-  console.error("Initialization Error Stack:", initError.stack);
-  // Set db/auth to null/undefined or handle appropriately so the handler knows initialization failed
-  // @ts-ignore - Allow reassignment for error case
-  db = null;
-  // @ts-ignore - Allow reassignment for error case
-  auth = null;
-}
+initializeAdminApp();
+const db = getAdminFirestore();
 
 const BOOKS_COLLECTION = "books";
 
@@ -74,99 +45,18 @@ function sanitizeData(body: any): Record<string, any> {
   );
 }
 
-export default async function handler(
-  req: NextApiRequest,
+async function handler(
+  req: AuthenticatedRequest,
   res: NextApiResponse<BookResponse>,
 ) {
-  // Check if initialization failed earlier
-  if (!db || !auth) {
-    console.error(
-      "Books API: Handler entered but Firebase Admin SDK failed to initialize. Returning 500.",
-    );
-    // Avoid processing if initialization failed
-    return res.status(500).json({
-      success: false,
-      error: "Internal Server Error: Firebase Admin SDK initialization failed.",
-    });
-  }
-
   console.log(
     "Books API received",
     req.method,
-    "request",
+    "request from user:",
+    req.user?.uid,
     req.query ? `with query: ${JSON.stringify(req.query)}` : "",
     req.body ? `with body: ${JSON.stringify(req.body)}` : "",
   );
-
-  // --- CORS Headers --- (Keep existing headers)
-  res.setHeader("Access-Control-Allow-Credentials", "true");
-  res.setHeader("Access-Control-Allow-Origin", "*"); // Adjust in production if needed
-  res.setHeader(
-    "Access-Control-Allow-Methods",
-    "GET, POST, PUT, DELETE, OPTIONS",
-  );
-  res.setHeader(
-    "Access-Control-Allow-Headers",
-    "Content-Type, Authorization, X-Requested-With",
-  );
-
-  // Handle CORS preflight
-  if (req.method === "OPTIONS") {
-    console.log("Books API: Handling OPTIONS preflight request.");
-    return res.status(200).end();
-  }
-
-  // --- Authentication Check --- (Applies to all methods: GET, POST, PUT, DELETE)
-  try {
-    // Check for Bearer token first (for API calls)
-    const authHeader = req.headers.authorization;
-    let token: string | null = null;
-
-    if (authHeader && authHeader.startsWith("Bearer ")) {
-      token = authHeader.split("Bearer ")[1];
-      try {
-        await auth.verifyIdToken(token);
-        console.log("Books API: Bearer token verified successfully.");
-      } catch (bearerError: any) {
-        console.error(
-          "Books API: Bearer token verification failed:",
-          bearerError.code,
-          bearerError.message,
-        );
-        // Fall through to session cookie check
-        token = null;
-      }
-    }
-
-    // If no valid Bearer token, check Firebase token cookie (for admin pages)
-    if (!token) {
-      const fbTokenCookie = req.cookies["fb_token"];
-      if (!fbTokenCookie) {
-        console.log("Books API: No authentication provided.");
-        return res
-          .status(401)
-          .json({ success: false, error: "No authentication provided" });
-      }
-
-      try {
-        await auth.verifyIdToken(fbTokenCookie);
-        console.log("Books API: Firebase token cookie verified successfully.");
-      } catch (tokenError: any) {
-        console.error(
-          "Books API: Firebase token cookie verification failed:",
-          tokenError.code,
-          tokenError.message,
-        );
-        return res
-          .status(401)
-          .json({ success: false, error: "Unauthorized - Invalid token" });
-      }
-    }
-  } catch (error: any) {
-    console.error("Books API auth error:", error);
-    return res.status(401).json({ success: false, error: "Unauthorized" });
-  }
-  // --- End Authentication Check ---
 
   try {
     // GET - Get all books or a specific book by ID
@@ -494,3 +384,5 @@ export default async function handler(
     }
   } // --- End Top-Level Try-Catch Block ---
 }
+
+export default withCORSAuth(handler);
