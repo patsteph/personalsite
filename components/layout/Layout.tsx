@@ -38,6 +38,7 @@ export default function Layout({
     cv: t('cv.title', 'Curriculum Vitae'),
     books: t('books.title', 'My Book Collection'),
     signals: t('signals.title', 'Signals'),
+    projects: t('projects.title', 'Projects'),
     contact: t('contact.title', 'Contact'),
     admin: t('admin.login', 'Admin')
   };
