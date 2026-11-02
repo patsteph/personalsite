@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/lib/hooks/useAuth';
+import { auth as firebaseAuth } from '@/lib/firebase-client';
 import { getAvailableTasks, toneOptions, AssistanceTask } from '@/lib/ai/blog-assistant';
 import type { ToneOption } from '@/lib/ai/blog-assistant';
 import toast from 'react-hot-toast';
@@ -59,10 +60,12 @@ const BlogAIAssistant: React.FC<BlogAIAssistantProps> = ({ content, onApplyChang
       }
 
       // Call the AI assistant API
+      const authToken = await firebaseAuth?.currentUser?.getIdToken();
       const response = await fetch('/api/ai/blog-assistant', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
         },
         body: JSON.stringify({
           task: selectedTask,

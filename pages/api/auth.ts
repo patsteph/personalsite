@@ -198,23 +198,18 @@ async function validateToken(
     // Get token from Authorization header
     const authHeader = req.headers.authorization || '';
     const token = authHeader.startsWith('Bearer ') ? authHeader.substring(7) : '';
-    
+
     if (!token) {
       return res.status(401).json({ success: false, valid: false, error: 'No token provided' });
     }
-    
+
     try {
-      // Verify the token
-      // TODO: Replace with server-side API call to verify token
-      // Stubbed logic for token verification
-      const decodedToken = {
-        uid: 'stub-uid',
-        email: 'stub-email@example.com'
-      };
-      
+      // Verify the token with the Firebase Admin SDK
+      const decodedToken = await adminAuth.verifyIdToken(token);
+
       // Token is valid
-      return res.status(200).json({ 
-        success: true, 
+      return res.status(200).json({
+        success: true,
         valid: true,
         user: {
           uid: decodedToken.uid,

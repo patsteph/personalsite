@@ -20,9 +20,11 @@ import {
 } from './api/auth';
 
 // Import the standardized cookie utilities
-import { 
-  setAuthCookie, 
-  removeAuthCookie, 
+import {
+  setAuthCookie,
+  removeAuthCookie,
+  setFirebaseTokenCookie,
+  removeFirebaseTokenCookie,
   AUTH_COOKIE_NAME
 } from './utils/cookies';
 
@@ -89,16 +91,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           displayName: firebaseUser.displayName || undefined,
           photoURL: firebaseUser.photoURL || undefined,
         };
-        
+
         setUser(appUser);
         setAuthCookie();
         setIsAuthenticated(true);
+
+        // Also store a real Firebase ID token cookie, so the edge
+        // middleware (and any request that can't reach Firebase client
+        // state) has more than the unsigned 'auth_success' flag to check.
+        // Real verification still happens server-side (withAuth / API routes).
+        firebaseUser.getIdToken().then((token) => {
+          setFirebaseTokenCookie(token);
+        }).catch((error) => {
+          if (DEBUG_AUTH) console.error('Failed to store Firebase ID token cookie:', error);
+        });
       } else {
         setUser(null);
         removeAuthCookie();
+        removeFirebaseTokenCookie();
         setIsAuthenticated(false);
       }
-      
+
       setLoading(false);
     });
 
@@ -178,6 +191,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
    */
   const signOut = useCallback(async () => {
     removeAuthCookie();
+    removeFirebaseTokenCookie();
     setLoading(true);
     
     try {

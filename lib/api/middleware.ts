@@ -20,8 +20,13 @@ export const withCORS = <T = any>(
   handler: (req: NextApiRequest, res: NextApiResponse<T>) => Promise<void>,
 ) => {
   return async (req: NextApiRequest, res: NextApiResponse<T>) => {
-    // Set CORS headers
-    res.setHeader("Access-Control-Allow-Credentials", "true");
+    // Set CORS headers. No Access-Control-Allow-Credentials here: browsers
+    // reject that combined with a wildcard origin for credentialed
+    // requests, and these routes are only ever called same-origin by this
+    // app's own frontend (which sends its auth as a Bearer header or the
+    // fb_token cookie, verified in withAuth/withCORSAuth, not via CORS
+    // credentials). A wildcard origin for the response itself is fine for
+    // these read-mostly endpoints since they don't rely on ambient cookies.
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader(
       "Access-Control-Allow-Methods",

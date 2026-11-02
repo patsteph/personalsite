@@ -31,6 +31,26 @@ const nextConfig = {
   async headers() {
     if (!isProd) return [];
 
+    // Content-Security-Policy: no 'unsafe-inline'/'unsafe-eval' for scripts.
+    // style-src keeps 'unsafe-inline' because Framer Motion and several UI
+    // libraries used here set inline style attributes directly via JS,
+    // which CSP's style-src governs same as <style> tags; tightening that
+    // further would need per-element nonces these libraries don't support.
+    const csp = [
+      "default-src 'self'",
+      "script-src 'self'",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      "img-src 'self' data: blob: https://firebasestorage.googleapis.com https://i.gr-assets.com https://images.unsplash.com https://source.unsplash.com https://books.google.com",
+      "font-src 'self' https://fonts.gstatic.com",
+      "connect-src 'self' https://*.firebaseio.com https://*.firebaseapp.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com https://www.googleapis.com wss://*.firebaseio.com",
+      "frame-src 'none'",
+      "object-src 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+      "frame-ancestors 'none'",
+      "upgrade-insecure-requests",
+    ].join("; ");
+
     return [
       {
         source: "/:path*",
@@ -48,34 +68,30 @@ const nextConfig = {
             value: "nosniff",
           },
           {
+            key: "X-Frame-Options",
+            value: "DENY",
+          },
+          {
             key: "Referrer-Policy",
             value: "origin-when-cross-origin",
           },
-        ],
-      },
-      {
-        source: "/api/:path*",
-        headers: [
           {
-            key: "Access-Control-Allow-Credentials",
-            value: "true",
+            key: "Permissions-Policy",
+            value: "camera=(), microphone=(), geolocation=(), interest-cohort=()",
           },
           {
-            key: "Access-Control-Allow-Origin",
-            value: "*",
-          },
-          {
-            key: "Access-Control-Allow-Methods",
-            value: "GET,POST,PUT,DELETE,OPTIONS",
-          },
-          {
-            key: "Access-Control-Allow-Headers",
-            value:
-              "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization",
+            key: "Content-Security-Policy",
+            value: csp,
           },
         ],
       },
     ];
+    // Note: no blanket CORS headers on /api/:path* — the app only calls its
+    // own API routes from the same origin, so no cross-origin CORS grant is
+    // needed. The previous config sent Access-Control-Allow-Origin: "*"
+    // together with Access-Control-Allow-Credentials: "true", a combination
+    // browsers reject for credentialed requests and that otherwise opened
+    // every API response to any origin for no reason.
   },
 
   // Image optimization

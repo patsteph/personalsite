@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getAdminFirestore } from '@/lib/firebase-admin';
-import { validateFirebaseIdToken } from '@/lib/api/server-auth';
+import { verifyAdminSession } from '@/lib/api/server-auth';
 
 type DashboardStats = {
   posts: number;
@@ -272,28 +272,17 @@ async function handler(
  */
 export default async function(req: NextApiRequest, res: NextApiResponse) {
   try {
-    // Check for development environment
-    const nodeEnv = process.env.NODE_ENV as string;
-    if (nodeEnv === 'development') {
-      // In development, we'll allow access without authentication
-      console.log('Development mode: bypassing authentication for dashboard stats');
-      return handler(req, res);
-    }
-    
-    // Validate the authentication token
-    const uid = await validateFirebaseIdToken(req);
-    
-    // Check for development token (from fetch-json.ts)
-    const authHeader = req.headers.authorization;
-    const isDevToken = authHeader === 'Bearer dev-token' && nodeEnv === 'development';
-    
-    if (!uid && !isDevToken) {
+    // Validate that the caller is an authenticated admin
+    // (verifyAdminSession itself bypasses in NODE_ENV=development for local dev)
+    const isAdmin = await verifyAdminSession(req);
+
+    if (!isAdmin) {
       return res.status(401).json({
         success: false,
         error: 'Unauthorized access'
       });
     }
-    
+
     // If authenticated, proceed to handler
     return handler(req, res);
   } catch (error) {
