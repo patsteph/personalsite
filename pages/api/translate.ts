@@ -230,6 +230,9 @@ export default async function handler(
     return res.status(200).json({ translations: results });
   } catch (error: any) {
     console.error('Error translating text:', error);
-    return res.status(500).json({ error: 'Error translating text' });
+    // TODO(temporary): surfacing error.message to diagnose the second
+    // production 500 (credits were the first cause, this is a new one) --
+    // remove once that's root-caused.
+    return res.status(500).json({ error: `Error translating text: ${error?.message || error}` });
   }
 }
