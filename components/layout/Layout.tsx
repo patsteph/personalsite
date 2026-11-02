@@ -2,11 +2,28 @@
 import { ReactNode } from 'react';
 import Head from 'next/head';
 import Sidebar from './Sidebar';
-import { useTranslation } from '@/lib/translations';
+import { useTranslation, LanguageCode } from '@/lib/translations';
 import { useEasterEggTrigger } from '@/lib/easter-eggs/useEasterEggTrigger';
 
 // Import page section types
 import { PageSection } from './types';
+
+// Short in-language labels for the footer buttons (own name for each language).
+const LANGUAGE_LABELS: Record<LanguageCode, string> = {
+  en: 'English',
+  es: 'Español',
+  de: 'Deutsch',
+  ja: '日本語',
+  uk: 'Українська',
+};
+
+const LANGUAGE_NAMES: Record<LanguageCode, string> = {
+  en: 'English',
+  es: 'Spanish',
+  de: 'German',
+  ja: 'Japanese',
+  uk: 'Ukrainian',
+};
 
 type LayoutProps = {
   children: ReactNode;
@@ -21,7 +38,7 @@ export default function Layout({
   description,
   section,
 }: LayoutProps) {
-  const { t } = useTranslation();
+  const { t, language, setLanguage } = useTranslation();
 
   // Default titles based on section
   const sectionTitles: Record<PageSection, string> = {
@@ -82,11 +99,26 @@ export default function Layout({
             {children}
           </div>
           
-          {/* Footer. Language selection lives in the GTranslate widget
-              mounted once in _app.tsx (fixed-positioned over this bar) so
-              it survives client-side page navigation instead of remounting
-              with this per-page footer. */}
-          <footer className="bg-linen p-4 flex justify-center items-center shadow-inner" {...languageSectionProps}>
+          {/* Footer. The visible language buttons below always work (they
+              switch the site's own UI/content strings). The GTranslate
+              widget mounted in _app.tsx adds a fixed-position dropdown over
+              this bar that additionally translates free-text content
+              (blog posts, reviews) when its third-party script loads. */}
+          <footer className="bg-linen p-4 flex flex-col sm:flex-row justify-between items-center shadow-inner gap-2">
+            <div className="flex items-center justify-center space-x-3" {...languageSectionProps}>
+              {(Object.keys(LANGUAGE_LABELS) as LanguageCode[]).map((code, i) => (
+                <span key={code} className="flex items-center space-x-3">
+                  {i > 0 && <span className="text-gray-400">•</span>}
+                  <button
+                    onClick={() => setLanguage(code)}
+                    className={`text-sm hover:text-accent transition-colors ${language === code ? 'font-bold text-accent' : 'text-gray-700'}`}
+                    title={LANGUAGE_NAMES[code]}
+                  >
+                    {LANGUAGE_LABELS[code]}
+                  </button>
+                </span>
+              ))}
+            </div>
             <div className="copyright text-sm text-gray-600">
               &copy; {new Date().getFullYear()} Patrick Stephens
             </div>
