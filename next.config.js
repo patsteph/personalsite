@@ -36,13 +36,21 @@ const nextConfig = {
     // libraries used here set inline style attributes directly via JS,
     // which CSP's style-src governs same as <style> tags; tightening that
     // further would need per-element nonces these libraries don't support.
+    //
+    // script-src allow-lists cdn.gtranslate.net specifically for the
+    // GTranslate footer translation widget (components/GTranslateWidget.tsx)
+    // -- its own settings script is served same-origin from
+    // public/gtranslate-settings.js instead of inline, so no 'unsafe-inline'
+    // exception was needed for that. frame-src/connect-src additions below
+    // are GTranslate's own documented hosts for the translation requests
+    // the widget makes once a language is selected.
     const csp = [
       "default-src 'self'",
-      "script-src 'self'",
+      "script-src 'self' https://cdn.gtranslate.net",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-      "img-src 'self' data: blob: https://firebasestorage.googleapis.com https://i.gr-assets.com https://images.unsplash.com https://source.unsplash.com https://books.google.com",
+      "img-src 'self' data: blob: https://firebasestorage.googleapis.com https://i.gr-assets.com https://images.unsplash.com https://source.unsplash.com https://books.google.com https://cdn.gtranslate.net",
       "font-src 'self' https://fonts.gstatic.com",
-      "connect-src 'self' https://*.firebaseio.com https://*.firebaseapp.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com https://www.googleapis.com wss://*.firebaseio.com",
+      "connect-src 'self' https://*.firebaseio.com https://*.firebaseapp.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com https://www.googleapis.com wss://*.firebaseio.com https://cdn.gtranslate.net https://translate.googleapis.com",
       "frame-src 'none'",
       "object-src 'none'",
       "base-uri 'self'",
