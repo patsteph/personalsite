@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import Layout from '@/components/layout/Layout';
 import BookRecommender from '@/components/books/BookRecommender';
-import { Book } from '@/types/book';
+import { Book, categorizeBookStatus } from '@/types/book';
 import { useTranslation } from '@/lib/translations';
 import { getAdminFirestore } from '@/lib/firebase-admin';
 import BooksFilter from '../components/BooksFilter';
@@ -139,35 +139,19 @@ export async function getStaticProps() {
     const booksSnapshot = await db.collection('books').get();
     const allBooks = booksSnapshot.docs;
     
-    // Calculate stats - account for different case variations
-    const readBooks = allBooks.filter(doc => {
-      const status = doc.data().status;
-      return status === 'Read' || status === 'read';
-    });
-    const readingBooks = allBooks.filter(doc => {
-      const status = doc.data().status;
-      return status === 'Currently Reading' || status === 'reading' || status === 'currentlyReading';
-    });
-    const toReadBooks = allBooks.filter(doc => {
-      const status = doc.data().status;
-      return status === 'To Read' || status === 'toRead' || status === 'to read';
-    });
-    
-    // Calculate books with other status (not in the main categories)
-    const otherBooks = allBooks.filter(doc => {
-      const status = doc.data().status;
-      const isRead = status === 'Read' || status === 'read';
-      const isReading = status === 'Currently Reading' || status === 'reading' || status === 'currentlyReading';
-      const isToRead = status === 'To Read' || status === 'toRead' || status === 'to read';
-      return !isRead && !isReading && !isToRead;
-    });
-    
+    // Bucket every book by status, covering both canonical and legacy
+    // (pre-normalization) status strings - see categorizeBookStatus.
+    const statusCounts = { read: 0, reading: 0, 'to-read': 0, other: 0 };
+    for (const doc of allBooks) {
+      statusCounts[categorizeBookStatus(doc.data().status)]++;
+    }
+
     const initialStats = {
       total: allBooks.length,
-      read: readBooks.length,
-      reading: readingBooks.length,
-      toRead: toReadBooks.length,
-      other: otherBooks.length
+      read: statusCounts.read,
+      reading: statusCounts.reading,
+      toRead: statusCounts['to-read'],
+      other: statusCounts.other
     };
 
     return {

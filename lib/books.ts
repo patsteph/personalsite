@@ -424,27 +424,9 @@ export const getBooks = async (): Promise<BookWithId[]> => {
     }
   } catch (error) {
     console.error('Error fetching books from public API:', error);
-    // Fall through to next attempt
   }
 
-  // 3. Try fetching from the debug endpoint as a last resort
-  try {
-    const response = await fetch('/api/books-debug');
-    if (!response.ok) {
-      console.error(`Debug book fetch failed: ${response.status} ${response.statusText}`);
-      // Give up
-    } else {
-      const result = await response.json();
-      if (result.success && Array.isArray(result.data)) {
-        console.log(`Successfully fetched ${result.data.length} books from debug API`);
-        return result.data as BookWithId[];
-      }
-    }
-  } catch (error) {
-    console.error('Error fetching books from debug API:', error);
-  }
-
-  // If all attempts fail
+  // If both attempts fail
   console.error('All attempts to fetch books failed.');
   return [];
 };

@@ -33,6 +33,24 @@ export type Book = {
 
 export type BookWithId = Book & { id: string };
 
+// Buckets used for display stats. Older documents in Firestore predate the
+// canonical BookStatus values above and store status as "Read", "To Read",
+// "toRead", "Currently Reading", etc. - this is the one place that maps all
+// known variants (canonical and legacy) to a display bucket.
+export type BookStatusBucket = 'read' | 'reading' | 'to-read' | 'other';
+
+const READ_VALUES = new Set(['read', 'Read']);
+const READING_VALUES = new Set(['reading', 'Currently Reading', 'currentlyReading']);
+const TO_READ_VALUES = new Set(['to-read', 'To Read', 'toRead', 'to read']);
+
+export function categorizeBookStatus(status: unknown): BookStatusBucket {
+  if (typeof status !== 'string') return 'other';
+  if (READ_VALUES.has(status)) return 'read';
+  if (READING_VALUES.has(status)) return 'reading';
+  if (TO_READ_VALUES.has(status)) return 'to-read';
+  return 'other';
+}
+
 export interface BookSearchResult {
   id: string;
   title: string;
