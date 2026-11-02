@@ -38,7 +38,7 @@ const nextConfig = {
     // further would need per-element nonces these libraries don't support.
     //
     // script-src allow-lists cdn.gtranslate.net specifically for the
-    // GTranslate footer translation widget (components/GTranslateWidget.tsx)
+    // GTranslate footer translation widget (mounted in pages/_document.tsx)
     // -- its own settings script is served same-origin from
     // public/gtranslate-settings.js instead of inline, so no 'unsafe-inline'
     // exception was needed for that. connect-src additionally allows
