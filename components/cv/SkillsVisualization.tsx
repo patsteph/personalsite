@@ -87,9 +87,9 @@ export default function SkillsVisualization({ skills }: SkillsVisualizationProps
       const positionedSkills: SkillWithPosition[] = [];
       
       skills.forEach(skill => {
-        // Base size on proficiency (assuming proficiency is 1-5)
-        const proficiency = parseInt(skill.proficiency.toString(), 10) || 3;
-        const size = Math.max(60, proficiency * 15); // Scale size based on proficiency
+        // Base size on proficiency (assuming proficiency is 1-5); unrated skills get a flat size
+        const proficiency = skill.proficiency != null ? parseInt(skill.proficiency.toString(), 10) || 3 : null;
+        const size = proficiency != null ? Math.max(60, proficiency * 15) : 70;
         
         // Random initial position
         const x = Math.random() * (containerSize.width - size);
@@ -230,21 +230,23 @@ export default function SkillsVisualization({ skills }: SkillsVisualizationProps
           {visibleSkills.filter(s => s.name === hoveredSkill).map(skill => (
             <div key={skill.name}>
               <h4 className="font-bold">{skill.name}</h4>
-              <div className="flex items-center mt-1">
-                <span className="text-sm text-gray-600 mr-2">Proficiency:</span>
-                <div className="flex">
-                  {[1, 2, 3, 4, 5].map(i => (
-                    <div 
-                      key={i}
-                      className={`w-4 h-4 rounded-full mx-0.5 ${
-                        i <= parseInt(skill.proficiency.toString(), 10)
-                          ? 'bg-accent'
-                          : 'bg-gray-200'
-                      }`}
-                    />
-                  ))}
+              {skill.proficiency != null && (
+                <div className="flex items-center mt-1">
+                  <span className="text-sm text-gray-600 mr-2">Proficiency:</span>
+                  <div className="flex">
+                    {[1, 2, 3, 4, 5].map(i => (
+                      <div
+                        key={i}
+                        className={`w-4 h-4 rounded-full mx-0.5 ${
+                          i <= parseInt(skill.proficiency!.toString(), 10)
+                            ? 'bg-accent'
+                            : 'bg-gray-200'
+                        }`}
+                      />
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
               {skill.description && (
                 <p className="text-sm text-gray-600 mt-1">{skill.description}</p>
               )}

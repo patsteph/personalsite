@@ -54,7 +54,7 @@ export type CVData = {
   export type Skill = {
     name: string;
     category: string;
-    proficiency: number | string;
+    proficiency?: number | string;
     description?: string;
     icon?: string;
     years?: number;

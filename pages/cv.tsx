@@ -60,7 +60,7 @@ export default function CVPage({ cvData }: CVPageProps) {
           </svg>
           <div>
             <p className="font-medium text-yellow-700">Under Construction</p>
-            <p className="text-sm text-yellow-600">The Interactive Resume feature is currently being developed. The placeholder content does not reflect my actual experience or skills.</p>
+            <p className="text-sm text-yellow-600">The Interactive Resume shows my real experience, skills, and education, but the Projects and Testimonials tabs are still being filled in.</p>
           </div>
         </div>
       </div>
