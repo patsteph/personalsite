@@ -114,6 +114,16 @@ describe("Layout", () => {
     });
   });
 
+  it("renders footer language buttons", () => {
+    render(<Layout {...defaultProps} />);
+
+    expect(screen.getByText("English")).toBeInTheDocument();
+    expect(screen.getByText("Español")).toBeInTheDocument();
+    expect(screen.getByText("Deutsch")).toBeInTheDocument();
+    expect(screen.getByText("日本語")).toBeInTheDocument();
+    expect(screen.getByText("Українська")).toBeInTheDocument();
+  });
+
   it("applies theme transition classes", () => {
     const { container } = render(<Layout {...defaultProps} />);
 
