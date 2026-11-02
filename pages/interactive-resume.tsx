@@ -433,14 +433,15 @@ export default function InteractiveResumePage({ cvData }: InteractiveResumeProps
   );
 }
 
-// Fetch data at build time
+// Live CV data from Firestore, normalized for the interactive components'
+// shape, regenerated hourly so edits show up without a redeploy.
 export const getStaticProps: GetStaticProps<InteractiveResumeProps> = async () => {
-  // Real CV data, normalized for the interactive components' shape
-  const cvData = toInteractiveCVData(getCVData());
+  const cvData = toInteractiveCVData(await getCVData());
 
   return {
     props: {
       cvData,
     },
+    revalidate: 3600,
   };
 };
