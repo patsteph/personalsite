@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getAdminFirestore } from '@/lib/firebase-admin';
 import { verifyAdminSession } from '@/lib/api/server-auth';
+import { getStaticCVData } from '@/lib/cv';
 import { CVData } from '@/types/cv';
 
 type ApiResponse = {
@@ -34,20 +35,11 @@ async function handler(
           data
         });
       } else {
-        // Return empty data if no document exists yet
+        // No saved edits yet - seed the editor with the live site's current
+        // CV data (content/cv/cv-data.json) instead of a blank form.
         return res.status(200).json({
           success: true,
-          data: {
-            about: '',
-            experience: [],
-            skills: [],
-            education: [],
-            Training: [],
-            publications: [],
-            languages: [],
-            projects: [],
-            testimonials: []
-          } as CVData
+          data: getStaticCVData()
         });
       }
     }

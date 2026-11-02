@@ -192,14 +192,15 @@ export default function CVPage({ cvData }: CVPageProps) {
   );
 }
 
-// Fetch data at build time
+// Live CV data from Firestore (the admin editor's source), regenerated
+// hourly so edits show up without a redeploy.
 export const getStaticProps: GetStaticProps<CVPageProps> = async () => {
-  // Get CV data
-  const cvData = getCVData();
-  
+  const cvData = await getCVData();
+
   return {
     props: {
       cvData,
     },
+    revalidate: 3600,
   };
 };
