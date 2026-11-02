@@ -2,6 +2,7 @@ import React from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
 import Layout from "@/components/layout/Layout";
 import { PageSection } from "@/components/layout/types";
+import { setGoogleTranslateLanguage } from "@/lib/google-translate";
 
 // Mock Next.js components
 jest.mock("next/head", () => {
@@ -10,23 +11,10 @@ jest.mock("next/head", () => {
   };
 });
 
-jest.mock("next/image", () => {
-  return function Image({ src, alt, ...props }: any) {
-    return <img src={src} alt={alt} {...props} />;
-  };
-});
-
 // Mock the sidebar component
 jest.mock("@/components/layout/Sidebar", () => {
   return function Sidebar({ currentSection }: { currentSection: PageSection }) {
     return <div data-testid="sidebar">Sidebar - {currentSection}</div>;
-  };
-});
-
-// Mock AdminButton component
-jest.mock("@/components/ui/AdminButton", () => {
-  return function AdminButton() {
-    return <button data-testid="admin-button">Admin</button>;
   };
 });
 
@@ -45,6 +33,11 @@ jest.mock("@/lib/easter-eggs/useEasterEggTrigger", () => ({
     onClick: jest.fn(),
     onDoubleClick: jest.fn(),
   }),
+}));
+
+// Mock the Google Translate driver (jsdom has no real widget to drive)
+jest.mock("@/lib/google-translate", () => ({
+  setGoogleTranslateLanguage: jest.fn(),
 }));
 
 describe("Layout", () => {
@@ -71,43 +64,6 @@ describe("Layout", () => {
     render(<Layout {...defaultProps} />);
     expect(screen.getByTestId("sidebar")).toBeInTheDocument();
     expect(screen.getByText("Sidebar - welcome")).toBeInTheDocument();
-  });
-
-  it("renders admin button", () => {
-    render(<Layout {...defaultProps} />);
-    expect(screen.getByTestId("admin-button")).toBeInTheDocument();
-  });
-
-  it("uses custom title when provided", () => {
-    const customTitle = "Custom Page Title";
-    render(<Layout {...defaultProps} title={customTitle} />);
-
-    // Check if the title is set in the document head
-    const titleElement = screen.getByTitle("Custom Page Title Header");
-    expect(titleElement).toBeInTheDocument();
-  });
-
-  it("uses default title based on section when no title provided", () => {
-    render(<Layout {...defaultProps} section="blog" />);
-
-    // Should use the blog section default title
-    const headerImage = screen.getByTitle("Blog Header");
-    expect(headerImage).toBeInTheDocument();
-  });
-
-  it("renders header image with correct src", () => {
-    render(<Layout {...defaultProps} />);
-
-    const headerImage = screen.getByTitle("Welcome Header");
-    expect(headerImage).toHaveAttribute("src", "/images/headers/welcome.jpg");
-  });
-
-  it("uses custom header image when provided", () => {
-    const customImage = "/custom-header.jpg";
-    render(<Layout {...defaultProps} headerImage={customImage} />);
-
-    const headerImage = screen.getByTitle("Welcome Header");
-    expect(headerImage).toHaveAttribute("src", customImage);
   });
 
   it("renders copyright with current year", () => {
@@ -141,9 +97,11 @@ describe("Layout", () => {
 
     fireEvent.click(screen.getByText("Idioma"));
     expect(mockSetLanguage).toHaveBeenCalledWith("es");
+    expect(setGoogleTranslateLanguage).toHaveBeenCalledWith("es");
 
     fireEvent.click(screen.getByText("Sprache"));
     expect(mockSetLanguage).toHaveBeenCalledWith("de");
+    expect(setGoogleTranslateLanguage).toHaveBeenCalledWith("de");
   });
 
   it("applies correct CSS classes for responsive layout", () => {
@@ -187,24 +145,12 @@ describe("Layout", () => {
       // Check that the sidebar receives the correct section
       expect(screen.getByText(`Sidebar - ${section}`)).toBeInTheDocument();
 
-      // Check that the header image path is correct
-      const headerImage = screen.getByTitle(
-        `${section.charAt(0).toUpperCase() + section.slice(1)} Header`,
-      );
-      expect(headerImage).toHaveAttribute(
-        "src",
-        `/images/headers/${section}.jpg`,
-      );
-
       rerender(<div />); // Clean up between iterations
     });
   });
 
   it("has proper accessibility attributes", () => {
     render(<Layout {...defaultProps} />);
-
-    // Check for aria-label on admin section
-    expect(screen.getByLabelText("Admin Access")).toBeInTheDocument();
 
     // Check for proper title attributes on language buttons
     expect(screen.getByTitle("English")).toBeInTheDocument();

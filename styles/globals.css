@@ -155,3 +155,21 @@ body {
 .prose blockquote {
   @apply border-l-4 border-light-accent pl-4 italic text-gray-600;
 }
+
+/* Google Translate widget: driven by our own footer language links
+   (lib/google-translate.ts), so hide every bit of its own UI. */
+.goog-te-banner-frame.skiptranslate,
+.goog-te-gadget-icon,
+#goog-gt-tt,
+.goog-te-balloon-frame {
+  display: none !important;
+}
+
+body {
+  top: 0 !important;
+}
+
+.goog-text-highlight {
+  background: none !important;
+  box-shadow: none !important;
+}

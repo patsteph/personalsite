@@ -1,9 +1,10 @@
 // components/layout/Layout.tsx
-import { ReactNode } from 'react';
+import { Fragment, ReactNode } from 'react';
 import Head from 'next/head';
 import Sidebar from './Sidebar';
-import { useTranslation } from '@/lib/translations';
+import { useTranslation, LanguageCode } from '@/lib/translations';
 import { useEasterEggTrigger } from '@/lib/easter-eggs/useEasterEggTrigger';
+import { setGoogleTranslateLanguage } from '@/lib/google-translate';
 
 // Import page section types
 import { PageSection } from './types';
@@ -40,6 +41,22 @@ export default function Layout({
   
   // Easter egg trigger (rapid-clicking the language links)
   const languageSectionProps = useEasterEggTrigger('rapid-clicks');
+
+  // Switches the UI-chrome strings (nav, buttons) via our own dictionary,
+  // and drives the hidden Google Translate widget to translate everything
+  // else on the page (blog posts, book reviews, CV copy).
+  const handleLanguageChange = (code: LanguageCode) => {
+    setLanguage(code);
+    setGoogleTranslateLanguage(code);
+  };
+
+  const footerLanguages: { code: LanguageCode; label: string; title: string }[] = [
+    { code: 'en', label: 'Language', title: 'English' },
+    { code: 'es', label: 'Idioma', title: 'Spanish' },
+    { code: 'de', label: 'Sprache', title: 'German' },
+    { code: 'ja', label: '言語', title: 'Japanese' },
+    { code: 'uk', label: 'Мова', title: 'Ukrainian' },
+  ];
   
   return (
     <div className="min-h-screen bg-linen text-gray-800 theme-transition">
@@ -86,45 +103,18 @@ export default function Layout({
           <footer className="bg-linen p-4 flex justify-between items-center shadow-inner">
             {/* Language selection as horizontal text links */}
             <div className="flex items-center justify-center space-x-3 flex-grow px-4" {...languageSectionProps}>
-              <button 
-                onClick={() => setLanguage('en')}
-                className={`text-sm hover:text-accent transition-colors ${language === 'en' ? 'font-bold text-accent' : 'text-gray-700'}`}
-                title="English"
-              >
-                Language
-              </button>
-              <span className="text-gray-400">•</span>
-              <button 
-                onClick={() => setLanguage('es')}
-                className={`text-sm hover:text-accent transition-colors ${language === 'es' ? 'font-bold text-accent' : 'text-gray-700'}`}
-                title="Spanish"
-              >
-                Idioma
-              </button>
-              <span className="text-gray-400">•</span>
-              <button 
-                onClick={() => setLanguage('de')}
-                className={`text-sm hover:text-accent transition-colors ${language === 'de' ? 'font-bold text-accent' : 'text-gray-700'}`}
-                title="German"
-              >
-                Sprache
-              </button>
-              <span className="text-gray-400">•</span>
-              <button 
-                onClick={() => setLanguage('ja')}
-                className={`text-sm hover:text-accent transition-colors ${language === 'ja' ? 'font-bold text-accent' : 'text-gray-700'}`}
-                title="Japanese"
-              >
-                言語
-              </button>
-              <span className="text-gray-400">•</span>
-              <button 
-                onClick={() => setLanguage('uk')}
-                className={`text-sm hover:text-accent transition-colors ${language === 'uk' ? 'font-bold text-accent' : 'text-gray-700'}`}
-                title="Ukrainian"
-              >
-                Мова
-              </button>
+              {footerLanguages.map(({ code, label, title }, i) => (
+                <Fragment key={code}>
+                  {i > 0 && <span className="text-gray-400">•</span>}
+                  <button
+                    onClick={() => handleLanguageChange(code)}
+                    className={`text-sm hover:text-accent transition-colors ${language === code ? 'font-bold text-accent' : 'text-gray-700'}`}
+                    title={title}
+                  >
+                    {label}
+                  </button>
+                </Fragment>
+              ))}
             </div>
             
             <div className="copyright text-sm text-gray-600">
