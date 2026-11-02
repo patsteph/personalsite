@@ -155,3 +155,28 @@ body {
 .prose blockquote {
   @apply border-l-4 border-light-accent pl-4 italic text-gray-600;
 }
+
+/* GTranslate widget (components/GTranslateWidget.tsx). Mounted once in
+   _app.tsx, outside the per-page Layout, so it survives client-side page
+   navigation -- fixed-positioned here to sit over every page's footer bar
+   (footer is p-4/16px tall padding, in the content column to the right of
+   the md:col-span-1 sidebar). */
+.gtranslate_wrapper {
+  position: fixed;
+  bottom: 1rem;
+  left: 1rem;
+  z-index: 40;
+}
+
+@media (min-width: 768px) {
+  .gtranslate_wrapper {
+    left: calc(25% + 1rem);
+  }
+}
+
+.gtranslate_wrapper .gt_selector {
+  font-size: 0.875rem;
+  color: #374151; /* text-gray-700 */
+  background: transparent;
+  border: none;
+}

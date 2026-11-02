@@ -1,9 +1,7 @@
 // components/layout/Layout.tsx
 import { ReactNode } from 'react';
 import Head from 'next/head';
-import Image from 'next/image';
 import Sidebar from './Sidebar';
-import AdminButton from '../ui/AdminButton';
 import { useTranslation } from '@/lib/translations';
 import { useEasterEggTrigger } from '@/lib/easter-eggs/useEasterEggTrigger';
 
@@ -15,7 +13,6 @@ type LayoutProps = {
   title?: string;
   description?: string;
   section: PageSection;
-  headerImage?: string;
 };
 
 export default function Layout({
@@ -23,14 +20,9 @@ export default function Layout({
   title,
   description,
   section,
-  headerImage
 }: LayoutProps) {
-  const { t, language, setLanguage } = useTranslation();
-  
-  // Default header image based on section
-  const defaultHeaderImage = `/images/headers/${section}.jpg`;
-  const headerImageSrc = headerImage || defaultHeaderImage;
-  
+  const { t } = useTranslation();
+
   // Default titles based on section
   const sectionTitles: Record<PageSection, string> = {
     welcome: t('welcome.title', 'Welcome'),
@@ -46,10 +38,9 @@ export default function Layout({
   const pageTitle = title || sectionTitles[section];
   const metaDescription = description || `Patrick Stephens personal website - ${pageTitle} section`;
   
-  // Easter egg triggers
-  const logoTripleClickProps = useEasterEggTrigger('triple-click');
+  // Easter egg trigger (rapid-clicking the language section)
   const languageSectionProps = useEasterEggTrigger('rapid-clicks');
-  
+
   return (
     <div className="min-h-screen bg-linen text-gray-800 theme-transition">
       <Head>
@@ -65,13 +56,13 @@ export default function Layout({
         <meta property="og:description" content={metaDescription} />
         <meta property="og:type" content="website" />
         <meta property="og:url" content={typeof window !== 'undefined' ? window.location.href : ''} />
-        <meta property="og:image" content={headerImageSrc} />
-        
+        <meta property="og:image" content="/images/profile.jpg" />
+
         {/* Twitter Card data */}
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={`${pageTitle} | Patrick Stephens`} />
         <meta name="twitter:description" content={metaDescription} />
-        <meta name="twitter:image" content={headerImageSrc} />
+        <meta name="twitter:image" content="/images/profile.jpg" />
         
         {/* Other meta tags */}
         <meta charSet="utf-8" />
@@ -86,81 +77,16 @@ export default function Layout({
         
         {/* Main content area (75% width on medium+ screens) */}
         <main className="md:col-span-3 flex flex-col min-h-screen">
-          {/* Header image */}
-          <header className="w-full shadow-sm relative">
-            <div className="w-full h-[220px] overflow-hidden">
-              <Image 
-                src={headerImageSrc} 
-                alt={`${pageTitle} Header`} 
-                className="w-full h-full object-cover transition-all duration-500 hover:scale-105"
-                width={1200}
-                height={220}
-                priority
-                sizes="(max-width: 640px) 100vw, (max-width: 768px) 100vw, (max-width: 1024px) 75vw, 75vw"
-                quality={85}
-                placeholder="blur"
-                blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="
-                {...logoTripleClickProps}
-              />
-            <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-[rgba(0,0,0,0.3)] to-transparent h-16"></div>
-            </div>
-          </header>
-          
           {/* Main content */}
           <div className="flex-grow p-6 md:p-8 text-gray-800">
             {children}
           </div>
           
-          {/* Footer with language selection and admin button */}
-          <footer className="bg-linen p-4 flex justify-between items-center shadow-inner">
-            {/* Admin button moved to far left */}
-            <div aria-label="Admin Access">
-              <AdminButton />
-            </div>
-            
-            {/* Language selection as horizontal text links */}
-            <div className="flex items-center justify-center space-x-3 flex-grow px-4" {...languageSectionProps}>
-              <button 
-                onClick={() => setLanguage('en')}
-                className={`text-sm hover:text-accent transition-colors ${language === 'en' ? 'font-bold text-accent' : 'text-gray-700'}`}
-                title="English"
-              >
-                Language
-              </button>
-              <span className="text-gray-400">•</span>
-              <button 
-                onClick={() => setLanguage('es')}
-                className={`text-sm hover:text-accent transition-colors ${language === 'es' ? 'font-bold text-accent' : 'text-gray-700'}`}
-                title="Spanish"
-              >
-                Idioma
-              </button>
-              <span className="text-gray-400">•</span>
-              <button 
-                onClick={() => setLanguage('de')}
-                className={`text-sm hover:text-accent transition-colors ${language === 'de' ? 'font-bold text-accent' : 'text-gray-700'}`}
-                title="German"
-              >
-                Sprache
-              </button>
-              <span className="text-gray-400">•</span>
-              <button 
-                onClick={() => setLanguage('ja')}
-                className={`text-sm hover:text-accent transition-colors ${language === 'ja' ? 'font-bold text-accent' : 'text-gray-700'}`}
-                title="Japanese"
-              >
-                言語
-              </button>
-              <span className="text-gray-400">•</span>
-              <button 
-                onClick={() => setLanguage('uk')}
-                className={`text-sm hover:text-accent transition-colors ${language === 'uk' ? 'font-bold text-accent' : 'text-gray-700'}`}
-                title="Ukrainian"
-              >
-                Мова
-              </button>
-            </div>
-            
+          {/* Footer. Language selection lives in the GTranslate widget
+              mounted once in _app.tsx (fixed-positioned over this bar) so
+              it survives client-side page navigation instead of remounting
+              with this per-page footer. */}
+          <footer className="bg-linen p-4 flex justify-center items-center shadow-inner" {...languageSectionProps}>
             <div className="copyright text-sm text-gray-600">
               &copy; {new Date().getFullYear()} Patrick Stephens
             </div>

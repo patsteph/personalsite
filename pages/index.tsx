@@ -4,6 +4,13 @@ import { BlogPost } from "@/types/blog";
 import Link from "next/link";
 import { useTranslation } from "@/lib/translations";
 import { format } from "date-fns";
+import {
+  BookOpenIcon,
+  PencilSquareIcon,
+  NewspaperIcon,
+  BriefcaseIcon,
+  EnvelopeIcon,
+} from "@heroicons/react/24/outline";
 
 // Imports for direct Firestore access
 import { getAdminFirestore } from "@/lib/firebase-admin";
@@ -48,10 +55,11 @@ export default function HomePage({ recentPosts }: HomePageProps) {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
           <div className="bg-white rounded-lg shadow p-3 hover:shadow-md transition-shadow">
+            <BookOpenIcon className="h-6 w-6 text-steel-blue mb-2" />
             <h3 className="text-lg font-semibold text-steel-blue mb-1">
               {t("nav.books", "Books")}
             </h3>
-            <p className="text-gray-700 mb-2 text-sm">📚🔑🧠</p>
+            <p className="text-gray-700 mb-2 text-sm">What I'm reading.</p>
             <Link
               href="/books"
               className="text-steel-blue hover:text-accent font-medium inline-flex items-center transition-colors text-sm"
@@ -75,11 +83,12 @@ export default function HomePage({ recentPosts }: HomePageProps) {
           </div>
 
           <div className="bg-white rounded-lg shadow p-3 hover:shadow-md transition-shadow">
+            <PencilSquareIcon className="h-6 w-6 text-steel-blue mb-2" />
             <h3 className="text-lg font-semibold text-steel-blue mb-1">
               {t("nav.blog", "Blog")}
             </h3>
             <p className="text-gray-700 mb-2 text-sm">
-              My thoughts on things 🤔💭
+              My thoughts on things.
             </p>
             <Link
               href="/blog"
@@ -104,11 +113,12 @@ export default function HomePage({ recentPosts }: HomePageProps) {
           </div>
 
           <div className="bg-white rounded-lg shadow p-3 hover:shadow-md transition-shadow">
+            <NewspaperIcon className="h-6 w-6 text-steel-blue mb-2" />
             <h3 className="text-lg font-semibold text-steel-blue mb-1">
               {t("nav.signals", "Signals")}
             </h3>
             <p className="text-gray-700 mb-2 text-sm">
-              Articles and newsletters. 📚📰
+              Articles and newsletters.
             </p>
             <Link
               href="/signals"
@@ -133,10 +143,11 @@ export default function HomePage({ recentPosts }: HomePageProps) {
           </div>
 
           <div className="bg-white rounded-lg shadow p-3 hover:shadow-md transition-shadow">
+            <BriefcaseIcon className="h-6 w-6 text-steel-blue mb-2" />
             <h3 className="text-lg font-semibold text-steel-blue mb-1">
               {t("nav.cv", "CV")}
             </h3>
-            <p className="text-gray-700 mb-2 text-sm">My career journey. 🚀</p>
+            <p className="text-gray-700 mb-2 text-sm">My career journey.</p>
             <Link
               href="/cv"
               className="text-steel-blue hover:text-accent font-medium inline-flex items-center transition-colors text-sm"
@@ -160,10 +171,11 @@ export default function HomePage({ recentPosts }: HomePageProps) {
           </div>
 
           <div className="bg-white rounded-lg shadow p-3 hover:shadow-md transition-shadow">
+            <EnvelopeIcon className="h-6 w-6 text-steel-blue mb-2" />
             <h3 className="text-lg font-semibold text-steel-blue mb-1">
               {t("nav.contact", "Contact")}
             </h3>
-            <p className="text-gray-700 mb-2 text-sm">💬 with me.</p>
+            <p className="text-gray-700 mb-2 text-sm">Get in touch.</p>
             <Link
               href="/contact"
               className="text-steel-blue hover:text-accent font-medium inline-flex items-center transition-colors text-sm"
