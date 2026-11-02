@@ -1,8 +1,7 @@
 import React from "react";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import Layout from "@/components/layout/Layout";
 import { PageSection } from "@/components/layout/types";
-import { setGoogleTranslateLanguage } from "@/lib/google-translate";
 
 // Mock Next.js components
 jest.mock("next/head", () => {
@@ -33,11 +32,6 @@ jest.mock("@/lib/easter-eggs/useEasterEggTrigger", () => ({
     onClick: jest.fn(),
     onDoubleClick: jest.fn(),
   }),
-}));
-
-// Mock the Google Translate driver (jsdom has no real widget to drive)
-jest.mock("@/lib/google-translate", () => ({
-  setGoogleTranslateLanguage: jest.fn(),
 }));
 
 describe("Layout", () => {
@@ -73,35 +67,6 @@ describe("Layout", () => {
     expect(
       screen.getByText(`© ${currentYear} Patrick Stephens`),
     ).toBeInTheDocument();
-  });
-
-  it("renders language selection buttons", () => {
-    render(<Layout {...defaultProps} />);
-
-    expect(screen.getByText("Language")).toBeInTheDocument();
-    expect(screen.getByText("Idioma")).toBeInTheDocument();
-    expect(screen.getByText("Sprache")).toBeInTheDocument();
-    expect(screen.getByText("言語")).toBeInTheDocument();
-    expect(screen.getByText("Мова")).toBeInTheDocument();
-  });
-
-  it("handles language selection clicks", () => {
-    const mockSetLanguage = jest.fn();
-    jest.mocked(require("@/lib/translations").useTranslation).mockReturnValue({
-      t: (key: string, fallback: string) => fallback,
-      language: "en",
-      setLanguage: mockSetLanguage,
-    });
-
-    render(<Layout {...defaultProps} />);
-
-    fireEvent.click(screen.getByText("Idioma"));
-    expect(mockSetLanguage).toHaveBeenCalledWith("es");
-    expect(setGoogleTranslateLanguage).toHaveBeenCalledWith("es");
-
-    fireEvent.click(screen.getByText("Sprache"));
-    expect(mockSetLanguage).toHaveBeenCalledWith("de");
-    expect(setGoogleTranslateLanguage).toHaveBeenCalledWith("de");
   });
 
   it("applies correct CSS classes for responsive layout", () => {
@@ -147,17 +112,6 @@ describe("Layout", () => {
 
       rerender(<div />); // Clean up between iterations
     });
-  });
-
-  it("has proper accessibility attributes", () => {
-    render(<Layout {...defaultProps} />);
-
-    // Check for proper title attributes on language buttons
-    expect(screen.getByTitle("English")).toBeInTheDocument();
-    expect(screen.getByTitle("Spanish")).toBeInTheDocument();
-    expect(screen.getByTitle("German")).toBeInTheDocument();
-    expect(screen.getByTitle("Japanese")).toBeInTheDocument();
-    expect(screen.getByTitle("Ukrainian")).toBeInTheDocument();
   });
 
   it("applies theme transition classes", () => {

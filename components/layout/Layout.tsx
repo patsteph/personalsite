@@ -1,10 +1,9 @@
 // components/layout/Layout.tsx
-import { Fragment, ReactNode } from 'react';
+import { ReactNode } from 'react';
 import Head from 'next/head';
 import Sidebar from './Sidebar';
-import { useTranslation, LanguageCode } from '@/lib/translations';
+import { useTranslation } from '@/lib/translations';
 import { useEasterEggTrigger } from '@/lib/easter-eggs/useEasterEggTrigger';
-import { setGoogleTranslateLanguage } from '@/lib/google-translate';
 
 // Import page section types
 import { PageSection } from './types';
@@ -22,7 +21,7 @@ export default function Layout({
   description,
   section,
 }: LayoutProps) {
-  const { t, language, setLanguage } = useTranslation();
+  const { t } = useTranslation();
 
   // Default titles based on section
   const sectionTitles: Record<PageSection, string> = {
@@ -39,25 +38,9 @@ export default function Layout({
   const pageTitle = title || sectionTitles[section];
   const metaDescription = description || `Patrick Stephens personal website - ${pageTitle} section`;
   
-  // Easter egg trigger (rapid-clicking the language links)
+  // Easter egg trigger (rapid-clicking the language section)
   const languageSectionProps = useEasterEggTrigger('rapid-clicks');
 
-  // Switches the UI-chrome strings (nav, buttons) via our own dictionary,
-  // and drives the hidden Google Translate widget to translate everything
-  // else on the page (blog posts, book reviews, CV copy).
-  const handleLanguageChange = (code: LanguageCode) => {
-    setLanguage(code);
-    setGoogleTranslateLanguage(code);
-  };
-
-  const footerLanguages: { code: LanguageCode; label: string; title: string }[] = [
-    { code: 'en', label: 'Language', title: 'English' },
-    { code: 'es', label: 'Idioma', title: 'Spanish' },
-    { code: 'de', label: 'Sprache', title: 'German' },
-    { code: 'ja', label: '言語', title: 'Japanese' },
-    { code: 'uk', label: 'Мова', title: 'Ukrainian' },
-  ];
-  
   return (
     <div className="min-h-screen bg-linen text-gray-800 theme-transition">
       <Head>
@@ -99,24 +82,11 @@ export default function Layout({
             {children}
           </div>
           
-          {/* Footer with language selection */}
-          <footer className="bg-linen p-4 flex justify-between items-center shadow-inner">
-            {/* Language selection as horizontal text links */}
-            <div className="flex items-center justify-center space-x-3 flex-grow px-4" {...languageSectionProps}>
-              {footerLanguages.map(({ code, label, title }, i) => (
-                <Fragment key={code}>
-                  {i > 0 && <span className="text-gray-400">•</span>}
-                  <button
-                    onClick={() => handleLanguageChange(code)}
-                    className={`text-sm hover:text-accent transition-colors ${language === code ? 'font-bold text-accent' : 'text-gray-700'}`}
-                    title={title}
-                  >
-                    {label}
-                  </button>
-                </Fragment>
-              ))}
-            </div>
-            
+          {/* Footer. Language selection lives in the GTranslate widget
+              mounted once in _app.tsx (fixed-positioned over this bar) so
+              it survives client-side page navigation instead of remounting
+              with this per-page footer. */}
+          <footer className="bg-linen p-4 flex justify-center items-center shadow-inner" {...languageSectionProps}>
             <div className="copyright text-sm text-gray-600">
               &copy; {new Date().getFullYear()} Patrick Stephens
             </div>
