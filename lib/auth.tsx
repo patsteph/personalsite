@@ -65,8 +65,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState<boolean>(true);
   const router = useRouter();
 
-  // Route definitions
-  const protectedAdminRoutes = ['/admin', '/admin/books', '/admin/blog', '/admin/signals'];
+  // Route definitions. '/admin' alone covers every /admin/* sub-path via
+  // startsWith below, so no need to list each admin page separately.
+  const protectedAdminRoutes = ['/admin'];
   const publicAdminRoutes = ['/admin/login'];
 
   /**

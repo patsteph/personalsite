@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Head from 'next/head'; 
-import { GetServerSideProps, GetServerSidePropsResult, GetServerSidePropsContext } from 'next'; 
+import { GetServerSideProps, GetServerSidePropsContext } from 'next'; 
 import { useRouter } from 'next/router'; 
 import { 
   addSignal as apiAddSignal, 
@@ -11,6 +11,7 @@ import {
 import { SignalSchema, SignalSchemaType } from '@/lib/schemas/signals'; 
 import AdminLayout from '@/components/admin/AdminLayout';
 import SignalForm from '@/components/admin/SignalForm';
+import { withAuth } from '@/lib/api/with-auth';
 
 import { Signal, Newsletter, Article } from '@/lib/schemas/signals';
 import { Signal as AppSignal, Newsletter as AppNewsletter, Article as AppArticle } from '@/types'; 
@@ -435,19 +436,11 @@ const SignalsAdminPage: React.FC<SignalsAdminPageProps> = ({ initialSignals, ser
 
 export default SignalsAdminPage;
 
-export const getServerSideProps: GetServerSideProps<SignalsAdminPageProps> = async (context: GetServerSidePropsContext): Promise<GetServerSidePropsResult<SignalsAdminPageProps>> => {
+export const getServerSideProps: GetServerSideProps<SignalsAdminPageProps> = withAuth<SignalsAdminPageProps>(async (context: GetServerSidePropsContext) => {
   try {
-    const token = context.req.cookies['fb_token']; 
-
-    if (!token) {
-      console.log('getServerSideProps: No fb_token found in cookies. Redirecting to login.');
-      return {
-        redirect: { 
-          destination: '/login', 
-          permanent: false,
-        },
-      };
-    }
+    // withAuth has already verified the caller is an admin; re-read the
+    // token here only to forward it to the internal API call below.
+    const token = context.req.cookies['fb_token'];
 
     const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
     const host = context.req.headers.host || process.env.NEXT_PUBLIC_VERCEL_URL || 'localhost:3000'; 
@@ -487,8 +480,8 @@ export const getServerSideProps: GetServerSideProps<SignalsAdminPageProps> = asy
     return {
       props: {
         initialSignals: [], 
-        serverError: `Failed to load initial signals: ${error instanceof Error ? error.message : String(error)}`, 
+        serverError: `Failed to load initial signals: ${error instanceof Error ? error.message : String(error)}`,
       },
     };
   }
-}; 
+});
