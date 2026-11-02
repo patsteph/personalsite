@@ -30,7 +30,6 @@ export default function CVEditor({ initialData, onSave, saving }: CVEditorProps)
   // Use initial data or default structure
   const [cvData, setCvData] = useState<CVData>(initialData || defaultCVData);
   const [activeTab, setActiveTab] = useState<string>('about');
-  const [previewMode, setPreviewMode] = useState<'standard' | 'interactive' | null>(null);
   
   // Update CV data
   const updateCvData = (key: keyof CVData, value: any) => {
@@ -67,10 +66,7 @@ export default function CVEditor({ initialData, onSave, saving }: CVEditorProps)
           {tabs.map(tab => (
             <button
               key={tab.id}
-              onClick={() => {
-                setActiveTab(tab.id);
-                setPreviewMode(null);
-              }}
+              onClick={() => setActiveTab(tab.id)}
               className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
                 activeTab === tab.id
                   ? 'border-indigo-500 text-indigo-600'
@@ -126,36 +122,7 @@ export default function CVEditor({ initialData, onSave, saving }: CVEditorProps)
         
         {/* Preview Section */}
         {activeTab === 'preview' && (
-          <div>
-            <div className="mb-4 flex space-x-4">
-              <button
-                type="button"
-                onClick={() => setPreviewMode('standard')}
-                className={`px-4 py-2 rounded-md text-sm font-medium ${
-                  previewMode === 'standard'
-                    ? 'bg-indigo-600 text-white'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                }`}
-              >
-                Standard View
-              </button>
-              <button
-                type="button"
-                onClick={() => setPreviewMode('interactive')}
-                className={`px-4 py-2 rounded-md text-sm font-medium ${
-                  previewMode === 'interactive'
-                    ? 'bg-indigo-600 text-white'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                }`}
-              >
-                Interactive View
-              </button>
-            </div>
-            
-            {previewMode && (
-              <CVPreview data={cvData} mode={previewMode} />
-            )}
-          </div>
+          <CVPreview data={cvData} />
         )}
         
         {/* Form Actions */}

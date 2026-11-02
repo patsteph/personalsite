@@ -11,7 +11,6 @@ import { useTranslation } from '@/lib/translations';
 import { useState } from 'react';
 import { trackUserAction } from '@/lib/analytics';
 import Image from 'next/image';
-import Link from 'next/link';
 
 // Props type definition
 type CVPageProps = {
@@ -44,27 +43,8 @@ export default function CVPage({ cvData }: CVPageProps) {
         <h1 className="text-3xl md:text-4xl font-bold text-accent">
           {t('cv.title', 'Curriculum Vitae')}
         </h1>
-        <Link href="/interactive-resume" className="inline-block bg-accent hover:bg-steel-blue text-white font-medium py-2 px-4 rounded transition-colors">
-          {t('cv.interactive_view', 'Interactive View')}
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-1 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-          </svg>
-        </Link>
       </div>
-      
-      {/* Under Construction Banner */}
-      <div className="mb-8 bg-yellow-100 border-l-4 border-yellow-500 p-4 rounded">
-        <div className="flex items-center">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-yellow-600 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-          </svg>
-          <div>
-            <p className="font-medium text-yellow-700">Under Construction</p>
-            <p className="text-sm text-yellow-600">The Interactive Resume feature is currently being developed. The placeholder content does not reflect my actual experience or skills.</p>
-          </div>
-        </div>
-      </div>
-      
+
       {/* Visual Career Journey Link - Compact Version */}
       <div className="mb-4 bg-white rounded-lg shadow p-3 text-center">
         <h2 className="text-lg font-bold text-accent mb-1">Visual Career Journey</h2>
