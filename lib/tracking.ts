@@ -1,5 +1,3 @@
-import { v4 as uuidv4 } from 'uuid';
-
 // Store session ID in sessionStorage to persist across page loads but not across browser sessions
 const SESSION_ID_KEY = 'tracking_session_id';
 
@@ -11,7 +9,7 @@ export function getTrackingSessionId(): string {
 
   let sessionId = sessionStorage.getItem(SESSION_ID_KEY);
   if (!sessionId) {
-    sessionId = uuidv4();
+    sessionId = crypto.randomUUID();
     sessionStorage.setItem(SESSION_ID_KEY, sessionId);
   }
   return sessionId;
