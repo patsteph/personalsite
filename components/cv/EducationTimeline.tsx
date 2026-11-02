@@ -12,8 +12,8 @@ export default function EducationTimeline({ education }: EducationTimelineProps)
   
   // Sort education by date (starting with most recent)
   const sortedEducation = [...education].sort((a, b) => {
-    const aYear = parseInt(a.year.split(' - ')[1] || a.year, 10);
-    const bYear = parseInt(b.year.split(' - ')[1] || b.year, 10);
+    const aYear = parseInt((a.year || '').split(' - ')[1] || a.year || '', 10) || 0;
+    const bYear = parseInt((b.year || '').split(' - ')[1] || b.year || '', 10) || 0;
     return bYear - aYear;
   });
   
@@ -63,11 +63,13 @@ export default function EducationTimeline({ education }: EducationTimelineProps)
               <div className={`bg-white rounded-lg shadow p-6 ml-12 sm:ml-0 w-full sm:w-5/12 ${
                 index % 2 === 0 ? 'sm:mr-auto sm:text-right' : 'sm:ml-auto'
               }`}>
-                <h3 className="text-xl font-semibold text-steel-blue">{edu.degree}</h3>
-                <div className="text-gray-600 mb-2">{edu.institution}</div>
-                <div className="inline-block px-3 py-1 bg-light-accent text-accent text-sm rounded-full mb-2">
-                  {edu.year}
-                </div>
+                <h3 className="text-xl font-semibold text-steel-blue">{edu.degree || edu.institution}</h3>
+                {edu.degree && <div className="text-gray-600 mb-2">{edu.institution}</div>}
+                {edu.year && (
+                  <div className="inline-block px-3 py-1 bg-light-accent text-accent text-sm rounded-full mb-2">
+                    {edu.year}
+                  </div>
+                )}
                 {edu.description && (
                   <motion.p 
                     className="text-gray-700 mt-2"

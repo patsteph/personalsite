@@ -9,7 +9,8 @@ import InteractiveTimeline from '@/components/cv/InteractiveTimeline';
 import SkillsVisualization from '@/components/cv/SkillsVisualization';
 import EducationTimeline from '@/components/cv/EducationTimeline';
 import AboutSection from '@/components/cv/AboutSection';
-import { getInteractiveCVData } from '@/lib/cv-interactive';
+import { getCVData } from '@/lib/cv';
+import { toInteractiveCVData } from '@/lib/cv-interactive-adapt';
 import Image from 'next/image';
 import Link from 'next/link';
 
@@ -80,7 +81,7 @@ export default function InteractiveResumePage({ cvData }: InteractiveResumeProps
             </svg>
             <div>
               <p className="font-medium text-yellow-700">Under Construction</p>
-              <p className="text-sm text-yellow-600">This Interactive Resume is currently in development. The content shown is placeholder data and does not reflect my actual experience, skills, or qualifications.</p>
+              <p className="text-sm text-yellow-600">This Interactive Resume is still being filled in. Experience, skills, and education are my real data, but the Projects and Testimonials tabs are empty until I add that content.</p>
             </div>
           </div>
         </div>
@@ -434,9 +435,9 @@ export default function InteractiveResumePage({ cvData }: InteractiveResumeProps
 
 // Fetch data at build time
 export const getStaticProps: GetStaticProps<InteractiveResumeProps> = async () => {
-  // Get enhanced CV data
-  const cvData = getInteractiveCVData();
-  
+  // Real CV data, normalized for the interactive components' shape
+  const cvData = toInteractiveCVData(getCVData());
+
   return {
     props: {
       cvData,
