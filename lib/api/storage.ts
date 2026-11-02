@@ -1,5 +1,3 @@
-import { v4 as uuidv4 } from 'uuid';
-
 /**
  * Generates a unique filename for an image using UUID
  * @param file The file to generate a unique name for
@@ -7,7 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
  */
 export const generateUniqueFilename = (file: File): string => {
   const fileExtension = file.name.split('.').pop();
-  return `${uuidv4()}.${fileExtension}`;
+  return `${crypto.randomUUID()}.${fileExtension}`;
 };
 
 /**
