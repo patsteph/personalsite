@@ -224,13 +224,13 @@ flowchart TD
 2. **Auth Context Provider**: Client-side session management with auto-refresh
 3. **Cookie-Based Auth**: Secure HTTP-only cookies for session state
 4. **Server-Side Verification**: API endpoints independently verify auth tokens
-5. **Role-Based Access**: Different permission levels for various admin functions
+5. **Admin Allowlist**: Access is granted to verified emails on the `ADMIN_EMAILS` allowlist — there's a single admin role, not per-feature permission levels
 
 ## 🚀 Getting Started
 
 ### Prerequisites
 
-- Node.js (v18 or later)
+- Node.js v24 (see `engines` in `package.json`)
 - npm or yarn
 - Firebase account
 
@@ -239,8 +239,8 @@ flowchart TD
 1. **Clone the repository**
 
    ```bash
-   git clone https://github.com/patsteph/personal-website.git
-   cd personal-website
+   git clone https://github.com/patsteph/personalsite.git
+   cd personalsite
    ```
 
 2. **Install dependencies**
@@ -262,7 +262,7 @@ flowchart TD
    NEXT_PUBLIC_FIREBASE_APP_ID=your-app-id
    NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=your-measurement-id
 
-   # Firebase Admin SDK (for API routes - currently stubbed)
+   # Firebase Admin SDK (for API routes)
    FIREBASE_PROJECT_ID=your-project-id
    FIREBASE_CLIENT_EMAIL=firebase-adminsdk-xxxx@your-project-id.iam.gserviceaccount.com
    FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nYour private key here\n-----END PRIVATE KEY-----"
@@ -320,7 +320,7 @@ personal-website/
 │   ├── tracking.ts        # Analytics and event tracking implementation
 │   ├── translations.tsx    # Multi-language support with i18n
 │   └── utils/             # Utility functions and helpers
-├── middleware.js          # Edge middleware for route protection and redirects
+├── middleware.ts          # Edge middleware for route protection and redirects
 ├── pages/                 # Next.js page components and API routes
 │   ├── admin/             # Admin pages (protected with authentication)
 │   ├── api/               # Server-side API endpoints
@@ -432,24 +432,21 @@ The CV section offers a complete professional profile management system:
 - **Cookie-Based Auth**: Secure HTTP-only cookies instead of localStorage tokens
 - **Server-Side Validation**: All admin API endpoints validate session tokens 
 - **Edge Protection**: Middleware enforces authentication at the network edge
-- **Role-Based Access Control**: Different permission levels for various admin functions
+- **Admin Allowlist**: A single admin role, granted by email via the `ADMIN_EMAILS` allowlist — not per-feature permission levels
 - **Auto Session Refresh**: Background token refresh keeps sessions secure
 
 ### API Security Architecture
 
 - **Request Validation**: All inputs are sanitized and validated server-side
 - **CORS Protection**: Strict origin policies prevent cross-site request forgery
-- **Rate Limiting**: API endpoints are protected against abuse with request limits
 - **Error Sanitization**: Sensitive information is removed from error responses
 - **Content Security Policy**: Strict CSP headers to prevent injection attacks
 
 ### Sensitive Information Handling
 
 - **Environment Variables**: All credentials stored in environment variables
-- **Secret Rotation**: Regular rotation of API keys and secrets
 - **Secure Builds**: Runtime configuration generation with secret protection
 - **Least Privilege**: Admin SDK uses minimal required permissions
-- **Audit Logging**: All authentication attempts are logged for security review
 
 ## 🚀 Deployment
 
