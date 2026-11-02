@@ -37,22 +37,18 @@ const nextConfig = {
     // which CSP's style-src governs same as <style> tags; tightening that
     // further would need per-element nonces these libraries don't support.
     //
-    // script-src allow-lists cdn.gtranslate.net specifically for the
-    // GTranslate footer translation widget (mounted in pages/_document.tsx)
-    // -- its own settings script is served same-origin from
-    // public/gtranslate-settings.js instead of inline, so no 'unsafe-inline'
-    // exception was needed for that. connect-src additionally allows
-    // translate-pa.googleapis.com, which is what the widget actually calls
-    // (as translateHtml XHR requests, confirmed live) once a language is
-    // selected -- translate.googleapis.com is kept too in case an older
-    // widget version or fallback path uses it instead.
+    // No third-party translation widget is loaded (GTranslate's own hosted
+    // script had an unfixable bug -- see the project thread/memory), so
+    // there's no script-src/connect-src exception for one. Full-page
+    // translation instead calls our own /api/translate route (DeepL under
+    // the hood), which only needs 'self'.
     const csp = [
       "default-src 'self'",
-      "script-src 'self' https://cdn.gtranslate.net",
+      "script-src 'self'",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-      "img-src 'self' data: blob: https://firebasestorage.googleapis.com https://i.gr-assets.com https://images.unsplash.com https://source.unsplash.com https://books.google.com https://cdn.gtranslate.net",
+      "img-src 'self' data: blob: https://firebasestorage.googleapis.com https://i.gr-assets.com https://images.unsplash.com https://source.unsplash.com https://books.google.com",
       "font-src 'self' https://fonts.gstatic.com",
-      "connect-src 'self' https://*.firebaseio.com https://*.firebaseapp.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com https://www.googleapis.com wss://*.firebaseio.com https://cdn.gtranslate.net https://translate.googleapis.com https://translate-pa.googleapis.com",
+      "connect-src 'self' https://*.firebaseio.com https://*.firebaseapp.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com https://www.googleapis.com wss://*.firebaseio.com",
       "frame-src 'none'",
       "object-src 'none'",
       "base-uri 'self'",
