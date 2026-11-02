@@ -7,7 +7,7 @@ import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase-client';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { fetchJson } from '@/lib/fetch-json';
-import toast from 'react-hot-toast';
+import { toast } from 'react-toastify';
 
 // Import dashboard stat icons
 import {

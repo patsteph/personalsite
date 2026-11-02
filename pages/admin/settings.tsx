@@ -3,7 +3,7 @@ import Head from 'next/head';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { useTheme } from '@/components/AppProviders';
-import toast from 'react-hot-toast';
+import { toast } from 'react-toastify';
 
 export default function SettingsPage() {
   const { user, signOut } = useAuth();

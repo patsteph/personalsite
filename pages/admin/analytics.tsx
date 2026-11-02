@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import Head from 'next/head';
 import AdminLayout from '@/components/admin/AdminLayout';
-import toast from 'react-hot-toast';
+import { toast } from 'react-toastify';
 import useAnalytics from '@/lib/hooks/useAnalytics';
 import { ChartBarIcon, ClockIcon, GlobeAltIcon, DeviceTabletIcon } from '@heroicons/react/24/outline';
 
