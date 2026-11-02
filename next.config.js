@@ -41,16 +41,18 @@ const nextConfig = {
     // GTranslate footer translation widget (components/GTranslateWidget.tsx)
     // -- its own settings script is served same-origin from
     // public/gtranslate-settings.js instead of inline, so no 'unsafe-inline'
-    // exception was needed for that. frame-src/connect-src additions below
-    // are GTranslate's own documented hosts for the translation requests
-    // the widget makes once a language is selected.
+    // exception was needed for that. connect-src additionally allows
+    // translate-pa.googleapis.com, which is what the widget actually calls
+    // (as translateHtml XHR requests, confirmed live) once a language is
+    // selected -- translate.googleapis.com is kept too in case an older
+    // widget version or fallback path uses it instead.
     const csp = [
       "default-src 'self'",
       "script-src 'self' https://cdn.gtranslate.net",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "img-src 'self' data: blob: https://firebasestorage.googleapis.com https://i.gr-assets.com https://images.unsplash.com https://source.unsplash.com https://books.google.com https://cdn.gtranslate.net",
       "font-src 'self' https://fonts.gstatic.com",
-      "connect-src 'self' https://*.firebaseio.com https://*.firebaseapp.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com https://www.googleapis.com wss://*.firebaseio.com https://cdn.gtranslate.net https://translate.googleapis.com",
+      "connect-src 'self' https://*.firebaseio.com https://*.firebaseapp.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com https://www.googleapis.com wss://*.firebaseio.com https://cdn.gtranslate.net https://translate.googleapis.com https://translate-pa.googleapis.com",
       "frame-src 'none'",
       "object-src 'none'",
       "base-uri 'self'",
