@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { validateFirebaseIdToken } from '@/lib/api/server-auth';
+import { verifyAdminSession } from '@/lib/api/server-auth';
 import { AssistanceTask, createWritingAssistant } from '@/lib/ai/blog-assistant';
 import { AIServiceConfig } from '@/lib/ai/ai-service';
 
@@ -23,11 +23,11 @@ export default async function handler(
 
   try {
     // Verify user authentication (only allow admin users)
-    const uid = await validateFirebaseIdToken(req);
-    if (!uid) {
-      return res.status(401).json({ 
-        success: false, 
-        error: 'Unauthorized' 
+    const isAdmin = await verifyAdminSession(req);
+    if (!isAdmin) {
+      return res.status(401).json({
+        success: false,
+        error: 'Unauthorized'
       });
     }
 

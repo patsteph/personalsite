@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { AUTH_COOKIE_NAME } from './lib/utils/cookies';
+import { FB_TOKEN_COOKIE_NAME } from './lib/utils/cookies';
 
 // Configuration
 const DEBUG_MIDDLEWARE = process.env.NODE_ENV === 'development';
@@ -37,19 +37,30 @@ export async function middleware(req: NextRequest) {
       return NextResponse.redirect(new URL('/admin', req.url));
     }
     
-    // Protect admin routes that are not the login page
+    // Protect admin routes that are not the login page.
+    //
+    // This is a fast, UX-level redirect only: Next.js Edge middleware can't
+    // run the Firebase Admin SDK, so it can't cryptographically verify a
+    // session here. It checks for the presence of a real Firebase ID token
+    // cookie (fb_token, set by the client right after a verified Firebase
+    // sign-in) rather than the old unsigned 'auth_success' flag, which any
+    // visitor could set themselves to pass this check. The actual
+    // authorization boundary is server-side: getServerSideProps pages use
+    // withAuth (lib/api/with-auth.ts), and admin API routes verify the
+    // token via the Firebase Admin SDK (lib/api/server-auth.ts). A request
+    // that gets past this middleware without a valid token still gets 401s
+    // from every admin API call.
     if (pathname.startsWith('/admin') && !pathname.includes('/admin/login')) {
-      // Check for the auth session cookie
-      const sessionStorageAuth = req.cookies.get(AUTH_COOKIE_NAME);
-      
-      debugLog(`Auth cookie check for ${pathname}: ${sessionStorageAuth ? 'Found' : 'Not found'}`);
-      
-      // Redirect to login if the auth cookie is not found
-      if (!sessionStorageAuth) {
+      const fbTokenCookie = req.cookies.get(FB_TOKEN_COOKIE_NAME);
+
+      debugLog(`Auth cookie check for ${pathname}: ${fbTokenCookie ? 'Found' : 'Not found'}`);
+
+      // Redirect to login if the token cookie is not found
+      if (!fbTokenCookie) {
         debugLog('Unauthorized access attempt, redirecting to login');
         return NextResponse.redirect(new URL('/admin/login', req.url));
       }
-      
+
       debugLog('Authorized access granted');
     }
     

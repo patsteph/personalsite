@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-// Removed adminAuth and Firestore import. Use server-side API or remove logic.
+import { getAdminAuth } from '@/lib/firebase-admin';
 
 type ValidateResponse = {
   success: boolean;
@@ -23,23 +23,22 @@ export default async function handler(
     // Get token from Authorization header
     const authHeader = req.headers.authorization || '';
     const token = authHeader.startsWith('Bearer ') ? authHeader.substring(7) : '';
-    
+
     if (!token) {
       return res.status(401).json({ success: false, valid: false, error: 'No token provided' });
     }
-    
-    // First, try to verify with Firebase
-    // TODO: Replace with server-side API call to validate token
-    // Stubbed validation logic for now
-    if (token === 'stub-valid-token') {
+
+    try {
+      const auth = getAdminAuth();
+      await auth.verifyIdToken(token);
       return res.status(200).json({ success: true, valid: true });
-    } else {
+    } catch (error) {
       return res.status(401).json({ success: false, valid: false, error: 'Invalid or expired token' });
     }
   } catch (error) {
     console.error('Token validation error:', error);
-    return res.status(500).json({ 
-      success: false, 
+    return res.status(500).json({
+      success: false,
       error: 'Error validating token'
     });
   }

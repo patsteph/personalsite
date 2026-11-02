@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { collection, doc, getDoc, getDocs, getFirestore, limit, orderBy, query, setDoc } from 'firebase/firestore';
-import { validateFirebaseIdToken } from '@/lib/api/server-auth';
+import { verifyAdminSession } from '@/lib/api/server-auth';
 
 type FeedbackItem = {
   id: string;
@@ -48,18 +48,16 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<AdminAnalyticsResponse>
 ) {
-  const uid = await validateFirebaseIdToken(req);
-  
-  if (!uid) {
-    console.error('Admin analytics: Authentication failed - invalid or missing token');
+  const isAdmin = await verifyAdminSession(req);
+
+  if (!isAdmin) {
+    console.error('Admin analytics: Authentication failed - not an authenticated admin');
     return res.status(401).json({
       success: false,
       error: 'Unauthorized: You must be logged in as an admin to access analytics'
     });
   }
-  
-  console.log(`Admin analytics: Authenticated user with UID ${uid}`);
-  
+
   if (req.method !== 'GET') {
     return res.status(405).json({ 
       success: false, 

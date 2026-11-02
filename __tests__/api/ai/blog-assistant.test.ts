@@ -4,7 +4,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 
 // Mock Firebase Admin Auth
 jest.mock("@/lib/api/server-auth", () => ({
-  validateFirebaseIdToken: jest.fn(),
+  verifyAdminSession: jest.fn(),
 }));
 
 // Mock blog assistant
@@ -50,7 +50,7 @@ jest.mock("@/lib/schemas/ai", () => ({
 
 describe("/api/ai/blog-assistant", () => {
   const mockValidateToken = jest.mocked(
-    require("@/lib/api/server-auth").validateFirebaseIdToken,
+    require("@/lib/api/server-auth").verifyAdminSession,
   );
   const mockCreateAssistant = jest.mocked(
     require("@/lib/ai/blog-assistant").createWritingAssistant,
@@ -59,7 +59,7 @@ describe("/api/ai/blog-assistant", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    mockValidateToken.mockResolvedValue("test-user-id");
+    mockValidateToken.mockResolvedValue(true);
     mockCreateAssistant.mockReturnValue({ execute: mockExecute });
   });
 
@@ -145,7 +145,7 @@ describe("/api/ai/blog-assistant", () => {
   });
 
   it("validates authentication", async () => {
-    mockValidateToken.mockResolvedValue(null);
+    mockValidateToken.mockResolvedValue(false);
 
     const { req, res } = createMocks<NextApiRequest, NextApiResponse>({
       method: "POST",

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { collection, query, orderBy, limit, getDocs, Timestamp, where } from 'firebase/firestore';
-import { db } from '@/lib/firebase-client'; 
-import { TrackingEventData } from '@/lib/tracking'; 
+import { db, auth as firebaseAuth } from '@/lib/firebase-client';
+import { TrackingEventData } from '@/lib/tracking';
 import { useAuth } from '@/lib/auth'; 
 
 // Interface for feedback items
@@ -182,7 +182,10 @@ const TrackingAnalytics: React.FC = () => {
       setFeedbackError(null);
       
       try {
-        const response = await fetch('/api/admin-analytics?dataType=feedback');
+        const token = await firebaseAuth?.currentUser?.getIdToken();
+        const response = await fetch('/api/admin-analytics?dataType=feedback', {
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        });
         const result = await response.json();
         
         if (result.success && result.data && Array.isArray(result.data.feedbackItems)) {
@@ -205,7 +208,10 @@ const TrackingAnalytics: React.FC = () => {
         setReactionsLoading(true);
         
         // Call the admin API endpoint to get blog engagement data including reactions
-        const response = await fetch('/api/admin-analytics?dataType=blog');
+        const token = await firebaseAuth?.currentUser?.getIdToken();
+        const response = await fetch('/api/admin-analytics?dataType=blog', {
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        });
         const result = await response.json();
         
         if (result.success && result.data) {

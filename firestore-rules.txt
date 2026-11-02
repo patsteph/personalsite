@@ -1,42 +1,53 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    // True only for a signed-in user whose UID has a doc in /admins.
+    // Note: the very first admin doc has to be created out-of-band
+    // (Firebase console or the Admin SDK) since nobody can write to
+    // /admins until an admin doc for them already exists.
+    function isAdmin() {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
     match /books/{bookId} {
       allow read;
-      allow write: if request.auth != null;
+      allow write: if isAdmin();
     }
     match /blog-posts/{postId} {
       allow read;
-      allow write: if request.auth != null;
+      allow write: if isAdmin();
     }
     match /signals/{signalId} {
-      allow get, list: if true; 
-      allow create, update, delete: if request.auth != null; // Simplified write
+      allow get, list: if true;
+      allow create, update, delete: if isAdmin();
     }
     match /site-stats/{statsId} {
       allow read;
-      allow write: if request.auth != null;
+      allow write: if isAdmin();
     }
-    // Add rules for the stats collection used for blog reactions
+    // Stats collection used for blog reactions
     match /stats/{statsId} {
       allow read;
-      allow write: if request.auth != null;
+      allow write: if isAdmin();
     }
     match /trackingEvents/{eventId} {
-      allow read: if request.auth != null; 
-      allow list, get: if request.auth != null; 
+      allow read, list, get: if isAdmin();
+      // Analytics events are written server-side via the Admin SDK,
+      // which bypasses these rules, so no client write rule is needed.
     }
     match /feedback/{feedbackId} {
       allow create: if true; // Anyone can submit feedback
-      allow read, update, delete: if request.auth != null; // Only authenticated users can read/manage feedback
+      allow read, update, delete: if isAdmin(); // Only admins can read/manage feedback
     }
     match /admins/{userId} {
        allow get: if request.auth != null && request.auth.uid == userId;
-       allow read: if request.auth != null; // Keeping broader read for server checks? Review if needed.
-       allow write: if request.auth != null;
+       allow list: if isAdmin();
+       allow write: if isAdmin();
     }
     match /admin_tokens/{tokenId} {
-       allow read, write: if request.auth != null; // Consider if only server needs this
-    }                                                           
-  }                                                                 
+       allow read, write: if isAdmin();
+    }
+  }
 }
