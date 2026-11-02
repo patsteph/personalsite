@@ -15,8 +15,12 @@ This file previously claimed a "Grade A (104/100)" audit result from January 202
 ## Known follow-up work (not yet done)
 
 - The 7 remaining high-severity dependency issues above, via major version upgrades.
-- The admin dashboard is spread across 9 separate pages under `pages/admin/` with inconsistent server-side protection (most rely only on the client-side `AuthProvider` redirect plus the now-fixed API-level checks). Consolidating these is tracked as general cleanup, not a security gap on its own now that the API layer is fixed.
-- `next build` currently fails on `main` due to a pre-existing, unrelated TypeScript issue (`lib/api/storage.ts` importing `uuid` with no type declarations installed), and the Jest suite has at least one pre-existing missing dependency (`node-mocks-http`). Neither is new; both block a clean build/test run and should be fixed early in the next pass.
+- The Jest suite has at least one pre-existing missing dependency (`node-mocks-http`), which blocks a clean test run.
+
+## Resolved since the pass above
+
+- The admin dashboard's inconsistent server-side protection (two pages — `/admin/easter-eggs`, `/admin/signals` — had their own broken or weaker auth checks instead of the shared `verifyAdminSession`) was fixed and consolidated onto the one real pattern.
+- The `next build` failure from `lib/api/storage.ts` importing `uuid` with no type declarations was fixed.
 
 ## How admin access works now
 
