@@ -33,6 +33,24 @@ function cacheKey(targetLang: string, text: string): string {
   return crypto.createHash('sha256').update(`${targetLang}:${text}`).digest('hex');
 }
 
+// Only accept calls that actually come from a page on this site (the
+// footer's language buttons, via lib/pageTranslator.ts) -- not just any
+// script that knows the URL. This doesn't stop someone from opening the
+// site and scripting calls from its own origin, but it blocks the much
+// more common case of an outside caller hitting the route directly to
+// spend the Anthropic key; the per-IP and daily-budget limits below are
+// the real backstop against that remaining case.
+function isSameOriginRequest(req: NextApiRequest): boolean {
+  const host = req.headers.host;
+  const originHeader = req.headers.origin || req.headers.referer;
+  if (!host || !originHeader) return false;
+  try {
+    return new URL(originHeader).host === host;
+  } catch {
+    return false;
+  }
+}
+
 function getClientIp(req: NextApiRequest): string {
   const forwarded = req.headers['x-forwarded-for'];
   if (typeof forwarded === 'string' && forwarded.length > 0) {
@@ -118,6 +136,10 @@ export default async function handler(
 ) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: `Method ${req.method} not allowed` });
+  }
+
+  if (!isSameOriginRequest(req)) {
+    return res.status(403).json({ error: 'Forbidden' });
   }
 
   const { texts, targetLang } = req.body as { texts?: unknown; targetLang?: unknown };
