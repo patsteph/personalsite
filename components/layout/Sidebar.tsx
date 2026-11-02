@@ -3,6 +3,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useTranslation } from '@/lib/translations';
 import { useTheme } from '@/components/AppProviders';
+import { useEasterEggTrigger } from '@/lib/easter-eggs/useEasterEggTrigger';
 import { PageSection } from './types';
 
 type SidebarProps = {
@@ -12,6 +13,7 @@ type SidebarProps = {
 export default function Sidebar({ currentSection }: SidebarProps) {
   const { t } = useTranslation();
   const { theme, toggleTheme } = useTheme();
+  const profileTripleClickProps = useEasterEggTrigger('triple-click');
   
   // Social media links
   const socialLinks = {
@@ -48,6 +50,7 @@ export default function Sidebar({ currentSection }: SidebarProps) {
             loading="eager"
             placeholder="blur"
             blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="
+            {...profileTripleClickProps}
           />
         </div>
         <h2 className="text-xl font-semibold mb-1 text-steel-blue">Patrick Stephens</h2>

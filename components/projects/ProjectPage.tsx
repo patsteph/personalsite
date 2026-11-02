@@ -16,7 +16,6 @@ export default function ProjectPage({ title, description, crumbs = [], children 
       section="projects"
       title={title}
       description={description}
-      headerImage="/images/headers/welcome.jpg"
     >
       <nav aria-label="Breadcrumb" className="text-sm text-steel-blue mb-4">
         <Link href="/projects" className="hover:text-accent">Projects</Link>
