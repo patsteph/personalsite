@@ -135,7 +135,9 @@ export default function AdminBooksPage() {
     }
   };
   
-  // AdminLayout handles both loading and auth states for us
+  // AdminLayout just renders the loading state; route protection itself
+  // comes from the global AuthProvider (lib/auth.tsx) redirecting away
+  // from /admin/* when signed out.
   return (
     <>
       <Head>
