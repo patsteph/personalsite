@@ -3,7 +3,7 @@ import { useAuth } from '@/lib/hooks/useAuth';
 import { auth as firebaseAuth } from '@/lib/firebase-client';
 import { getAvailableTasks, toneOptions, AssistanceTask } from '@/lib/ai/blog-assistant';
 import type { ToneOption } from '@/lib/ai/blog-assistant';
-import toast from 'react-hot-toast';
+import { toast } from 'react-toastify';
 
 interface BlogAIAssistantProps {
   content: string;

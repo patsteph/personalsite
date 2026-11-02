@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Book } from '@/types/book';
 import { BookRecommendationInput } from '@/lib/ai/book-recommender';
-import toast from 'react-hot-toast';
+import { toast } from 'react-toastify';
 import Image from 'next/image';
 
 interface BookRecommenderProps {

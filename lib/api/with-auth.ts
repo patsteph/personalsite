@@ -1,7 +1,7 @@
 import { GetServerSideProps, GetServerSidePropsContext, Redirect } from 'next';
 import { NextApiRequest, NextApiResponse } from 'next';
 import { getAdminAuth } from '@/lib/firebase-admin';
-import { parseCookies } from 'nookies';
+import { parse as parseCookies } from 'cookie';
 import { AUTH_COOKIE_NAME } from '@/lib/utils/cookies';
 
 /**
@@ -13,8 +13,8 @@ export const withAuth = <T extends Record<string, any>>(
   gssp: (context: GetServerSidePropsContext) => Promise<{ props: T } | { redirect: Redirect } | { notFound: true }>
 ): GetServerSideProps<T> => {
   return async (context) => {
-    const { req, res } = context;
-    const cookies = parseCookies({ req });
+    const { req } = context;
+    const cookies = parseCookies(req.headers.cookie || '');
     const sessionCookie = cookies[AUTH_COOKIE_NAME];
 
     if (!sessionCookie) {

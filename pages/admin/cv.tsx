@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { CVData } from '@/types/cv';
-import toast from 'react-hot-toast';
+import { toast } from 'react-toastify';
 import { fetchJson, ApiResponse } from '@/lib/fetch-json';
 import CVEditor from '@/components/admin/CVEditor';
 import AdminLoading from '@/components/admin/AdminLoading';
