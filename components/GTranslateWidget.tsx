@@ -1,5 +1,6 @@
 // components/GTranslateWidget.tsx
 import Script from 'next/script';
+import { useState } from 'react';
 
 /**
  * GTranslate's free Website Translator widget (gtranslate.io), free for
@@ -22,16 +23,31 @@ import Script from 'next/script';
  * specifically for the one script below rather than relaxing the policy
  * generally. Keep LANGUAGES in public/gtranslate-settings.js in sync
  * with lib/translations.tsx's language list.
+ *
+ * Load order matters: dropdown.js reads window.gtranslateSettings once,
+ * as soon as it runs, so it must not load until the settings script has
+ * actually executed. Two separate next/script tags with the same
+ * strategy don't guarantee that order (confirmed live: dropdown.js
+ * logged "gtranslateSettings is not properly initialized"), so the
+ * second script is only rendered once the first one's onLoad fires.
  */
 export default function GTranslateWidget() {
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
+
   return (
     <>
       <div className="gtranslate_wrapper" />
-      <Script src="/gtranslate-settings.js" strategy="afterInteractive" />
       <Script
-        src="https://cdn.gtranslate.net/widgets/latest/dropdown.js"
+        src="/gtranslate-settings.js"
         strategy="afterInteractive"
+        onReady={() => setSettingsLoaded(true)}
       />
+      {settingsLoaded && (
+        <Script
+          src="https://cdn.gtranslate.net/widgets/latest/dropdown.js"
+          strategy="afterInteractive"
+        />
+      )}
     </>
   );
 }
