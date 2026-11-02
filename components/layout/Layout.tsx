@@ -99,11 +99,15 @@ export default function Layout({
             {children}
           </div>
           
-          {/* Footer. The visible language buttons below always work (they
-              switch the site's own UI/content strings). The GTranslate
-              widget mounted in _app.tsx adds a fixed-position dropdown over
-              this bar that additionally translates free-text content
-              (blog posts, reviews) when its third-party script loads. */}
+          {/* Footer. These buttons switch the site's own UI strings via
+              lib/translations (setLanguage) immediately, and also trigger
+              components/PageTranslationSync.tsx (mounted in _app.tsx),
+              which translates the rest of the page's free-text content
+              (blog posts, book reviews, CV copy) via our own
+              /api/translate route -- see lib/pageTranslator.ts. We tried
+              third-party widgets (Google's, then GTranslate's) for this
+              first; both turned out unreliable in ways outside our
+              control, so this calls a translation API directly instead. */}
           <footer className="bg-linen p-4 flex flex-col sm:flex-row justify-between items-center shadow-inner gap-2">
             <div className="flex items-center justify-center space-x-3" {...languageSectionProps}>
               {(Object.keys(LANGUAGE_LABELS) as LanguageCode[]).map((code, i) => (
