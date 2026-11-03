@@ -111,7 +111,11 @@ async function translateWithClaude(texts: string[], languageName: string, apiKey
       // No `temperature` -- this model deprecated it and rejects the request
       // entirely (400) if it's present, deterministic or not.
       model: ANTHROPIC_MODEL,
-      max_tokens: 4096,
+      // Generous headroom: a batch is up to 50 texts of up to 2000 chars
+      // each, and translated text (e.g. into Japanese) can come back
+      // longer than the source -- 4096 wasn't enough and silently
+      // truncated the JSON array mid-response.
+      max_tokens: 8192,
       messages: [{ role: 'user', content: prompt }],
     }),
   });
@@ -121,8 +125,15 @@ async function translateWithClaude(texts: string[], languageName: string, apiKey
     throw new Error(`Anthropic API error ${response.status}: ${errBody}`);
   }
 
-  const data = (await response.json()) as { content: { text: string }[] };
-  const raw = data.content?.[0]?.text ?? '';
+  const data = (await response.json()) as {
+    content: { type: string; text?: string }[];
+    stop_reason?: string;
+  };
+  if (data.stop_reason === 'max_tokens') {
+    throw new Error('Anthropic response was truncated (hit max_tokens)');
+  }
+  const textBlock = data.content?.find((block) => block.type === 'text');
+  const raw = textBlock?.text ?? '';
   const jsonMatch = raw.match(/\[[\s\S]*\]/);
   const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : raw);
   if (!Array.isArray(parsed) || parsed.length !== texts.length) {
