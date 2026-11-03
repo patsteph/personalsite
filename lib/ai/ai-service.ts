@@ -119,7 +119,7 @@ export function createAIService(defaultProvider: AIProvider = 'anthropic') {
           'anthropic-version': '2023-06-01'
         },
         body: JSON.stringify({
-          model: 'claude-3-opus-20240229',
+          model: 'claude-haiku-5-5',
           max_tokens: config.maxTokens,
           temperature: config.temperature,
           messages: [
