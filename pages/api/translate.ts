@@ -27,7 +27,15 @@ const MAX_TEXT_LENGTH = 2000;
 // bill. Both live in Firestore so they hold across serverless invocations.
 const IP_WINDOW_MS = 60 * 60 * 1000; // 1 hour
 const IP_MAX_REQUESTS_PER_WINDOW = 60;
-const DAILY_TRANSLATION_CALL_BUDGET = 500;
+// 500 turned out far too low for real use: a single page has dozens of
+// distinct text nodes, so just a few page views across languages (let
+// alone a first-time cache-cold crawl of the whole site) burns through
+// it in minutes, at which point translation silently stops. Each unit
+// here is one short string translated once (then cached forever), and
+// this model is cheap enough that even a fully-exhausted day costs well
+// under a dollar, so this is sized to comfortably cover normal traffic
+// while still bounding a genuine runaway.
+const DAILY_TRANSLATION_CALL_BUDGET = 5000;
 
 function cacheKey(targetLang: string, text: string): string {
   return crypto.createHash('sha256').update(`${targetLang}:${text}`).digest('hex');
