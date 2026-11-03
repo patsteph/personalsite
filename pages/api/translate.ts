@@ -108,9 +108,10 @@ async function translateWithClaude(texts: string[], languageName: string, apiKey
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
+      // No `temperature` -- this model deprecated it and rejects the request
+      // entirely (400) if it's present, deterministic or not.
       model: ANTHROPIC_MODEL,
       max_tokens: 4096,
-      temperature: 0,
       messages: [{ role: 'user', content: prompt }],
     }),
   });
@@ -230,9 +231,6 @@ export default async function handler(
     return res.status(200).json({ translations: results });
   } catch (error: any) {
     console.error('Error translating text:', error);
-    // TODO(temporary): surfacing error.message to diagnose the second
-    // production 500 (credits were the first cause, this is a new one) --
-    // remove once that's root-caused.
-    return res.status(500).json({ error: `Error translating text: ${error?.message || error}` });
+    return res.status(500).json({ error: 'Error translating text' });
   }
 }
